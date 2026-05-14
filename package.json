@@ -1,0 +1,24 @@
+{
+  "name": "daily-work-tool",
+  "version": "1.0.0",
+  "description": "**作成日:** 2026/04/10  \r **更新日:** 2026/05/11  \r **作成者:** 須藤 亜衣莉",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ark-creton/daily-work-tool.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/ark-creton/daily-work-tool/issues"
+  },
+  "homepage": "https://github.com/ark-creton/daily-work-tool#readme",
+  "dependencies": {
+    "@supabase/supabase-js": "^2.105.4"
+  }
+}

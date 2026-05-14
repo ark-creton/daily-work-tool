@@ -1,0 +1,38 @@
+/* ==================================================
+   システム共通スタイル
+   ================================================== */
+
+/* 1. 画面全体の基本設定 */
+body {
+  background-color: #f4f4f9;
+  color: #333333;
+  font-family: "Noto Sans JP", sans-serif;
+  margin: 0;
+  font-size: 16px;
+  line-height: 1.6; 
+}
+
+/* 2. フォームコントロールの共通リセット
+   (ブラウザ標準の青い外枠線を消し、独自制御の邪魔をさせない) */
+.form-control:focus {
+  outline: none !important;
+  box-shadow: none !important;
+  border-color: #dee2e6; 
+}
+
+/* 3. 共通：フォーカス時のカスタム制御クラス
+   (JSで .is-focused を付与した際に適用される青い光) */
+.is-focused {
+  border-radius: 0.375rem;
+  border-color: #86b7fe !important;
+  box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25) !important;
+}
+
+/* 4. 共通：エラー時のカスタム制御クラス
+   (JSで .is-invalid-focus を付与した際に適用される赤い光) */
+.is-invalid-focus {
+  border-radius: 0.375rem;
+  border: 1px solid #dc3545 !important;
+  box-shadow: 0 0 0 0.25rem rgba(220, 53, 69, 0.25) !important;
+}
+
