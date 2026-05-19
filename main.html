@@ -1,0 +1,114 @@
+<div class="dashboard-container">
+  <div class="status-clock-section">
+    <div class="clock-card">
+      <div class="card-header-title">
+        <span id="current_date_display" class="date-display"
+          >2026年5月18日(月)</span
+        >
+        <span id="current_status_label" class="status-badge">未出勤</span>
+      </div>
+      <div id="current_time_display" class="time-display">00:00:00</div>
+    </div>
+
+    <div class="button-group-card">
+      <div class="action-buttons-top">
+        <button id="clock_in_button" class="btn btn-clock-in">出勤</button>
+        <button id="clock_out_button" class="btn btn-clock-out" disabled>
+          退勤
+        </button>
+      </div>
+      <div class="action-buttons-bottom">
+        <button id="break_toggle_button" class="btn btn-break" disabled>
+          外出開始
+        </button>
+      </div>
+
+      <div class="today-remarks-area">
+        <div class="remarks-input-group">
+          <input
+            type="text"
+            id="today_remarks_input"
+            class="form-control remarks-input"
+            placeholder="本日の備考（遅刻理由等）を入力"
+            maxlength="100"
+          />
+          <button id="btn_save_remarks" class="btn btn-save-remarks">
+            保存
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="logs-section">
+    <div class="section-title">直近の打刻内容（勤怠ログ）</div>
+    <textarea
+      id="recent_logs_area"
+      class="form-control logs-textarea"
+      readonly
+      rows="4"
+      placeholder="打刻履歴や備考の保存ログがここに表示されます"
+    ></textarea>
+  </div>
+
+  <div class="report-action-section">
+    <button id="btn_new_report" class="btn btn-new-report">
+      <i class="bi bi-file-earmark-plus"></i> レポート新規作成
+    </button>
+  </div>
+
+  <div class="content-grid-section">
+    <div class="grid-card calendar-card">
+      <div class="card-header-toggle" id="calendar-toggle-header">
+        <span class="section-title">カレンダー</span>
+        <div class="switcher-area">
+          <select id="period_switcher" class="form-select form-select-sm">
+            <option value="current">2026/05</option>
+          </select>
+        </div>
+        <i class="bi bi-chevron-down accordion-icon d-md-none"></i>
+      </div>
+      <div class="card-body-content" id="calendar-body">
+        <div id="attendance_calendar" class="calendar-placeholder">
+          カレンダー表示エリア
+        </div>
+      </div>
+    </div>
+
+    <div class="grid-card reports-card">
+      <div class="card-header-toggle" id="reports-toggle-header">
+        <span class="section-title">過去のレポート 一覧表示</span>
+        <div class="page-limit-area">
+          <select id="page_limit" class="form-select form-select-sm">
+            <option value="5">5件</option>
+            <option value="10">10件</option>
+          </select>
+        </div>
+        <i class="bi bi-chevron-down accordion-icon d-md-none"></i>
+      </div>
+      <div class="card-body-content" id="reports-body">
+        <div class="report-list-group">
+          <div class="report_row clickable-report-item">
+            <span class="report-date">2026/05/18</span>
+            <span class="report-summary">日報タイトルなど...</span>
+            <i class="bi bi-chevron-right"></i>
+          </div>
+        </div>
+
+        <nav class="reports-pagination">
+          <ul class="pagination pagination-sm justify-content-center">
+            <li class="page-item disabled">
+              <a class="page-link" href="#">前へ</a>
+            </li>
+            <li class="page-item active">
+              <a class="page-link" href="#">1</a>
+            </li>
+            <li class="page-item">
+              <a class="page-link" href="#">次へ</a>
+            </li>
+          </ul>
+        </nav>
+      </div>
+    </div>
+  </div>
+</div>

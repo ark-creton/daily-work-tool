@@ -1,4 +1,3 @@
-// 画面の準備ができたら実行
 document.addEventListener("DOMContentLoaded", () => {
   console.log("ログイン画面のJSが正常に読み込まれました");
 
