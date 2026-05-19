@@ -1,31 +1,27 @@
 document.addEventListener("DOMContentLoaded", () => {
-  const mobileToggle = document.getElementById("mobile-menu-toggle"); // スマホ用ボタン
-  const sidebarNav = document.querySelector(".sidebar-nav"); // 動かしたいメニュー
-  const menuToggle = document.getElementById("menu-toggle"); // PC用ボタン
-  const sidebar = document.querySelector(".sidebar-area"); // PC用サイドバー
+  // ==========================================
+  // 1. サイドバーの開閉制御（アプリ全体共通）
+  // ==========================================
+  const mobileToggle = document.getElementById("mobile-menu-toggle");
+  const sidebarNav = document.querySelector(".sidebar-nav");
+  const menuToggle = document.getElementById("menu-toggle");
+  const sidebar = document.querySelector(".sidebar-area");
 
-  // --- PC用のサイドバー開閉 ---
   if (menuToggle && sidebar) {
     menuToggle.addEventListener("click", () => {
       sidebar.classList.toggle("collapsed");
     });
   }
 
-  // --- スマホ用のハンバーガーメニュー開閉 ---
   if (mobileToggle && sidebarNav) {
     mobileToggle.addEventListener("click", (event) => {
-      // CSS側の名前「mobile-active」と完全に一致させる
       sidebarNav.classList.toggle("mobile-active");
-
-      // ボタン自体のクリックが他に影響しないようにする
       event.stopPropagation();
     });
   }
 
-  // メニューの外側をクリックした時に閉じる（使いやすさ向上）
   document.addEventListener("click", (event) => {
     if (sidebarNav && sidebarNav.classList.contains("mobile-active")) {
-      // クリックした場所がメニュー本体でなければ、メニューを閉じる
       if (!sidebarNav.contains(event.target)) {
         sidebarNav.classList.remove("mobile-active");
       }
@@ -33,7 +29,7 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   // ==========================================
-  // 画面切り替え制御（SPA基盤）＆ 共通パーツ自動初期化
+  // 2. 画面切り替え制御（SPA基盤）
   // ==========================================
   const dynamicArea = document.getElementById("main_content_dynamic_area");
   const navItems = document.querySelectorAll(".sidebar-nav .nav-item");
@@ -56,9 +52,10 @@ document.addEventListener("DOMContentLoaded", () => {
         dynamicArea.innerHTML = htmlContent;
       }
 
-      // 【★修正ポイント1】HTMLが置き換わった直後に、共通パーツの初期化を走らせる
-      // これにより、main.htmlでもtimecard.htmlでも、中身に応じて自動起動します！
-      initializeClockAndButtons();
+      // 【超重要】画面が「main」に切り替わった時だけ、引っ越し先の「main.js」の初期化を呼び出す！
+      if (pageName === "main" && typeof initializeMainPage === "function") {
+        initializeMainPage();
+      }
     } catch (error) {
       console.error("画面の切り替え中にエラーが発生しました:", error);
       if (dynamicArea) {
@@ -68,73 +65,6 @@ document.addEventListener("DOMContentLoaded", () => {
           </div>
         `;
       }
-    }
-  }
-
-  /**
-   * 【★修正ポイント2】共通パーツ自動検知・起動システム
-   * 画面内に日付・時計・打刻ボタンが存在していれば自動でイベントを設定します
-   */
-  function initializeClockAndButtons() {
-    const dateDisplay = document.getElementById("current_date_display");
-    const timeDisplay = document.getElementById("current_time_display");
-
-    // --- 1. 時計・日付パーツの自動起動 ---
-    if (dateDisplay && timeDisplay) {
-      console.log(
-        "共通システム: 打刻パーツ（時計）を検出しました。タイマーを起動します。",
-      );
-      const weekDays = ["日", "月", "火", "水", "木", "金", "土"];
-
-      const updateClock = () => {
-        const now = new Date();
-        // 日付表示の更新
-        dateDisplay.textContent = `${now.getFullYear()}年${now.getMonth() + 1}月${now.getDate()}日(${weekDays[now.getDay()]})`;
-        // 時刻表示の更新（2桁パディング）
-        const hours = String(now.getHours()).padStart(2, "0");
-        const minutes = String(now.getMinutes()).padStart(2, "0");
-        const seconds = String(now.getSeconds()).padStart(2, "0");
-        timeDisplay.textContent = `${hours}:${minutes}:${seconds}`;
-      };
-
-      updateClock(); // 1回目を即時実行
-
-      // 1秒ごとの監視タイマーをスタート
-      const clockInterval = setInterval(() => {
-        // 画面切り替えで時計表示が消えたら自動停止（省エネ）
-        if (!document.getElementById("current_time_display")) {
-          clearInterval(clockInterval);
-          console.log(
-            "共通システム: 打刻パーツが画面から消えたため、時計タイマーを停止しました。",
-          );
-          return;
-        }
-        updateClock();
-      }, 1000);
-    }
-
-    // --- 2. 各種打刻ボタンの自動イベント登録 ---
-    const clockInBtn = document.getElementById("clock_in_button");
-    if (clockInBtn) {
-      clockInBtn.addEventListener("click", () => {
-        alert(
-          "出勤ボタンが押されました！（将来ここにSupabaseの処理を書き込みます）",
-        );
-      });
-    }
-
-    const clockOutBtn = document.getElementById("clock_out_button");
-    if (clockOutBtn) {
-      clockOutBtn.addEventListener("click", () => {
-        alert("退勤ボタンが押されました！");
-      });
-    }
-
-    const breakToggleBtn = document.getElementById("break_toggle_button");
-    if (breakToggleBtn) {
-      breakToggleBtn.addEventListener("click", () => {
-        alert("外出ボタンが押されました！");
-      });
     }
   }
 
@@ -153,6 +83,7 @@ document.addEventListener("DOMContentLoaded", () => {
       )
         return;
 
+      // 一旦すべてのメニューから active クラスを消す
       navItems.forEach((i) => i.classList.remove("active"));
       clickedItem.classList.add("active");
 
@@ -160,13 +91,13 @@ document.addEventListener("DOMContentLoaded", () => {
       console.log("クリックされたページ:", page);
 
       if (page === "home") {
-        loadPage("main"); // メイン画面（ダッシュボード）
+        loadPage("main"); // メイン画面
       } else if (page === "timecard") {
         loadPage("timecard"); // タイムカード画面
       } else if (page === "report") {
-        loadPage("report"); // レポート一覧画面（仮）
+        loadPage("report"); // レポート一覧画面
       } else if (page === "admin") {
-        loadPage("admin"); // 管理者専用画面（仮）
+        loadPage("admin"); // 管理者専用画面
       }
 
       if (sidebarNav && sidebarNav.classList.contains("mobile-active")) {

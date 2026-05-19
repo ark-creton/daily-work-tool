@@ -59,29 +59,43 @@
   font-variant-numeric: tabular-nums; /* 数字の幅を均等にしてガタつきを防ぐ */
 }
 
-/* ステータスバッジの基本スタイル（初期：未出勤） */
+/* --- ステータス表記のスタイル --- */
 .status-badge {
-  display: inline-block;
-  padding: 4px 12px;
-  font-size: 0.8rem;
+  padding: 6px 14px;
+  font-size: 0.85rem;
   font-weight: bold;
   border-radius: 6px;
+  display: inline-block;
   text-align: center;
-  background-color: #f0f0f5;
-  color: #666677;
-  border: 1px solid #dcdce5;
+  transition: all 0.3s ease;
 }
 
-/* 【将来用】ステータスが変わった時の色（JS連動） */
-.status-badge.working {
-  background-color: #e3f2fd;
-  color: #0d6efd;
-  border-color: #badceb;
+/* 未出勤 */
+.status-badge.status-default {
+  background-color: #f1f3f5;
+  color: #495057;
+  border: 1px solid #ced4da;
 }
-.status-badge.on-break {
-  background-color: #fff3e0;
-  color: #ef6c00;
-  border-color: #ffe0b2;
+
+/* ①出勤中 */
+.status-badge.status-working {
+  background-color: #e3f2fd !important;
+  color: #0d6efd !important;
+  border: 1px solid #badceb !important;
+}
+
+/* ②外出中 */
+.status-badge.status-break {
+  background-color: #fff3cd !important;
+  color: #856404 !important;
+  border: 1px solid #ffeeba !important;
+}
+
+/* ③退勤済 */
+.status-badge.status-returned {
+  background-color: #f8d7da !important;
+  color: #842029 !important;
+  border: 1px solid #f5c6cb !important;
 }
 
 /* --------------------------------------------------
@@ -117,6 +131,10 @@
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
 }
 
+/* --------------------------------------------------
+   打刻ボタンのレイアウト ＆ 統一感カラー（サイズ固定版）
+   -------------------------------------------------- */
+
 /* 出勤・退勤ボタン（上の段）は横に2等分して広げる */
 .btn-clock-in,
 .btn-clock-out {
@@ -129,23 +147,36 @@
   width: 100%;
 }
 
-/* 各ボタンの色（通常時・ホバー時） */
+/* 各ボタンの個別カラー設定（枠線なし・ステータスと同トーン） */
+
+/* ① 出勤ボタン：爽やかで優しいペールブルー */
 .btn-clock-in {
-  background-color: #b4b8df; /* 薄い紫 */
-  color: #ffffff;
+  background-color: #e3f2fd;
+  color: #0d6efd;
+  border: none !important; /* 枠線を完全に無くしてサイズ崩れを防止 */
 }
 .btn-clock-in:hover:not(:disabled) {
-  background-color: #9297cf;
+  background-color: #cee7fc;
 }
 
-.btn-clock-out,
-.btn-break {
-  background-color: #d1d2dc; /* 基本グレー */
-  color: #ffffff;
+/* ② 退勤ボタン：上品で落ち着いたローズピンク */
+.btn-clock-out {
+  background-color: #f8d7da;
+  color: #842029;
+  border: none !important;
 }
-.btn-clock-out:hover:not(:disabled),
+.btn-clock-out:hover:not(:disabled) {
+  background-color: #f5c2c7;
+}
+
+/* ③ 外出ボタン：柔らかなアンバーベージュ */
+.btn-break {
+  background-color: #fff3cd;
+  color: #856404;
+  border: none !important;
+}
 .btn-break:hover:not(:disabled) {
-  background-color: #bcbdd0;
+  background-color: #ffeeba;
 }
 
 /* ボタンを押した瞬間の「ポチッ」とした凹み演出 */
@@ -154,15 +185,18 @@
   box-shadow: none;
 }
 
-/* グレーアウト（非活性：disabled）の状態 */
+/* ==================================================
+   グレーアウト（非活性：disabled）の状態
+   ================================================== */
 .button-group-card .btn:disabled {
-  background-color: #e6e7ee !important;
-  color: #a0a2b7 !important;
+  background-color: #f8f9fa !important;
+  color: #ced4da !important;
+  border: none !important; /* 枠線を無しに */
+  opacity: 0.5; /* 半透明で存在感を薄める */
   cursor: not-allowed;
-  box-shadow: none;
-  transform: none;
+  box-shadow: none !important;
+  transform: none !important;
 }
-
 /* --------------------------------------------------
    上段・右側：当日備考入力エリア（追加機能）
    -------------------------------------------------- */
@@ -485,3 +519,5 @@
     display: block;
   }
 }
+
+
