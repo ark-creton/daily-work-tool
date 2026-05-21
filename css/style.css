@@ -432,4 +432,36 @@ body {
   .sidebar-nav.mobile-active .mobile-logout-item {
     display: flex !important;
   }
+
+  /* スマホメニュー（mobile-active）が開いている時は表示する */
+  .sidebar-nav.mobile-active .mobile-logout-item {
+    display: flex !important;
+  }
+
+  /* 💡 【追記】9. スマホのときはヘッダーのユーザー名を消す */
+  .header-right .user-name {
+    display: none !important;
+  }
+
+  /* 💡 【追記】10. スマホメニュー内のユーザー名表示エリアの装飾 */
+  .sidebar-user-info {
+    display: flex !important; /* スマホ時のみ表示 */
+    align-items: center;
+    padding: 20px 25px;
+    border-bottom: 1px solid #eee;
+    font-weight: 700;
+    color: #334155; /* 引き締まったグレー */
+    background-color: #f8fafc; /* ほんのり優しい背景色 */
+  }
+
+  .sidebar-user-info i {
+    font-size: 1.3rem;
+    margin-right: 12px;
+    color: #8ea3c2; /* メイン画面の優しい青と同期 */
+  }
+}
+
+/* 💡 【追記】PCのときはメニュー内のユーザー名は不要なので隠しておく */
+.sidebar-user-info {
+  display: none;
 }

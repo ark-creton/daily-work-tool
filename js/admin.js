@@ -187,6 +187,26 @@ function setupFormSubmit(userModal) {
         // ==========================================
         console.log(`Supabaseのユーザー情報を更新中... ID: ${editUserId}`);
 
+        // 💡 【追加】もしパスワード欄に入力があったら、先にAuth（認証）側のパスワードを更新する
+        if (password && password.length > 0) {
+          console.log(
+            "パスワードの変更を検知。Edge Functions経由で更新します。",
+          );
+
+          // 先ほどアップロードした 'update-user-password' を呼び出す
+          const { data: funcData, error: funcError } =
+            await supabase.functions.invoke("update-user-password", {
+              body: { userId: editUserId, password: password },
+            });
+
+          if (funcError || (funcData && funcData.error)) {
+            const errorMsg = funcError ? funcError.message : funcData.error;
+            throw new Error(`Auth情報の更新に失敗しました: ${errorMsg}`);
+          }
+
+          console.log("Edge Functions経由でのパスワード更新に成功！");
+        }
+
         // 1. user_master テーブルの該当ユーザーだけを狙い撃ちして更新
         const { error: dbError } = await supabase
           .from("user_master")
@@ -198,7 +218,7 @@ function setupFormSubmit(userModal) {
             is_active: isActive,
             avatar_url: avatarUrl,
           })
-          .eq("id", editUserId); // ここでクリックされた人だけに制限
+          .eq("id", editUserId);
 
         if (dbError) throw dbError;
 

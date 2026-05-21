@@ -12,7 +12,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // ログインボタン押下時のバリデーション処理
   if (loginBtn) {
-    loginBtn.addEventListener("click", (event) => {
+    loginBtn.addEventListener("click", async (event) => {
       event.preventDefault();
 
       // エラー表示のリセット
@@ -20,7 +20,6 @@ document.addEventListener("DOMContentLoaded", () => {
       errorContainer.innerText = "";
 
       // 入力された値を取得する
-      // .trim() をつけることで、前後の余計なスペースを自動で削除
       const emailValue = emailInput.value.trim();
       const passwordValue = passwordInput.value;
 
@@ -47,6 +46,52 @@ document.addEventListener("DOMContentLoaded", () => {
       }
 
       console.log("入力OK。Supabase認証へ進みます");
+
+      try {
+        // 🔄 ログイン実行中にボタンを連打されないように無効化
+        loginBtn.disabled = true;
+        loginBtn.innerText = "ログイン中...";
+
+        /* ====================================================================
+         * ✨ Supabase 認証処理の組み込み
+         * ==================================================================== */
+        const supabaseClient = window.supabase || supabase; 
+        
+        if (!supabaseClient) {
+          throw new Error("Supabaseクライアントが初期化されていません。");
+        }
+
+        const { data, error } = await supabaseClient.auth.signInWithPassword({
+          email: emailValue,
+          password: passwordValue,
+        });
+
+        // ❌ Supabase側で認証エラーが起きた場合
+        if (error) {
+          console.error("ログインエラー:", error.message);
+          // ユーザー向けの優しいメッセージ（セキュリティ上、どちらが間違っているかは明かさないのが一般的です）
+          showError("メールアドレスまたはパスワードが正しくありません", emailInput);
+          return;
+        }
+
+        // 🟢 ログイン成功時
+        if (data && data.user) {
+          console.log("ログイン成功！ユーザー情報:", data.user);
+          
+          // メイン画面へ遷移
+          window.location.href = "index.html"; 
+        }
+
+      } catch (err) {
+        console.error("予期せぬ例外が発生しました:", err);
+        showError("システムエラーが発生しました。時間を置いて再度お試しください。", emailInput);
+      } finally {
+        // 🔄 処理が終わったら（エラー時など）ボタンを元に戻す
+        if (loginBtn) {
+          loginBtn.disabled = false;
+          loginBtn.innerText = "ログイン";
+        }
+      }
     });
   }
 

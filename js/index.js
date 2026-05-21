@@ -1,4 +1,96 @@
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("DOMContentLoaded", async () => {
+  console.log("インデックス（共通基盤）のJSが正常に読み込まれました");
+
+  // ==========================================
+  // ログインユーザーのチェックとヘッダーへの名前反映
+  // ==========================================
+  async function checkAndDisplayUser() {
+    try {
+      const supabaseClient = window.supabase || supabase;
+      if (!supabaseClient) {
+        console.error("Supabaseが初期化されていません");
+        return;
+      }
+
+      // 1. まず認証情報を取得（ここでIDがわかります）
+      const {
+        data: { user },
+        error: authError,
+      } = await supabaseClient.auth.getUser();
+
+      if (authError) throw authError;
+
+      if (user) {
+        console.log("ログイン中のAuthユーザーID:", user.id);
+
+        /* 💡 ここで user_master テーブルから user_name を引っ張る */
+        const { data: masterData, error: dbError } = await supabaseClient
+          .from("user_master")
+          .select("user_name")
+          .eq("id", user.id)
+          .single(); // 1件だけ取得
+
+        let userName = "ゲストユーザー";
+
+        if (dbError) {
+          console.warn(
+            "user_masterからの名前取得に失敗したため、代替値を使用します:",
+            dbError.message,
+          );
+          userName = user.email || "ゲストユーザー"; // 失敗時はメールアドレスを代用
+        } else if (masterData) {
+          userName = masterData.user_name; // 🟢 データベースから取れた「テスト01」を代入！
+        }
+
+        // ヘッダーの表示を書き換える
+        const userNameSpan = document.querySelector(".header-right .user-name");
+        if (userNameSpan) {
+          userNameSpan.innerText = `${userName} さん`; 
+        }
+        // スマホメニュー内の表示も同時に書き換える
+        const mobileUserNameSpan = document.querySelector(".sidebar-user-name");
+        if (mobileUserNameSpan) {
+          mobileUserNameSpan.innerText = `${userName} さん`; 
+        }
+      } else {
+        // ❌ ログインしていない場合はログイン画面へ強制リダイレクト
+        console.warn("未ログイン状態です。ログイン画面へ遷移します。");
+        window.location.href = "login.html";
+      }
+    } catch (err) {
+      console.error("ユーザー情報の取得中にエラーが発生しました:", err.message);
+    }
+  }
+
+  // 最初にユーザーチェックを実行（非同期）
+  await checkAndDisplayUser();
+
+  // ==========================================
+  // ログアウト処理の共通イベント設定
+  // ==========================================
+  async function handleLogout() {
+    try {
+      const supabaseClient = window.supabase || supabase;
+      if (supabaseClient) {
+        const { error } = await supabaseClient.auth.signOut();
+        if (error) throw error;
+        console.log("ログアウト成功");
+      }
+      // ログアウト後はログイン画面へ
+      window.location.href = "login.html";
+    } catch (err) {
+      console.error("ログアウト中にエラーが発生しました:", err.message);
+      alert("ログアウトに失敗しました。");
+    }
+  }
+
+  // PC版・スマホ版それぞれのログアウトボタンにイベントを設定
+  const logoutBtnPC = document.querySelector(".logout-btn");
+  const logoutBtnMobile = document.querySelector(".mobile-logout-item");
+
+  if (logoutBtnPC) logoutBtnPC.addEventListener("click", handleLogout);
+  if (logoutBtnMobile) logoutBtnMobile.addEventListener("click", handleLogout);
+
   // ==========================================
   // 1. サイドバーの開閉制御（アプリ全体共通）
   // ==========================================
