@@ -35,6 +35,99 @@ body {
   box-shadow: 0 0 0 0.25rem rgba(220, 53, 69, 0.25) !important;
 }
 
+/* --------------------------------------------------
+   PC・スマホ位置切り替え型トースト通知
+   -------------------------------------------------- */
+.custom-toast {
+  position: fixed;
+  left: 50%;
+
+  /* スマホ対応：画面からはみ出さないように最大幅を設定 */
+  width: 90%;
+  max-width: 450px;
+
+  /* システムの淡いブルーグレーと一体化させる背景色（不透明度を0.98に上げて視認性UP） */
+  background-color: rgba(241, 245, 249, 0.98);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(203, 213, 225, 0.9);
+  color: #334155;
+
+  /* レイアウト */
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 14px 20px;
+  border-radius: 12px;
+
+  /* 💡 影を引き締め、内側に白い光（inset）を仕込んでパーツをクッキリ際立たせる */
+  box-shadow:
+    0 12px 30px -4px rgba(148, 163, 184, 0.25),
+    0 4px 12px -2px rgba(148, 163, 184, 0.15),
+    inset 0 1px 0 rgba(255, 255, 255, 1);
+
+  /* アニメーション共通設定 */
+  z-index: 9999;
+  font-weight: 600;
+  font-size: 0.92rem;
+  opacity: 0;
+  transition:
+    transform 0.4s cubic-bezier(0.16, 1, 0.3, 1),
+    opacity 0.3s ease;
+  pointer-events: none;
+  white-space: normal;
+  word-break: break-all;
+}
+
+/* 📱 スマートフォン（画面幅が 767px 以下）のとき：画面の下に配置 */
+@media (max-width: 767px) {
+  .custom-toast {
+    bottom: 24px; /* 下から24pxの位置 */
+    transform: translateX(-50%) translateY(20px); /* 最初は少し下に隠す */
+  }
+  .custom-toast.show {
+    transform: translateX(-50%) translateY(0); /* 下からスッと上がってくる */
+    opacity: 1;
+  }
+}
+
+/* 💻 PC・タブレット（画面幅が 768px 以上）のとき：画面の上に配置 */
+@media (min-width: 768px) {
+  .custom-toast {
+    top: 24px; /* 上から24pxの位置 */
+    transform: translateX(-50%) translateY(-20px); /* 最初は少し上に隠す */
+  }
+  .custom-toast.show {
+    transform: translateX(-50%) translateY(0); /* 上からスッと降りてくる */
+    opacity: 1;
+  }
+}
+
+/* 💡 アイコンが潰れないように保護 */
+.custom-toast i.bi {
+  flex-shrink: 0;
+  font-size: 1.15rem;
+  line-height: 1;
+}
+
+/* 🟢 通常・成功時 */
+.custom-toast .bi-check-circle {
+  color: #059669;
+}
+
+/* 🔴 エラー用：優しさを保ちつつ見やすいパステルピンク */
+.custom-toast.error {
+  background-color: rgba(254, 242, 242, 0.98);
+  border-color: rgba(252, 165, 165, 0.9);
+  color: #991b1b;
+  box-shadow:
+    0 12px 30px -4px rgba(239, 68, 68, 0.15),
+    0 4px 12px -2px rgba(239, 68, 68, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 1);
+}
+.custom-toast.error .bi-exclamation-circle {
+  color: #dc2626;
+}
+
 /* ==================================================
    2. レイアウト（配置）
    ================================================== */
@@ -245,7 +338,7 @@ body {
   /* 2. PC用のメニュー(ナビ)を初期状態では隠す */
   .sidebar-nav {
     display: none;
-    position: fixed; 
+    position: fixed;
     top: 60px;
     left: 0;
     width: 100%;

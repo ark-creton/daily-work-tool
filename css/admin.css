@@ -1,0 +1,345 @@
+/* ==================================================
+   管理者専用画面専用スタイル
+   ================================================== */
+
+/* --- 検索窓のスタイル微調整 --- */
+.input-group:has(#user_search_input:focus) {
+  border-color: #86b7fe;
+  box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.15);
+  border-radius: 6px; /* 影が丸みに綺麗に沿うように設定 */
+}
+
+/* 枠線の色がぶつかり合わないように調整 */
+.input-group:has(#user_search_input:focus) .input-group-text,
+.input-group:has(#user_search_input:focus) #user_search_input {
+  border-color: #86b7fe !important;
+}
+
+/* Bootstrap標準の個別のフォーカス影をリセットして、グループ全体の影とダブらないようにする */
+#user_search_input:focus {
+  border-color: #86b7fe;
+  box-shadow: none !important;
+}
+
+/* 検索窓全体の初期の枠線を少し優しくコントロール */
+.input-group {
+  transition:
+    border-color 0.15s ease-in-out,
+    box-shadow 0.15s ease-in-out;
+  border: 1px solid #dee2e6;
+}
+.input-group .input-group-text,
+.input-group .form-control {
+  border: none !important; /* 個別の枠線を消してグループ側で一括管理 */
+}
+.input-group .input-group-text {
+  border-right: none !important;
+}
+
+/* 新規ユーザー登録ボタン */
+/* 1. 管理画面の「新規ユーザー登録ボタン」 */
+#user_new_button {
+  background-color: #8ea3c2 !important;
+  color: #ffffff !important;
+  border: none !important;
+  font-weight: 600 !important;
+  padding: 10px 20px !important;
+  border-radius: 8px !important;
+
+  box-shadow: 0 4px 10px -2px rgba(142, 163, 194, 0.25) !important;
+  transition: all 0.2s ease !important;
+}
+
+/* 💡 新規登録ボタンのHover：備考保存ボタンと完全に統一 */
+#user_new_button:hover:not(:disabled) {
+  background-color: #7a99c5 !important;
+  box-shadow: 0 6px 12px -2px rgba(122, 153, 197, 0.35) !important;
+}
+
+#user_new_button i,
+#user_new_button svg {
+  color: #ffffff !important;
+}
+
+/* --- 権限バッジのカスタム --- */
+
+/* 「管理者」バッジ */
+.badge.bg-danger-subtle {
+  background-color: #f8d7da !important;
+  color: #842029 !important;
+  border: 1px solid #f5c6cb;
+}
+
+/* 「一般ユーザー」バッジ */
+.badge.bg-primary-subtle {
+  background-color: #e3f2fd !important;
+  color: #0d6efd !important;
+  border: 1px solid #badceb;
+}
+
+/* 「有効」バッジ */
+.badge.bg-success-subtle {
+  background-color: #e3fde7;
+  color: #198754 !important;
+  border: 1px solid #baebd4;
+}
+
+/* 「無効」バッジ */
+.badge.bg-secondary-subtle {
+  background-color: #f8f9fa !important;
+  color: #6c757d !important;
+  border: 1px solid #dee2e6;
+}
+
+/* --- テーブル行のホバー時の色味調整 ＆ 無効ユーザーの消込 --- */
+
+/* ① PC画面（横並び・画面幅 768px 以上）のときだけホバー色をつける */
+@media (min-width: 768px) {
+  #list_user_name tbody tr:hover td {
+    background-color: #f1f5f9 !important;
+    transition: background-color 0.15s ease;
+  }
+}
+
+/* ② 無効（is-disabled）がついた行全体の消込（PC・スマホ共通のベース設定） */
+#list_user_name tbody tr.is-disabled {
+  opacity: 0.55; /* 行全体を半透明にする */
+}
+
+/* 無効ユーザーの氏名に打ち消し線を入れる（PC・スマホ共通） */
+#list_user_name tbody tr.is-disabled .fw-bold {
+  text-decoration: line-through;
+  color: #94a3b8 !important;
+}
+
+/* ==================================================
+   モーダル（登録・編集画面）のスタイル
+   ================================================== */
+
+/* モーダル全体の角の丸みと影 */
+.modal-content {
+  border-radius: 20px !important;
+  border: none !important;
+  box-shadow: 0 15px 50px rgba(0, 0, 0, 0.15) !important;
+}
+
+/* ヘッダーの調整 */
+.modal-header {
+  border-bottom: 1px solid #f0f0f0 !important;
+  padding: 1.5rem 2rem !important;
+}
+.modal-title {
+  font-size: 1.25rem;
+  letter-spacing: -0.02em;
+}
+
+/* 入力フィールド（input, select）の洗練 */
+.modal-body .form-control,
+.modal-body .form-select {
+  border: 1.5px solid #e9ecef !important;
+  border-radius: 10px !important;
+  padding: 0.75rem 1rem !important;
+  font-size: 0.95rem !important;
+  transition: all 0.2s ease !important;
+  background-color: #fcfcfc;
+}
+
+/* フィールドにフォーカスした時のアニメーション */
+.modal-body .form-control:focus,
+.modal-body .form-select:focus {
+  background-color: #fff;
+  border-color: #0d6efd !important;
+  box-shadow: 0 0 0 4px rgba(13, 110, 253, 0.1) !important;
+  outline: none;
+}
+
+/* ラベルのスタイル */
+.modal-body .form-label {
+  font-weight: 600 !important;
+  color: #495057 !important;
+  margin-bottom: 0.5rem !important;
+  font-size: 0.85rem !important;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+/* 必須マーク（*）の色 */
+.text-danger {
+  color: #e63946 !important;
+}
+
+/* --- フッターのボタン配置 --- */
+.modal-footer {
+  border-top: 1px solid #f0f0f0 !important;
+  padding: 1.25rem 2rem 1.75rem !important;
+
+  display: flex !important;
+  flex-direction: row !important; /* 確実に横並び */
+  flex-wrap: nowrap !important; /* 💡 追加：絶対に縦に折り返させない */
+  justify-content: flex-end !important; /* 右寄せ */
+  gap: 12px !important; /* ボタン同士の隙間 */
+  align-items: center !important;
+}
+
+/* キャンセルボタン */
+#cancel_button {
+  background-color: #f8f9fa !important;
+  color: #6c757d !important;
+  border: none !important;
+  font-weight: 600 !important;
+  padding: 10px 16px !important; /* 横幅を少しスマートに */
+  border-radius: 10px !important;
+  white-space: nowrap !important;
+
+  /* 💡 追加：画面が狭いときはボタンが少し縮むのを許可する */
+  flex-shrink: 1 !important;
+}
+#cancel_button:hover {
+  background-color: #e9ecef !important;
+}
+
+/* 保存ボタン */
+/* 2. モーダル内の「情報を保存するボタン」 */
+#submit_button {
+  background: #8ea3c2 !important;
+  color: #ffffff !important;
+  border: none !important;
+  font-weight: 700 !important;
+  padding: 10px 20px !important;
+  border-radius: 10px !important;
+
+  box-shadow: 0 4px 10px -2px rgba(142, 163, 194, 0.25) !important;
+  white-space: nowrap !important;
+  flex-shrink: 1 !important;
+  transition: all 0.2s ease !important;
+}
+
+/* 💡 保存ボタンのHover：備考保存ボタンと完全に統一 */
+#submit_button:hover:not(:disabled) {
+  background-color: #7a99c5 !important;
+  box-shadow: 0 6px 12px -2px rgba(122, 153, 197, 0.35) !important;
+}
+
+#submit_button i,
+#submit_button svg {
+  color: #ffffff !important;
+  margin-right: 4px;
+}
+
+/* ==================================================
+   従業員一覧表（テーブル）のスマホ最適化（カード変身プラン）
+   ================================================== */
+
+/* スマホ画面（画面幅が 768px 未満）のときのスタイル定義 */
+@media (max-width: 767.98px) {
+  /* テーブルの外枠（親のdivやtable）に最初からついている白背景や影をリセット */
+  #list_user_name,
+  .table-responsive,
+  .card:has(#list_user_name) {
+    background-color: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+  }
+
+  /* 1. テーブルの構造（ヘッダー）を非表示にする */
+  #list_user_name thead {
+    display: none;
+  }
+
+  /* 2. テーブルの行（tr）を1つの独立した「カード」にする */
+  #list_user_name tbody tr {
+    display: block;
+    background-color: #ffffff !important; /* 初期状態は純粋な白 */
+    border-radius: 12px;
+    margin-bottom: 1.25rem;
+    padding: 1.25rem;
+    box-shadow:
+      0 4px 6px -1px rgb(0 0 0 / 0.05),
+      0 2px 4px -2px rgb(0 0 0 / 0.05);
+    border: 1px solid rgba(241, 245, 249, 0.8);
+
+    /* 💡 浮き上がる動きは削除し、背景色の変化（0.1秒）だけに集中させます */
+    transition: background-color 0.1s ease;
+    overflow: hidden; /* 中身の色のハミ出しをカードの角丸の中に閉じ込める */
+  }
+
+  /* 💡 修正：ホバー（タップ）時、カード全体を確実にわかりやすいグレー（#e2e8f0）にする */
+  #list_user_name tbody tr:hover {
+    background-color: #e2e8f0 !important; /* 前より少しだけ濃くして、タップしたことがハッキリ分かる色に */
+  }
+
+  /* 💡 超重要：Bootstrapが<td>に強制付与している背景色を完全に無効化（透過）する */
+  #list_user_name tbody tr td,
+  #list_user_name tbody tr:hover td {
+    background-color: transparent !important;
+    box-shadow: none !important; /* 内側の変な影や境界線をリセット */
+  }
+
+  /* 3. マス目（td）を縦並びのブロックにする */
+  #list_user_name tbody td {
+    display: block;
+    width: 100% !important;
+    text-align: left !important;
+    padding: 0.25rem 0 !important;
+    border: none !important; /* 内側の線を消す */
+  }
+
+  /* 4. 各パーツの配置をスマホ用に最適化 */
+
+  /* アイコンと氏名を同じ行っぽく見せるための調整 */
+  #list_user_name tbody td:nth-child(1) {
+    float: left;
+    width: auto !important;
+    margin-right: 0.75rem;
+  }
+
+  /* 氏名の文字を大きく、強調する */
+  #list_user_name tbody td:nth-child(2) {
+    font-size: 1.1rem;
+    padding-top: 0.4rem !important;
+  }
+
+  /* メールアドレス（3番目のマス） */
+  #list_user_name tbody td:nth-child(3) {
+    clear: both; /* アイコンの回り込みを解除 */
+    color: #64748b !important;
+    font-size: 0.85rem;
+    padding-top: 0.5rem !important;
+  }
+
+  /* 権限（4番目のマス） */
+  #list_user_name tbody td:nth-child(4) {
+    font-size: 0.9rem;
+    color: #334155;
+  }
+  #list_user_name tbody td:nth-child(4)::before {
+    content: "権限：";
+    color: #94a3b8;
+    font-size: 0.8rem;
+  }
+
+  /* 状態（5番目のマス） */
+  #list_user_name tbody td:nth-child(5) {
+    padding-top: 0.5rem !important;
+  }
+
+  #list_user_name tbody td:nth-child(5)::before {
+    content: "状態：";
+    color: #94a3b8;
+    font-size: 0.8rem;
+  }
+
+  /* 操作・編集ボタン（6番目のマス） */
+  #list_user_name tbody td:nth-child(6) {
+    border-top: 1px solid #f1f5f9 !important; /* ボタンの上に区切り線 */
+    margin-top: 0.75rem;
+    padding-top: 0.75rem !important;
+    text-align: right !important; /* ボタンを右寄せに */
+  }
+
+  /* スマホの時は編集ボタンを押しやすく少し広げる */
+  #list_user_name .user_edit_button {
+    width: 100%;
+    padding: 8px 0;
+  }
+}

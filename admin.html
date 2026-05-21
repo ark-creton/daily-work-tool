@@ -1,0 +1,73 @@
+<link rel="stylesheet" href="css/admin.css" />
+
+<div class="container-fluid p-4">
+  <div class="mb-4">
+    <h2 class="h4 mb-1 fw-bold text-dark">管理者専用画面</h2>
+    <p class="text-muted small mb-0">
+      従業員のアカウント開設、所属、権限の管理を行えます。
+    </p>
+  </div>
+
+  <div class="row g-3 mb-4 align-items-center">
+    <div class="col-12 col-md-6 col-lg-4">
+      <div class="input-group bg-white shadow-sm rounded">
+        <span class="input-group-text bg-transparent border-end-0 text-muted">
+          <i class="bi bi-search"></i>
+        </span>
+        <input
+          type="text"
+          id="user_search_input"
+          class="form-control border-start-0"
+          placeholder="氏名、所属会社で検索..."
+        />
+      </div>
+    </div>
+
+    <div class="col-12 col-md-auto ms-md-auto text-end">
+      <button
+        type="button"
+        id="user_new_button"
+        class="btn d-inline-flex align-items-center justify-content-center gap-2"
+      >
+        <i class="bi bi-person-plus-fill"></i> 新規ユーザー登録
+      </button>
+    </div>
+  </div>
+
+  <div class="card border-0 shadow-sm">
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0" id="list_user_name">
+          <thead class="table-light text-muted small">
+            <tr>
+              <th style="width: 6%">No</th>
+              <th style="width: 24%">ユーザー</th>
+              <th style="width: 28%">メールアドレス (ログインID)</th>
+              <th style="width: 14%">権限</th>
+              <th style="width: 14%">状態</th>
+              <th style="width: 14%; text-align: center">操作</th>
+            </tr>
+          </thead>
+          <tbody class="text-dark" id="user_list_tbody">
+            <tr id="no_data_row">
+              <td colspan="6" class="text-center py-5 text-muted">
+                <div class="mb-2">
+                  <i
+                    class="bi bi-people text-secondary"
+                    style="font-size: 2.5rem; opacity: 0.5"
+                  ></i>
+                </div>
+                <p class="mb-1 fw-bold">登録されている従業員がいません</p>
+                <p class="small text-secondary mb-0">
+                  右上の「新規ユーザー登録」ボタンから最初のアカウント開設をしてください。
+                </p>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="modal_container"></div>

@@ -52,9 +52,13 @@ document.addEventListener("DOMContentLoaded", () => {
         dynamicArea.innerHTML = htmlContent;
       }
 
-      // 【超重要】画面が「main」に切り替わった時だけ、引っ越し先の「main.js」の初期化を呼び出す！
+      // 画面が「main」に切り替わった時だけ、引っ越し先の「main.js」の初期化を呼び出す！
       if (pageName === "main" && typeof initializeMainPage === "function") {
         initializeMainPage();
+      }
+      // 画面が「admin」に切り替わった時、admin.js の初期化を呼び出す！
+      if (pageName === "admin" && typeof initializeAdminPage === "function") {
+        initializeAdminPage();
       }
     } catch (error) {
       console.error("画面の切り替え中にエラーが発生しました:", error);
