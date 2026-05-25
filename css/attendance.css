@@ -1,0 +1,171 @@
+/* ==================================================
+   勤怠管理画面専用スタイル
+   ================================================== */
+
+/* --- 共通の文字色コントロール --- */
+.page-title,
+.text-value {
+  color: #2b2c3a !important;
+}
+
+.text-label {
+  color: #55555c !important;
+}
+
+/* タイトルの字間調整 */
+.page-title {
+  letter-spacing: 0.5px;
+}
+
+/* --- 上部・条件選択パーツ --- */
+.filter-control {
+  width: 180px !important;
+  color: #2b2c3a !important;
+  border-radius: 6px !important;
+}
+
+/* --- 1段目：月間集計結果カード --- */
+.summary-card {
+  border-radius: 12px !important;
+  background-color: #ffffff !important;
+}
+
+.summary-container {
+  row-gap: 15px;
+  column-gap: 24px;
+}
+
+/* 数字部分の幅を等幅（固定幅）にしてガタつきを防ぐ */
+.summary-container .fw-bold {
+  font-variant-numeric: tabular-nums;
+}
+
+/* 縦の区切り線（実線） */
+.v-divider {
+  width: 1px;
+  height: 20px;
+  background-color: #dee2e6;
+}
+
+/* 経費手前の区切り線（点線） */
+.v-divider-dashed {
+  border-left: 1px dashed #ced4da;
+  height: 25px;
+}
+
+/* --- 2段目：月間勤務表テーブル --- */
+.table-card {
+  border-radius: 12px !important;
+  background-color: #ffffff !important;
+}
+
+/* テーブルのスクロール外枠 */
+.table-scroll-container {
+  max-height: 480px;
+  overflow-y: auto;
+  border: 1px solid #dee2e6;
+  border-radius: 8px;
+}
+
+/* 固定ヘッダーの設定 */
+.table-header-area {
+  z-index: 5;
+}
+
+.table-header-area tr {
+  color: #2b2c3a !important;
+  font-size: 0.85rem;
+  border-bottom: 2px solid #dee2e6;
+}
+
+/* テーブル内のデータエリア */
+.table-body-area {
+  color: #2b2c3a !important;
+  font-size: 0.9rem;
+}
+
+/* 各マスの幅・配置微調整 */
+.cell-action {
+  width: 70px !important; /* 少し狭く */
+  text-align: center;
+}
+
+.cell-date {
+  width: 130px !important; /* 日付・曜日が収まる幅に */
+}
+
+.cell-memo {
+  padding-right: 15px !important;
+}
+
+/* テーブル内の編集ボタン */
+.btn-table-edit {
+  font-size: 0.75rem !important;
+  padding: 0px 8px !important;
+}
+
+/* --- 📋 モーダル（ポップアップ）関連 --- */
+.attendance-modal-content {
+  border-radius: 16px !important;
+  border: none !important;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.12) !important;
+}
+
+.modal-title-fs {
+  font-size: 1.15rem;
+}
+
+/* モーダル内の日付バッジ */
+.modal-date-badge {
+  background-color: #f8f9fa;
+  border: 1px solid #e9ecef;
+  border-radius: 8px;
+}
+
+/* モーダル内の入力フォーム共通 */
+.form-control-custom {
+  color: #2b2c3a !important;
+  border-radius: 8px !important;
+}
+
+/* フッターボタンの横並び固定 */
+.modal-btn-layout {
+  display: flex !important;
+  flex-wrap: nowrap !important;
+  gap: 10px !important;
+  justify-content: flex-end !important;
+}
+
+/* モーダルのキャンセルボタン */
+.btn-modal-cancel {
+  border-radius: 8px !important;
+  padding: 8px 16px !important;
+}
+
+/* モーダルの更新するボタン */
+.btn-modal-submit {
+  background-color: #8ea3c2 !important;
+  color: white !important;
+  border-radius: 8px !important;
+  padding: 8px 20px !important;
+  font-weight: bold !important;
+}
+
+/* --- テーブルのレイアウトを固定 --- */
+#attendance_table th:not(.cell-action):not(.cell-date):not(.cell-memo) {
+  width: 80px !important;
+  text-align: center;
+}
+
+/* --- 祝日・日曜日の赤背景 --- */
+#attendance_table tbody tr.row-holiday,
+#attendance_table tbody tr.row-holiday td {
+  background-color: #fff5f5 !important;
+}
+
+/* --- 土曜日の青背景 --- */
+#attendance_table tbody tr.row-saturday,
+#attendance_table tbody tr.row-saturday td {
+  background-color: #f0f7ff !important;
+}
+

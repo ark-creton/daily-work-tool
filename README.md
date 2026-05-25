@@ -49,7 +49,7 @@
 #### 画面ページ (Root)
 - `login.html` (SC-001: ログイン画面)
 - `index.html` (SC-002: メイン画面)
-- `timecard.html` (SC-003: タイムカード画面)
+- `attendance.html` (SC-003: タイムカード画面)
 - `report.html` (SC-004: レポート画面)
 - `admin-users.html` (SC-005: 管理者専用画面)
 - `style.css` (全体共通デザイン)

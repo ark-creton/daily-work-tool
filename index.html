@@ -27,8 +27,22 @@
     <link rel="stylesheet" href="css/style.css" />
     <link rel="stylesheet" href="css/main.css" />
     <link rel="stylesheet" href="css/admin.css" />
+    <link rel="stylesheet" href="css/attendance.css" />
+    <link rel="stylesheet" href="css/report.css" />
   </head>
   <body>
+    <!-- ローディング -->
+    <div id="global-loading">
+      <div class="text-center">
+        <div class="dots-container mb-3">
+          <div class="hyokkori-dot dot-1"></div>
+          <div class="hyokkori-dot dot-2"></div>
+          <div class="hyokkori-dot dot-3"></div>
+        </div>
+        <div class="loading-text">読み込み中...</div>
+      </div>
+    </div>
+
     <div class="app-container">
       <!-- エリア1：左サイドバー -->
       <aside class="sidebar-area" id="sidebar">
@@ -51,15 +65,20 @@
             <i class="bi bi-house-door"></i>
             <span class="nav-text">メイン</span>
           </li>
-          <li class="nav-item" data-page="timecard" data-title="タイムカード">
+          <li class="nav-item" data-page="attendance" data-title="勤怠">
             <i class="bi bi-clock"></i>
-            <span class="nav-text">タイムカード</span>
+            <span class="nav-text">勤怠</span>
           </li>
           <li class="nav-item" data-page="report" data-title="レポート">
             <i class="bi bi-file-earmark-text"></i>
             <span class="nav-text">レポート</span>
           </li>
-          <li class="nav-item" data-page="admin" data-title="管理者専用">
+          <li
+            class="nav-item"
+            id="menu_admin"
+            data-page="admin"
+            data-title="管理者専用"
+          >
             <i class="bi bi-person-gear"></i>
             <span class="nav-text">管理者専用</span>
           </li>
@@ -107,8 +126,39 @@
     <script src="js/common.js"></script>
 
     <script src="js/main.js"></script>
+    <script src="js/attendance.js"></script>
     <script src="js/admin.js"></script>
 
     <script src="js/index.js"></script>
+    <script>
+      document.addEventListener("DOMContentLoaded", function () {
+        // ポップオーバー（？マーク）の初期化関数
+        function initPopover() {
+          var popoverTriggerList = [].slice.call(
+            document.querySelectorAll('[data-bs-toggle="popover"]'),
+          );
+          popoverTriggerList.map(function (popoverTriggerEl) {
+            // 二重初期化を防ぐ
+            if (bootstrap.Popover.getInstance(popoverTriggerEl)) return;
+
+            return new bootstrap.Popover(popoverTriggerEl, {
+              trigger: "focus", // タップで表示、他を触ると閉じる
+            });
+          });
+        }
+
+        // 初回読み込み時に実行
+        initPopover();
+
+        // メインコンテンツの切り替えを検知して再適用
+        var targetArea = document.getElementById("main_content_dynamic_area");
+        if (targetArea) {
+          var observer = new MutationObserver(function () {
+            setTimeout(initPopover, 100);
+          });
+          observer.observe(targetArea, { childList: true, subtree: true });
+        }
+      });
+    </script>
   </body>
 </html>

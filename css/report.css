@@ -1,0 +1,41 @@
+/* ==================================================
+   レポート管理画面専用スタイル（自動フィット版）
+   ================================================== */
+
+/* 1. 左側：レポート詳細カード */
+.report-detail-card {
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 300px;
+}
+
+/* 本文エリアをカード内で綺麗にスクロールさせる */
+.report-content-body {
+  flex-grow: 1;
+  overflow-y: auto;
+}
+
+/* 2. 右側：過去のレポート一覧カード */
+.report-list-card {
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+/* 過去ログ一覧をカード内で綺麗にスクロールさせる */
+.report-list-scroll-container {
+  flex-grow: 1;
+  overflow-y: auto;
+}
+
+/* リンク色設定 */
+.report-list-scroll-container a {
+  color: #8ea3c2;
+  text-decoration: none;
+}
+.report-list-scroll-container a:hover {
+  color: #2b2c3a;
+  text-decoration: underline !important;
+}

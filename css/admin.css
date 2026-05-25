@@ -2,6 +2,12 @@
    管理者専用画面専用スタイル
    ================================================== */
 
+/* 大見出し「管理者専用」の文字色を #2b2c3a に固定 */
+.container-fluid h2,
+.h4.text-dark {
+  color: #2b2c3a !important;
+}
+
 /* --- 検索窓のスタイル微調整 --- */
 .input-group:has(#user_search_input:focus) {
   border-color: #86b7fe;
@@ -30,8 +36,15 @@
 }
 .input-group .input-group-text,
 .input-group .form-control {
-  border: none !important; /* 個別の枠線を消してグループ側で一括管理 */
+  border: none !important;
+  color: #2b2c3a !important; /* 💡 入力した文字を #2b2c3a に */
 }
+
+/* 💡 追加：検索窓のプレースホルダー（うっすら見える初期文字）もこの色をベースにする */
+.input-group .form-control::placeholder {
+  color: rgba(43, 44, 58, 0.5) !important;
+}
+
 .input-group .input-group-text {
   border-right: none !important;
 }
@@ -59,6 +72,16 @@
 #user_new_button i,
 #user_new_button svg {
   color: #ffffff !important;
+}
+
+/* テーブルの見出しと中身の文字色を #2b2c3a に統一 */
+#list_user_name th,
+#list_user_name td {
+  color: #2b2c3a !important;
+}
+/* No.や氏名などの太字（fw-bold）も確実にこの色にする */
+#list_user_name .fw-bold {
+  color: #2b2c3a !important;
 }
 
 /* --- 権限バッジのカスタム --- */
@@ -102,12 +125,12 @@
 }
 
 /* ② 無効（is-disabled）がついた行全体の消込（PC・スマホ共通のベース設定） */
-#list_user_name tbody tr.is-disabled {
-  opacity: 0.55; /* 行全体を半透明にする */
+.is-disabled {
+  opacity: 0.55; /* 行・カード全体を半透明にする */
 }
 
-/* 無効ユーザーの氏名に打ち消し線を入れる（PC・スマホ共通） */
-#list_user_name tbody tr.is-disabled .fw-bold {
+/* 無効ユーザーの氏名に打ち消し線を入れる */
+.is-disabled .fw-bold {
   text-decoration: line-through;
   color: #94a3b8 !important;
 }
@@ -144,7 +167,7 @@
   background-color: #fcfcfc;
 }
 
-/* フィールドにフォーカスした時のアニメーション */
+/* フィールドにフォーカスした時のアニメーション（通常時） */
 .modal-body .form-control:focus,
 .modal-body .form-select:focus {
   background-color: #fff;
@@ -175,7 +198,7 @@
 
   display: flex !important;
   flex-direction: row !important; /* 確実に横並び */
-  flex-wrap: nowrap !important; /* 💡 追加：絶対に縦に折り返させない */
+  flex-wrap: nowrap !important; /* 絶対に縦に折り返させない */
   justify-content: flex-end !important; /* 右寄せ */
   gap: 12px !important; /* ボタン同士の隙間 */
   align-items: center !important;
@@ -187,11 +210,9 @@
   color: #6c757d !important;
   border: none !important;
   font-weight: 600 !important;
-  padding: 10px 16px !important; /* 横幅を少しスマートに */
+  padding: 10px 16px !important;
   border-radius: 10px !important;
   white-space: nowrap !important;
-
-  /* 💡 追加：画面が狭いときはボタンが少し縮むのを許可する */
   flex-shrink: 1 !important;
 }
 #cancel_button:hover {
@@ -199,7 +220,6 @@
 }
 
 /* 保存ボタン */
-/* 2. モーダル内の「情報を保存するボタン」 */
 #submit_button {
   background: #8ea3c2 !important;
   color: #ffffff !important;
@@ -207,19 +227,15 @@
   font-weight: 700 !important;
   padding: 10px 20px !important;
   border-radius: 10px !important;
-
   box-shadow: 0 4px 10px -2px rgba(142, 163, 194, 0.25) !important;
   white-space: nowrap !important;
   flex-shrink: 1 !important;
   transition: all 0.2s ease !important;
 }
-
-/* 💡 保存ボタンのHover：備考保存ボタンと完全に統一 */
 #submit_button:hover:not(:disabled) {
   background-color: #7a99c5 !important;
   box-shadow: 0 6px 12px -2px rgba(122, 153, 197, 0.35) !important;
 }
-
 #submit_button i,
 #submit_button svg {
   color: #ffffff !important;
@@ -227,119 +243,196 @@
 }
 
 /* ==================================================
-   従業員一覧表（テーブル）のスマホ最適化（カード変身プラン）
+   バリデーションカスタム
    ================================================== */
 
-/* スマホ画面（画面幅が 768px 未満）のときのスタイル定義 */
+/* ① 【成功・失敗共通】Bootstrap標準のすべてのアイコン（緑の✔、赤の❗など）を完全に非表示にする */
+#userModal .form-control.is-valid,
+#userModal .was-validated .form-control:valid,
+#userModal .form-select.is-valid,
+#userModal .was-validated .form-select:valid,
+#userModal .form-control.is-invalid,
+#userModal .was-validated .form-control:invalid,
+#userModal .form-select.is-invalid,
+#userModal .was-validated .form-select:invalid {
+  background-image: none !important;
+  padding-right: 1rem !important; /* 右側の余白を通常時と完全に統一 */
+}
+
+/* --------------------------------------------------
+   ▼ 入力OK（成功時）のスタイル
+   -------------------------------------------------- */
+/* ② 枠線カラーを優しいミントグリーンにする */
+#userModal .form-control.is-valid,
+#userModal .was-validated .form-control:valid,
+#userModal .form-select.is-valid,
+#userModal .was-validated .form-select:valid {
+  border-color: #10b981 !important;
+  background-color: #fcfcfc;
+}
+
+/* ③ 成功時にクリック（フォーカス）したとき、緑色にふんわり光らせる */
+#userModal .form-control.is-valid:focus,
+#userModal .was-validated .form-control:valid:focus,
+#userModal .form-select.is-valid:focus,
+#userModal .was-validated .form-select:valid:focus {
+  background-color: #fff;
+  border-color: #10b981 !important;
+  box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.15) !important;
+}
+
+/* --------------------------------------------------
+   ▼ 入力NG（エラー時）のスタイル
+   -------------------------------------------------- */
+/* ④ エラー時の枠線カラーを赤（#e63946）にする */
+#userModal .form-control.is-invalid,
+#userModal .was-validated .form-control:invalid,
+#userModal .form-select.is-invalid,
+#userModal .was-validated .form-select:invalid {
+  border-color: #e63946 !important;
+  background-color: #fcfcfc;
+}
+
+/* ⑤ エラー時にクリック（フォーカス）したとき、赤色（#e63946）のフレームで綺麗に光らせる */
+#userModal .form-control.is-invalid:focus,
+#userModal .was-validated .form-control:invalid:focus,
+#userModal .form-select.is-invalid:focus,
+#userModal .was-validated .form-select:invalid:focus {
+  background-color: #fff;
+  border-color: #e63946 !important;
+  box-shadow: 0 0 0 4px rgba(230, 57, 70, 0.15) !important;
+}
+
+/* --------------------------------------------------
+   ▼ パスワード欄（#password_group）の完全制御
+   -------------------------------------------------- */
+/* ⑥ Bootstrapがパスワードのinput単体に付けようとするエラー/成功の線やフォーカス時の「ピンクの影」を強制リセット */
+#userModal .was-validated #password.form-control:valid,
+#userModal .was-validated #password.form-control:invalid,
+#userModal .was-validated #password.form-control:valid:focus,
+#userModal .was-validated #password.form-control:invalid:focus {
+  border: none !important;
+  box-shadow: none !important; /* 💡 これで中身のピンクのモヤが完全に消えます！ */
+  background-color: transparent !important;
+}
+
+/* ⑦ 保存ボタンが押された後（was-validated）、パスワードの成否を外枠（#password_group）に適用 */
+#userModal .was-validated #password_group:has(#password:valid) {
+  border-color: #10b981 !important;
+}
+#userModal .was-validated #password_group:has(#password:invalid) {
+  border-color: #e63946 !important;
+}
+
+/* ⑧ 【ここが超重要】パスワード入力時に「グループ全体」をじわーっと一本の綺麗な影で光らせる */
+#userModal .was-validated #password_group:has(#password:focus) {
+  background-color: #fff !important;
+}
+#userModal .was-validated #password_group:has(#password:valid:focus) {
+  border-color: #10b981 !important;
+  box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.15) !important;
+}
+#userModal .was-validated #password_group:has(#password:invalid:focus) {
+  border-color: #e63946 !important;
+  box-shadow: 0 0 0 4px rgba(230, 57, 70, 0.15) !important; /* 💡 外枠だけがきれいに赤く発光します */
+}
+
+/* ==================================================
+   スマホ表示用カードリスト専用スタイル
+   ================================================== */
 @media (max-width: 767.98px) {
-  /* テーブルの外枠（親のdivやtable）に最初からついている白背景や影をリセット */
-  #list_user_name,
-  .table-responsive,
-  .card:has(#list_user_name) {
-    background-color: transparent !important;
-    border: none !important;
-    box-shadow: none !important;
+  /* 要素を完全に中央に寄せるための汎用クラス */
+  .flex-center {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
   }
 
-  /* 1. テーブルの構造（ヘッダー）を非表示にする */
-  #list_user_name thead {
-    display: none;
+  /* 無効ユーザーのカード背景をほんのりグレーにして分かりやすく */
+  .card.is-disabled {
+    background-color: #f8f9fa !important;
   }
 
-  /* 2. テーブルの行（tr）を1つの独立した「カード」にする */
-  #list_user_name tbody tr {
-    display: block;
-    background-color: #ffffff !important; /* 初期状態は純粋な白 */
-    border-radius: 12px;
-    margin-bottom: 1.25rem;
-    padding: 1.25rem;
-    box-shadow:
-      0 4px 6px -1px rgb(0 0 0 / 0.05),
-      0 2px 4px -2px rgb(0 0 0 / 0.05);
-    border: 1px solid rgba(241, 245, 249, 0.8);
-
-    /* 💡 浮き上がる動きは削除し、背景色の変化（0.1秒）だけに集中させます */
-    transition: background-color 0.1s ease;
-    overflow: hidden; /* 中身の色のハミ出しをカードの角丸の中に閉じ込める */
+  /* ★ここに追記しました：スマホ用カードに「押せる感」をプラス */
+  #user_list_mobile .card {
+    cursor: pointer;
+    transition:
+      background-color 0.15s ease,
+      transform 0.1s ease;
   }
 
-  /* 💡 修正：ホバー（タップ）時、カード全体を確実にわかりやすいグレー（#e2e8f0）にする */
-  #list_user_name tbody tr:hover {
-    background-color: #e2e8f0 !important; /* 前より少しだけ濃くして、タップしたことがハッキリ分かる色に */
+  /* タップしている最中（アクティブ状態）に少しだけ背景をグレーにし、キュッと縮む */
+  #user_list_mobile .card:active {
+    background-color: #f1f5f9 !important;
+    transform: scale(0.98);
   }
+}
 
-  /* 💡 超重要：Bootstrapが<td>に強制付与している背景色を完全に無効化（透過）する */
-  #list_user_name tbody tr td,
-  #list_user_name tbody tr:hover td {
-    background-color: transparent !important;
-    box-shadow: none !important; /* 内側の変な影や境界線をリセット */
-  }
+/* --------------------------------------------------
+   自作の破棄確認モーダル（トースト通知とデザイン統一）
+   -------------------------------------------------- */
+.confirm-discard-content {
+  background-color: rgba(241, 245, 249, 0.98) !important;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(203, 213, 225, 0.9) !important;
+  border-radius: 12px !important;
+  color: #334155;
+  box-shadow:
+    0 12px 30px -4px rgba(148, 163, 184, 0.25),
+    0 4px 12px -2px rgba(148, 163, 184, 0.15),
+    inset 0 1px 0 rgba(255, 255, 255, 1) !important;
+  overflow: hidden;
+}
 
-  /* 3. マス目（td）を縦並びのブロックにする */
-  #list_user_name tbody td {
-    display: block;
-    width: 100% !important;
-    text-align: left !important;
-    padding: 0.25rem 0 !important;
-    border: none !important; /* 内側の線を消す */
-  }
+/* モーダル内のテキスト微調整 */
+.confirm-discard-content .modal-body i.bi-exclamation-circle {
+  font-size: 2rem;
+  color: #dc2626;
+}
 
-  /* 4. 各パーツの配置をスマホ用に最適化 */
+.confirm-discard-content .modal-body h6 {
+  color: #334155;
+  font-size: 0.95rem;
+}
 
-  /* アイコンと氏名を同じ行っぽく見せるための調整 */
-  #list_user_name tbody td:nth-child(1) {
-    float: left;
-    width: auto !important;
-    margin-right: 0.75rem;
-  }
+.confirm-discard-content .modal-body p {
+  color: #64748b;
+  line-height: 1.5;
+  font-weight: 500;
+}
 
-  /* 氏名の文字を大きく、強調する */
-  #list_user_name tbody td:nth-child(2) {
-    font-size: 1.1rem;
-    padding-top: 0.4rem !important;
-  }
+/* 下部のボタンエリア（ほんのりグレーの背景） */
+.confirm-discard-footer {
+  border-top: none !important;
+  background-color: rgba(226, 232, 240, 0.4);
+  padding: 1rem !important;
+}
 
-  /* メールアドレス（3番目のマス） */
-  #list_user_name tbody td:nth-child(3) {
-    clear: both; /* アイコンの回り込みを解除 */
-    color: #64748b !important;
-    font-size: 0.85rem;
-    padding-top: 0.5rem !important;
-  }
+/* 「いいえ」ボタン */
+.btn-discard-cancel {
+  background-color: #fff !important;
+  border: 1px solid rgba(203, 213, 225, 0.8) !important;
+  color: #475569 !important;
+  border-radius: 8px !important;
+  font-size: 0.85rem !important;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+.btn-discard-cancel:hover {
+  background-color: #f8fafc !important;
+  color: #334155 !important;
+}
 
-  /* 権限（4番目のマス） */
-  #list_user_name tbody td:nth-child(4) {
-    font-size: 0.9rem;
-    color: #334155;
-  }
-  #list_user_name tbody td:nth-child(4)::before {
-    content: "権限：";
-    color: #94a3b8;
-    font-size: 0.8rem;
-  }
-
-  /* 状態（5番目のマス） */
-  #list_user_name tbody td:nth-child(5) {
-    padding-top: 0.5rem !important;
-  }
-
-  #list_user_name tbody td:nth-child(5)::before {
-    content: "状態：";
-    color: #94a3b8;
-    font-size: 0.8rem;
-  }
-
-  /* 操作・編集ボタン（6番目のマス） */
-  #list_user_name tbody td:nth-child(6) {
-    border-top: 1px solid #f1f5f9 !important; /* ボタンの上に区切り線 */
-    margin-top: 0.75rem;
-    padding-top: 0.75rem !important;
-    text-align: right !important; /* ボタンを右寄せに */
-  }
-
-  /* スマホの時は編集ボタンを押しやすく少し広げる */
-  #list_user_name .user_edit_button {
-    width: 100%;
-    padding: 8px 0;
-  }
+/* 「はい、閉じます」ボタン（トーストのエラー配色を移植） */
+.btn-discard-yes {
+  background-color: #fee2e2 !important;
+  border: 1px solid rgba(252, 165, 165, 0.9) !important;
+  color: #991b1b !important;
+  border-radius: 8px !important;
+  font-size: 0.85rem !important;
+  box-shadow: 0 1px 2px rgba(239, 68, 68, 0.05);
+}
+.btn-discard-yes:hover {
+  background-color: #fecaca !important;
+  color: #7f1d1d !important;
 }

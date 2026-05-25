@@ -1,6 +1,7 @@
 <div
   class="modal fade"
   id="userModal"
+  data-bs-backdrop="static"
   tabindex="-1"
   aria-labelledby="userModalLabel"
   aria-hidden="true"
@@ -65,8 +66,16 @@
                 placeholder="example@domain.com"
                 required
               />
-              <div class="invalid-feedback small">
+              <div class="invalid-feedback small" id="email_invalid_feedback">
                 正しいメールアドレスを入力してください。
+              </div>
+              <div
+                class="text-danger small mt-1"
+                id="email_duplicate_feedback"
+                style="display: none"
+              >
+                <i class="bi bi-exclamation-triangle-fill me-1"></i
+                >このメールアドレスはすでに登録されています。
               </div>
             </div>
 
@@ -77,25 +86,28 @@
 
               <div
                 class="input-group"
+                id="password_group"
                 style="
-                  border: 1px solid #dee2e6;
-                  border-radius: 0.375rem;
+                  border: 1.5px solid #e9ecef;
+                  border-radius: 10px;
                   overflow: hidden;
+                  background-color: #fcfcfc;
+                  transition: all 0.2s ease;
                 "
               >
                 <input
                   type="password"
                   id="password"
-                  class="form-control border-0 border-end-0"
+                  class="form-control border-0 bg-transparent py-2"
                   placeholder="6〜20文字の半角英数字"
                   pattern="[a-zA-Z0-9]{6,20}"
                   minlength="6"
                   maxlength="20"
                   required
-                  style="box-shadow: none"
+                  style="box-shadow: none; font-size: 0.95rem"
                 />
                 <button
-                  class="btn bg-white border-0 border-start-0 text-muted px-3"
+                  class="btn bg-transparent border-0 text-muted px-3"
                   type="button"
                   id="toggle_password_btn"
                   style="z-index: 4; box-shadow: none"
@@ -182,6 +194,49 @@
           class="btn text-white"
         >
           <i class="bi bi-check2-circle me-1"></i> 情報を保存する
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div
+  class="modal fade"
+  id="confirmDiscardModal"
+  data-bs-backdrop="static"
+  tabindex="-1"
+  aria-hidden="true"
+  style="z-index: 1060"
+>
+  <div
+    class="modal-dialog modal-dialog-centered modal-sm"
+    style="max-width: 380px; width: 90%"
+  >
+    <div class="modal-content confirm-discard-content">
+      <div class="modal-body p-4 text-center">
+        <div class="mb-3">
+          <i class="bi bi-exclamation-circle"></i>
+        </div>
+        <h6 class="fw-bold mb-2">入力内容の破棄</h6>
+        <p class="small mb-0">
+          入力・編集中の内容が消えてしまいますが、閉じてもよろしいですか？
+        </p>
+      </div>
+
+      <div class="modal-footer confirm-discard-footer d-flex gap-2">
+        <button
+          type="button"
+          class="btn btn-sm w-50 m-0 py-2 fw-semibold btn-discard-cancel"
+          id="btn_confirm_discard_cancel"
+        >
+          いいえ
+        </button>
+        <button
+          type="button"
+          class="btn btn-sm w-50 m-0 py-2 fw-semibold btn-discard-yes"
+          id="btn_confirm_discard_yes"
+        >
+          はい、閉じます
         </button>
       </div>
     </div>

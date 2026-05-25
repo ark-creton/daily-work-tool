@@ -2,6 +2,19 @@ document.addEventListener("DOMContentLoaded", async () => {
   console.log("インデックス（共通基盤）のJSが正常に読み込まれました");
 
   // ==========================================
+  // 共通ローディングの表示・非表示関数
+  // ==========================================
+  function showGlobalLoading() {
+    const loader = document.getElementById("global-loading");
+    if (loader) loader.classList.add("show");
+  }
+
+  function hideGlobalLoading() {
+    const loader = document.getElementById("global-loading");
+    if (loader) loader.classList.remove("show");
+  }
+
+  // ==========================================
   // ログインユーザーのチェックとヘッダーへの名前反映
   // ==========================================
   async function checkAndDisplayUser() {
@@ -23,34 +36,51 @@ document.addEventListener("DOMContentLoaded", async () => {
       if (user) {
         console.log("ログイン中のAuthユーザーID:", user.id);
 
-        /* 💡 ここで user_master テーブルから user_name を引っ張る */
+        /* user_name と一緒に role（権限）も引っ張るようにします */
         const { data: masterData, error: dbError } = await supabaseClient
           .from("user_master")
-          .select("user_name")
+          .select("user_name, role")
           .eq("id", user.id)
-          .single(); // 1件だけ取得
+          .single();
 
         let userName = "ゲストユーザー";
+        let userRole = "staff"; // 失敗したときの初期値（一般スタッフ）を用意
 
         if (dbError) {
           console.warn(
             "user_masterからの名前取得に失敗したため、代替値を使用します:",
             dbError.message,
           );
-          userName = user.email || "ゲストユーザー"; // 失敗時はメールアドレスを代用
+          userName = user.email || "ゲストユーザー";
         } else if (masterData) {
-          userName = masterData.user_name; // 🟢 データベースから取れた「テスト01」を代入！
+          userName = masterData.user_name;
+          userRole = masterData.role; // データベースから取れた権限（adminかstaff）を代入！
         }
 
         // ヘッダーの表示を書き換える
         const userNameSpan = document.querySelector(".header-right .user-name");
         if (userNameSpan) {
-          userNameSpan.innerText = `${userName} さん`; 
+          userNameSpan.innerText = `${userName} さん`;
         }
+
+        // ==========================================
+        // 管理者メニューの表示・非表示の切り替え
+        // ==========================================
+        const adminMenuItem = document.getElementById("menu_admin");
+        if (adminMenuItem) {
+          if (userRole === "admin") {
+            // 管理者の場合は表示する
+            adminMenuItem.style.setProperty("display", "flex", "important");
+          } else {
+            // 管理者以外（staffなど）の場合は完全に非表示にする
+            adminMenuItem.style.setProperty("display", "none", "important");
+          }
+        }
+
         // スマホメニュー内の表示も同時に書き換える
         const mobileUserNameSpan = document.querySelector(".sidebar-user-name");
         if (mobileUserNameSpan) {
-          mobileUserNameSpan.innerText = `${userName} さん`; 
+          mobileUserNameSpan.innerText = `${userName} さん`;
         }
       } else {
         // ❌ ログインしていない場合はログイン画面へ強制リダイレクト
@@ -70,6 +100,9 @@ document.addEventListener("DOMContentLoaded", async () => {
   // ==========================================
   async function handleLogout() {
     try {
+      // ✨【追加】ログアウト通信が始まる瞬間にローディングを表示
+      showGlobalLoading();
+
       const supabaseClient = window.supabase || supabase;
       if (supabaseClient) {
         const { error } = await supabaseClient.auth.signOut();
@@ -81,6 +114,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     } catch (err) {
       console.error("ログアウト中にエラーが発生しました:", err.message);
       alert("ログアウトに失敗しました。");
+      hideGlobalLoading(); // 💡 エラー時のみローディングを消す（画面遷移に失敗した時のため）
     }
   }
 
@@ -132,6 +166,9 @@ document.addEventListener("DOMContentLoaded", async () => {
    */
   async function loadPage(pageName) {
     try {
+      // 💡 HTMLの取得を始める瞬間にローディング画面を表示
+      showGlobalLoading();
+
       const response = await fetch(`./${pageName}.html`);
 
       if (!response.ok) {
@@ -144,13 +181,18 @@ document.addEventListener("DOMContentLoaded", async () => {
         dynamicArea.innerHTML = htmlContent;
       }
 
-      // 画面が「main」に切り替わった時だけ、引っ越し先の「main.js」の初期化を呼び出す！
+      // 各画面の初期化JavaScriptが動き終わるのを待つ
       if (pageName === "main" && typeof initializeMainPage === "function") {
-        initializeMainPage();
+        await initializeMainPage();
       }
-      // 画面が「admin」に切り替わった時、admin.js の初期化を呼び出す！
       if (pageName === "admin" && typeof initializeAdminPage === "function") {
-        initializeAdminPage();
+        await initializeAdminPage();
+      }
+      if (
+        pageName === "attendance" &&
+        typeof window.initAttendanceCalendar === "function"
+      ) {
+        await window.initAttendanceCalendar();
       }
     } catch (error) {
       console.error("画面の切り替え中にエラーが発生しました:", error);
@@ -161,7 +203,20 @@ document.addEventListener("DOMContentLoaded", async () => {
           </div>
         `;
       }
+    } finally {
+      hideGlobalLoading();
     }
+  }
+
+  // 初期実行時（ログイン直後など）の最初のタブ名を設定
+  document.title = "メイン - 勤怠レポートツール";
+
+  // 初期実行：最初のメニュー（メイン）にアクティブ色をつける
+  const homeItem = document.querySelector(
+    '.sidebar-nav .nav-item[data-page="home"]',
+  );
+  if (homeItem) {
+    homeItem.classList.add("active");
   }
 
   // 初期実行：アプリ起動時は「main.html」を自動で読み込む
@@ -186,14 +241,22 @@ document.addEventListener("DOMContentLoaded", async () => {
       const page = clickedItem.getAttribute("data-page");
       console.log("クリックされたページ:", page);
 
+      // クリックされたメニューの「data-title」から画面名を取得
+      const pageTitle = clickedItem.getAttribute("data-title");
+
       if (page === "home") {
         loadPage("main"); // メイン画面
-      } else if (page === "timecard") {
-        loadPage("timecard"); // タイムカード画面
+      } else if (page === "attendance") {
+        loadPage("attendance"); // 勤怠画面
       } else if (page === "report") {
-        loadPage("report"); // レポート一覧画面
+        loadPage("report"); // レポート画面
       } else if (page === "admin") {
         loadPage("admin"); // 管理者専用画面
+      }
+
+      // タブの文字を「画面名 - 勤怠レポートツール」に書き換え
+      if (pageTitle) {
+        document.title = `${pageTitle} - 勤怠レポートツール`;
       }
 
       if (sidebarNav && sidebarNav.classList.contains("mobile-active")) {

@@ -1,3 +1,8 @@
+// 検索窓で使うために、取得した全ユーザーデータを一時保管しておく変数
+let allUsers = [];
+// すべての関数から共通して参照・操作できるように、ファイルの先頭（グローバル）で宣言
+let isFormDirty = false;
+
 /**
  * 管理者専用画面（admin.html）初期化関数
  */
@@ -19,28 +24,28 @@ async function initializeAdminPage() {
     const userModalElement = document.getElementById("userModal");
     const userModal = new bootstrap.Modal(userModalElement);
 
+    // ここで先にフォーム要素をしっかり取得します
+    const form = document.getElementById("user_form");
+
     // ==========================================
-    // カンパニーマスターから会社名を取得してセレクトボックスに反映
+    // カンパニーマスターから会社名を取得
     // ==========================================
     console.log("Supabaseから会社マスタを取得中...");
     const { data: companies, error: companyLoadError } = await supabase
       .from("company_master")
       .select("id, company_name")
-      .order("company_name", { ascending: true }); // 会社名順に並び替え
+      .order("company_name", { ascending: true });
 
     if (companyLoadError) throw companyLoadError;
 
     const companySelect = userModalElement.querySelector("#company_id");
     if (companySelect) {
-      // 一度既存の選択肢をクリアして、初期選択肢だけにする
       companySelect.innerHTML =
         '<option value="" selected disabled>選択してください</option>';
-
-      // 取得した会社データを1つずつ選択肢（option）として追加
       companies.forEach((company) => {
         const option = document.createElement("option");
-        option.value = company.id; // データベースにはIDを保存
-        option.textContent = company.company_name; // 画面には会社名を表示
+        option.value = company.id;
+        option.textContent = company.company_name;
         companySelect.appendChild(option);
       });
       console.log("会社マスタの連携が完了しました！");
@@ -51,43 +56,229 @@ async function initializeAdminPage() {
       newButton.addEventListener("click", () => {
         setupModalForNew(userModalElement);
         userModal.show();
+
+        // モーダルが完全に開ききったタイミングで氏名欄にフォーカスを当てる
+        userModalElement.addEventListener(
+          "shown.bs.modal",
+          () => {
+            const userNameInput = document.getElementById("user_name");
+            if (userNameInput) {
+              userNameInput.focus();
+            }
+          },
+          { once: true },
+        ); // 💡 1回だけ実行するための設定
       });
     }
 
-    // ==========================================
-    // パスワードの表示/非表示切り替えイベント
-    // ==========================================
+    // パスワードの表示/非表示切り替え
     const togglePasswordBtn = document.getElementById("toggle_password_btn");
     if (togglePasswordBtn) {
       togglePasswordBtn.addEventListener("click", () => {
         const passwordInput = document.getElementById("password");
         const passwordIcon = document.getElementById("toggle_password_icon");
-
         if (passwordInput && passwordIcon) {
-          // 現在がpassword（隠し状態）ならtext（見える状態）に、逆ならpasswordに戻す
           if (passwordInput.type === "password") {
             passwordInput.type = "text";
             passwordIcon.classList.remove("bi-eye");
-            passwordIcon.classList.add("bi-eye-slash"); // 斜線付きの目のアイコン
+            passwordIcon.classList.add("bi-eye-slash");
           } else {
             passwordInput.type = "password";
             passwordIcon.classList.remove("bi-eye-slash");
-            passwordIcon.classList.add("bi-eye"); // 通常の目のアイコン
+            passwordIcon.classList.add("bi-eye");
           }
         }
       });
     }
 
-    // 3. フォームの「保存（送信）」イベントを設定
+    // ==========================================
+    // メールアドレスのリアルタイム重複チェック
+    // ==========================================
+    const emailInput = document.getElementById("login_email");
+    const emailDuplicateFeedback = document.getElementById(
+      "email_duplicate_feedback",
+    );
+    const emailInvalidFeedback = document.getElementById(
+      "email_invalid_feedback",
+    );
+    const submitButton = document.getElementById("submit_button");
+
+    if (emailInput) {
+      emailInput.addEventListener("blur", async () => {
+        const email = emailInput.value.trim();
+
+        // 空っぽ、または簡易的な形式チェック（@が含まれていないなど）の場合は処理しない
+        if (!email || !email.includes("@")) {
+          if (emailDuplicateFeedback)
+            emailDuplicateFeedback.style.display = "none";
+          return;
+        }
+
+        // 編集モードの場合、自分の現在のメールアドレスなら重複チェックをスキップする
+        const editUserId = form.getAttribute("data-edit-id");
+
+        try {
+          console.log("メールアドレスの重複を確認中...", email);
+
+          // Supabaseの user_master から同じメールアドレスを持つユーザーを1件だけ探す
+          let query = supabase
+            .from("user_master")
+            .select("id")
+            .eq("login_email", email);
+
+          // 💡 編集中の場合は「自分以外のユーザー」で重複がないかを調べる
+          if (editUserId) {
+            query = query.neq("id", editUserId);
+          }
+
+          const { data, error } = await query.maybeSingle();
+
+          if (error) throw error;
+
+          if (data) {
+            // ⚠️ データが見つかった ＝ 重複している！
+            console.warn("メールアドレスの重複を検知しました。");
+
+            emailInput.classList.add("is-invalid"); // 枠線を赤くする
+            if (emailInvalidFeedback)
+              emailInvalidFeedback.style.display = "none"; // 標準エラーは隠す
+            if (emailDuplicateFeedback)
+              emailDuplicateFeedback.style.display = "block"; // 重複エラーを表示
+            if (submitButton) submitButton.disabled = true; // 保存ボタンを押せなくする
+          } else {
+            // ✅ 重複なし ＝ 安全！
+            emailInput.classList.remove("is-invalid");
+            if (emailDuplicateFeedback)
+              emailDuplicateFeedback.style.display = "none";
+            if (submitButton) submitButton.disabled = false; // ボタンを元に戻す
+          }
+        } catch (err) {
+          console.error("重複チェック中にエラーが発生しました:", err);
+        }
+      });
+
+      // ユーザーが文字を入力し始めたら、一旦エラー表示とボタンのロックを解除する（親切設計）
+      emailInput.addEventListener("input", () => {
+        emailInput.classList.remove("is-invalid");
+        if (emailDuplicateFeedback)
+          emailDuplicateFeedback.style.display = "none";
+        if (submitButton) submitButton.disabled = false;
+      });
+    }
+
+    // ==========================================
+    // フォームの変更検知（うっかり破棄の防止：完全ループ対応版）
+    // ==========================================
+    // フォーム内の入力が変更されたら「書き換えられたフラグ」を立てる
+    if (form) {
+      form.addEventListener("input", () => {
+        isFormDirty = true;
+        console.log("フォームの変更を検知しました: isFormDirty =", isFormDirty);
+      });
+    }
+
+    // 新規作成ボタンが押された瞬間にフラグをリセット
+    if (newButton) {
+      newButton.addEventListener("click", () => {
+        isFormDirty = false;
+      });
+    }
+
+    // 確認用ミニモーダルの初期化
+    const confirmDiscardModalElement = document.getElementById(
+      "confirmDiscardModal",
+    );
+    const confirmDiscardModal = new bootstrap.Modal(confirmDiscardModalElement);
+
+    // メインモーダルの右上×ボタンとキャンセルボタンを狙い撃ち
+    const mainCloseButtons = userModalElement.querySelectorAll(
+      "#cancel_button, .modal-header .btn-close",
+    );
+
+    mainCloseButtons.forEach((btn) => {
+      btn.addEventListener("click", (event) => {
+        if (isFormDirty) {
+          // Bootstrapの標準の閉じ動きを完全にブロック
+          event.preventDefault();
+          event.stopPropagation();
+          event.stopImmediatePropagation();
+
+          // 手前の確認ポップアップを表示
+          confirmDiscardModal.show();
+        }
+      });
+    });
+
+    // 確認モーダルで「いいえ（戻る）」を押した場合
+    const discardCancelBtn = document.getElementById(
+      "btn_confirm_discard_cancel",
+    );
+    if (discardCancelBtn) {
+      discardCancelBtn.addEventListener("click", (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+
+        confirmDiscardModal.hide(); // 手前の確認ポップアップだけを閉じる
+
+        // 💡 編集フラグ（isFormDirty = true）は維持したまま、後ろの画面を固定！
+        userModal.show();
+        console.log("「いいえ」が押されたため、編集状態を維持して戻ります。");
+      });
+    }
+
+    // 確認モーダルで「はい、閉じます」を押した場合
+    const discardYesBtn = document.getElementById("btn_confirm_discard_yes");
+    if (discardYesBtn) {
+      discardYesBtn.addEventListener("click", (event) => {
+        event.preventDefault();
+
+        isFormDirty = false; // フラグをリセット（これで閉じられるようになる）
+        confirmDiscardModal.hide(); // 確認ポップアップを閉じる
+        userModal.hide(); // メインの入力画面も閉じる
+
+        // 背景の暗幕バグ対策
+        document
+          .querySelectorAll(".modal-backdrop")
+          .forEach((el) => el.remove());
+        document.body.style.overflow = "";
+        document.body.style.paddingRight = "";
+      });
+    }
+
+    // 3. フォームの「保存」設定
     setupFormSubmit(userModal);
 
-    // 画面初期化の最後に、自動でデータを読み込んで一覧を表示する
+    // 一覧表示
     await fetchAndRenderUserList();
-
-    // 編集ボタンをクリックした時のイベントを設定
     setupEditButtonEvents();
+
+    // ==========================================
+    // 検索窓の入力イベントを監視
+    // ==========================================
+    const searchInput = document.getElementById("user_search_input");
+    if (searchInput) {
+      searchInput.addEventListener("input", (event) => {
+        // 入力された文字を小文字に変換し、前後の不要な空白を削る
+        const keyword = event.target.value.toLowerCase().trim();
+
+        // 保管してある allUsers（全データ）から、キーワードに合う人だけを絞り込む
+        const filteredUsers = allUsers.filter((user) => {
+          const name = (user.user_name || "").toLowerCase();
+          const company = (user.company_name || "").toLowerCase();
+
+          // 名前、または会社名にキーワードが含まれているか判定
+          return name.includes(keyword) || company.includes(keyword);
+        });
+
+        // 絞り込んだ結果を使って、画面のテーブルとスマホカードを再描画
+        const tbody = document.getElementById("user_list_tbody");
+        const mobileContainer = document.getElementById("user_list_mobile");
+        renderUserTable(filteredUsers, tbody, mobileContainer);
+      });
+    }
   } catch (error) {
-    console.error("初期設定中にエラーが発生しました:", error);
+    console.error("初期化エラー:", error);
+    showToast(getFriendlyErrorMessage(error), "error");
   }
 }
 
@@ -123,6 +314,15 @@ function setupFormSubmit(userModal) {
   const form = document.getElementById("user_form");
   if (!form) return;
 
+  // 入力欄でのEnterキーによる誤送信（暴発）を防止
+  form.addEventListener("keydown", (event) => {
+    // 押されたのがEnterキー、かつ入力欄（INPUT）の中だった場合
+    if (event.key === "Enter" && event.target.tagName === "INPUT") {
+      event.preventDefault(); // フォーム送信（submit）を強制キャンセル
+      console.log("Enterキーによる誤送信を防止しました。");
+    }
+  });
+
   form.addEventListener("submit", async (event) => {
     event.preventDefault(); // ページが勝手にリロードされるのを防ぐ
     event.stopPropagation();
@@ -130,6 +330,16 @@ function setupFormSubmit(userModal) {
     // Bootstrapの標準バリデーション（入力チェック）を適用
     if (!form.checkValidity()) {
       form.classList.add("was-validated");
+
+      // エラーにかかわらず、一番最初（上）のエラー要素を狙い撃ちで取得
+      const firstInvalidInput = form.querySelector(":invalid");
+      if (firstInvalidInput) {
+        firstInvalidInput.focus();
+        firstInvalidInput.scrollIntoView({
+          behavior: "smooth",
+          block: "center",
+        });
+      }
       return;
     }
 
@@ -260,6 +470,7 @@ function setupFormSubmit(userModal) {
       }
 
       // ーーー 登録・更新 成功後の共通後処理 ーーー
+      isFormDirty = false;
       userModal.hide();
       form.reset();
       form.removeAttribute("data-edit-id");
@@ -271,7 +482,8 @@ function setupFormSubmit(userModal) {
       }
     } catch (error) {
       console.error("処理中にエラーが発生しました:", error);
-      showToast(`処理に失敗しました: ${error.message || error}`, "error");
+      // 翻訳機を通すように変更しました
+      showToast(getFriendlyErrorMessage(error), "error");
     } finally {
       // ボタンを一瞬で元の状態に戻す
       submitButton.disabled = false;
@@ -287,6 +499,8 @@ async function fetchAndRenderUserList() {
   console.log("Supabaseからユーザー一覧を取得中...");
 
   const tbody = document.getElementById("user_list_tbody");
+  const mobileContainer = document.getElementById("user_list_mobile");
+
   if (!tbody) {
     console.warn(
       "ユーザー一覧テーブル（tbody）が見つからないため、描画をスキップします。",
@@ -329,52 +543,73 @@ async function fetchAndRenderUserList() {
 
     console.log("会社名のドッキングに成功しました:", mergedUsers);
 
-    // 4. 結合済みのデータをテーブルに描画する
-    renderUserTable(mergedUsers, tbody);
+    // ==========================================
+    // 最新のデータを全データ用変数（allUsers）にコピーする
+    // ==========================================
+    allUsers = mergedUsers;
+
+    // 4. 結合済みのデータをテーブルとスマホ用エリアに描画する
+    renderUserTable(mergedUsers, tbody, mobileContainer);
   } catch (error) {
     console.error("ユーザー一覧の取得に失敗しました:", error);
     tbody.innerHTML = `<tr><td colspan="7" class="text-danger text-center">データの取得に失敗しました: ${error.message}</td></tr>`;
+    if (mobileContainer) {
+      mobileContainer.innerHTML = `<div class="text-danger text-center p-3">データの取得に失敗しました: ${error.message}</div>`;
+    }
   }
 }
 
 /**
- * 💡 上から順番に1, 2, 3...と素直に流し込む
+ * 💡 PC用テーブルとスマホ用カードリストへデータを流し込む
  */
-function renderUserTable(users, tbody) {
+function renderUserTable(users, tbody, mobileContainer) {
+  // 1. まず双方の中身をクリアする
   tbody.innerHTML = "";
+  if (mobileContainer) mobileContainer.innerHTML = "";
 
+  // 2. データが空の場合の処理
   if (!users || users.length === 0) {
     tbody.innerHTML =
-      '<tr><td colspan="7" class="text-center text-muted">登録されているユーザーがいません。</td></tr>';
+      '<tr id="no_data_row"><td colspan="7" class="text-center text-muted py-5">登録されているユーザーがいません。</td></tr>';
+    if (mobileContainer) {
+      mobileContainer.innerHTML = `
+        <div id="no_data_mobile" class="text-center py-5 text-muted">
+          <div class="mb-2"><i class="bi bi-people text-secondary" style="font-size: 2.5rem; opacity: 0.5"></i></div>
+          <p class="mb-1 fw-bold">登録されている従業員がいません</p>
+        </div>`;
+    }
     return;
   }
 
+  // 3. ループ処理でデータを組み立てていく
   users.forEach((user, index) => {
-    const tr = document.createElement("tr");
+    // アカウント無効状態（is_activeがfalse）のクラス判定
+    const disabledClass = user.is_active === false ? "is-disabled" : "";
 
-    // もしアカウントが無効（is_active が false）なら、行に消込用のクラスを付与する
-    if (user.is_active === false) {
-      tr.classList.add("is-disabled");
-    }
-
-    // 1. 権限（role）の表示
+    // 権限（role）のバッジ判定
     const roleBadge =
       user.role === "admin"
-        ? '<span class="badge bg-danger-subtle">管理者</span>'
-        : '<span class="badge bg-primary-subtle">一般</span>';
+        ? '<span class="badge bg-danger-subtle text-danger">管理者</span>'
+        : '<span class="badge bg-primary-subtle text-primary">一般</span>';
 
-    // 2. 状態（is_active）の表示
+    // 状態（is_active）のバッジ判定
     const statusBadge = user.is_active
-      ? '<span class="badge bg-success-subtle">有効</span>'
-      : '<span class="badge bg-secondary-subtle">無効</span>';
+      ? '<span class="badge bg-success-subtle text-success">有効</span>'
+      : '<span class="badge bg-secondary-subtle text-secondary">無効</span>';
 
-    // 3. アイコン画像
+    // アバター画像の読み込み
     const avatarPath =
       user.avatar_url && user.avatar_url !== "default-avatar.png"
         ? user.avatar_url
         : "assets/default-avatar.png";
 
     const avatarImg = `<img src="${avatarPath}" class="rounded-circle" width="32" height="32" style="object-fit: cover; background-color: #f1f5f9;">`;
+
+    // --------------------------------------------------
+    // A. 【PC表示用】テーブル行の生成
+    // --------------------------------------------------
+    const tr = document.createElement("tr");
+    if (disabledClass) tr.classList.add(disabledClass);
 
     tr.innerHTML = `
       <td><strong>${index + 1}</strong></td>
@@ -396,33 +631,93 @@ function renderUserTable(users, tbody) {
         </button>
       </td>
     `;
-
     tbody.appendChild(tr);
+
+    // --------------------------------------------------
+    // B. 【スマホ表示用】コンパクトカードの生成
+    // --------------------------------------------------
+    if (mobileContainer) {
+      const cardDiv = document.createElement("div");
+      cardDiv.className = `card border-0 shadow-sm mb-2 bg-white rounded-3 ${disabledClass}`;
+
+      cardDiv.innerHTML = `
+        <div class="card-body p-3 position-relative">
+          
+          <div class="mb-2">
+            <div class="fw-bold text-dark text-truncate">
+              <span class="text-muted small me-2">${index + 1}</span>${user.user_name || "未設定"}
+            </div>
+            <div class="small text-muted text-truncate ms-3">${user.company_name}</div>
+          </div>
+          
+          <div class="ms-3" style="padding-right: 45px;"> 
+            <div class="small text-muted mb-2 text-truncate">${user.login_email}</div>
+            <div class="d-flex gap-2">
+              ${roleBadge}
+              ${statusBadge}
+            </div>
+          </div>
+
+          <div class="position-absolute" style="bottom: 15px; right: 15px; z-index: 10;">
+            <button class="btn btn-sm btn-light rounded-circle border shadow-sm edit-user-btn d-flex align-items-center justify-content-center" data-id="${user.id}" style="width:36px; height:36px;">
+              <i class="bi bi-pencil-square small"></i>
+            </button>
+          </div>
+
+        </div>
+      `;
+      mobileContainer.appendChild(cardDiv);
+    }
   });
 }
 
 /**
- * 💡 従業員一覧テーブル内の「編集」ボタンのクリックイベントを設定する関数
+ * 💡 従業員一覧（テーブル内およびスマホカード内）の「編集」ボタンクリックイベント
  */
 function setupEditButtonEvents() {
-  const tbody = document.getElementById("user_list_tbody");
-  if (!tbody) return;
+  const cardBody = document.querySelector(".card-body.p-0");
+  if (!cardBody) return;
 
-  tbody.addEventListener("click", async (event) => {
-    const editButton = event.target.closest(".edit-user-btn");
-    if (!editButton) return;
+  cardBody.addEventListener("click", async (event) => {
+    let userId = null;
 
-    const userId = editButton.getAttribute("data-id");
-    console.log("編集ボタンがクリックされました。ユーザーID:", userId);
+    // 1. スマホ画面（画面幅 768px 未満）のとき
+    if (window.innerWidth < 768) {
+      // タップされた要素から一番近い「スマホ用カード（.card）」を探す
+      const clickedCard = event.target.closest("#user_list_mobile .card");
+      if (clickedCard) {
+        // カード内にある編集ボタンからIDを引っこ抜く
+        const editButton = clickedCard.querySelector(".edit-user-btn");
+        if (editButton) {
+          userId = editButton.getAttribute("data-id");
+        }
+      }
+    }
 
-    const userModalElement = document.getElementById("userModal");
-    const userModal =
-      bootstrap.Modal.getInstance(userModalElement) ||
-      new bootstrap.Modal(userModalElement);
+    // 2. PC画面、またはスマホでカードの外側が触られた場合のフォールバック
+    if (!userId) {
+      const editButton = event.target.closest(".edit-user-btn");
+      if (editButton) {
+        userId = editButton.getAttribute("data-id");
+      }
+    }
 
-    if (userModalElement && userModal) {
-      await setupModalForEdit(userModalElement, userId);
-      userModal.show();
+    // IDが特定できたらモーダルを開く
+    if (userId) {
+      console.log("編集アクションがトリガーされました。ユーザーID:", userId);
+
+      // 新しく編集画面を開く瞬間なので、うっかり破棄フラグを一旦クリアする
+      isFormDirty = false;
+
+      const userModalElement = document.getElementById("userModal");
+      const userModal =
+        bootstrap.Modal.getInstance(userModalElement) ||
+        new bootstrap.Modal(userModalElement);
+
+      if (userModalElement && userModal) {
+        await setupModalForEdit(userModalElement, userId);
+        userModal.show();
+      }
     }
   });
 }
@@ -479,15 +774,15 @@ async function setupModalForEdit(modalEl, userId) {
       form.querySelector("#avatar_url").value = user.avatar_url || "";
 
       form.setAttribute("data-edit-id", user.id);
+
       // ==========================================
-      // 🛠️ 追加：作成日時・更新日時を綺麗にフォーマットして表示
+      // 🛠️ 作成日時・更新日時を綺麗にフォーマットして表示
       // ==========================================
       const timestampsArea = modalEl.querySelector("#timestamps_area");
       const createdAtText = modalEl.querySelector("#created_at_text");
       const updatedAtText = modalEl.querySelector("#updated_at_text");
 
       if (timestampsArea && createdAtText && updatedAtText) {
-        // 日本の表記（2026/05/20 14:30）に変換する関数
         const formatDate = (dateStr) => {
           if (!dateStr) return "なし";
           const d = new Date(dateStr);
@@ -500,14 +795,11 @@ async function setupModalForEdit(modalEl, userId) {
           });
         };
 
-        // 💡 実際のテーブルの列名が created_at / updated_at だと仮定しています。
-        // もしDBの列名が create_at などの場合は user.create_at に書き換えてください。
         createdAtText.textContent = formatDate(
           user.created_at || user.create_at,
         );
         updatedAtText.textContent = formatDate(user.updated_at);
 
-        // エリアを表示する
         timestampsArea.style.display = "block";
       }
     }
@@ -515,4 +807,29 @@ async function setupModalForEdit(modalEl, userId) {
     console.error("編集データの取得に失敗しました:", error);
     showToast("データの読み込みに失敗しました。", "error");
   }
+}
+
+/**
+ * エラー内容を日本語のメッセージに変換する翻訳機
+ */
+function getFriendlyErrorMessage(error) {
+  const errorMsg = (error.message || "").toLowerCase();
+
+  if (
+    errorMsg.includes("already registered") ||
+    errorMsg.includes("user_already_exists") ||
+    errorMsg.includes("duplicate key")
+  ) {
+    return "そのメールアドレスはすでに登録されています。別のメールアドレスを使用してください。";
+  }
+  if (
+    errorMsg.includes("password should be") ||
+    errorMsg.includes("weak_password")
+  ) {
+    return "パスワードは6文字以上の英数字で入力してください。";
+  }
+  if (errorMsg.includes("network") || errorMsg.includes("failed to fetch")) {
+    return "ネットワーク接続に問題があります。インターネット環境を確認してください。";
+  }
+  return `処理に失敗しました: ${error.message}`;
 }

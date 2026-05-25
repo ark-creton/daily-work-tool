@@ -2,8 +2,20 @@
 
 <div class="container-fluid p-4">
   <div class="mb-4">
-    <h2 class="h4 mb-1 fw-bold text-dark">管理者専用画面</h2>
-    <p class="text-muted small mb-0">
+    <h2 class="h4 mb-1 fw-bold text-dark d-flex align-items-center">
+      管理者専用
+      <span
+        class="ms-2 help-icon d-md-none"
+        tabindex="0"
+        data-bs-toggle="popover"
+        data-bs-trigger="focus"
+        data-bs-content="従業員のアカウント開設、所属、権限の管理を行えます。"
+      >
+        <i class="bi bi-question-circle"></i>
+      </span>
+    </h2>
+
+    <p class="text-muted small mb-0 d-none d-md-block">
       従業員のアカウント開設、所属、権限の管理を行えます。
     </p>
   </div>
@@ -33,10 +45,11 @@
       </button>
     </div>
   </div>
-
-  <div class="card border-0 shadow-sm">
+  <div class="card bg-transparent border-0">
     <div class="card-body p-0">
-      <div class="table-responsive">
+      <div
+        class="table-responsive d-none d-md-block bg-white shadow-sm rounded-3"
+      >
         <table class="table table-hover align-middle mb-0" id="list_user_name">
           <thead class="table-light text-muted small">
             <tr>
@@ -59,12 +72,30 @@
                 </div>
                 <p class="mb-1 fw-bold">登録されている従業員がいません</p>
                 <p class="small text-secondary mb-0">
-                  右上の「新規ユーザー登録」ボタンから最初のアカウント開設をしてください。
+                  「新規ユーザー登録」ボタンから最初のアカウント開設をしてください。
                 </p>
               </td>
             </tr>
           </tbody>
         </table>
+      </div>
+
+      <div class="d-md-none p-0" id="user_list_mobile">
+        <div
+          id="no_data_mobile"
+          class="text-center py-5 text-muted bg-white shadow-sm rounded-3"
+        >
+          <div class="mb-2">
+            <i
+              class="bi bi-people text-secondary"
+              style="font-size: 2.5rem; opacity: 0.5"
+            ></i>
+          </div>
+          <p class="mb-1 fw-bold">登録されている従業員がいません</p>
+          <p class="small text-secondary mb-0">
+            「新規ユーザー登録」ボタンから最初のアカウント開設をしてください。
+          </p>
+        </div>
       </div>
     </div>
   </div>

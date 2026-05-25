@@ -1,0 +1,287 @@
+<div class="container-fluid p-4">
+  <div
+    class="d-flex justify-content-between align-items-end mb-4 flex-wrap row-gap-3"
+  >
+    <div>
+      <h2 class="h4 mb-1 fw-bold page-title">勤怠管理</h2>
+      <p class="text-muted small mb-0">
+        月間の労働日数、総勤務時間、時間外労働の集計確認、および勤務内容の修正を行えます。
+      </p>
+    </div>
+
+    <div class="d-flex gap-2">
+      <select id="target_user_id" class="form-select filter-control">
+        <option value="">表示対象ユーザー</option>
+      </select>
+      <input
+        type="month"
+        id="display_period"
+        class="form-control filter-control"
+      />
+    </div>
+  </div>
+
+  <div class="card border-0 shadow-sm p-4 mb-4 summary-card">
+    <div class="d-flex flex-wrap align-items-center summary-container">
+      <div class="d-flex align-items-baseline gap-2">
+        <span class="small fw-bold text-label">労働日数</span>
+        <div>
+          <span id="work_days_count" class="h4 fw-bold mb-0 text-value">-</span>
+          <span class="text-muted small">日</span>
+        </div>
+      </div>
+
+      <div class="v-divider"></div>
+
+      <div class="d-flex align-items-baseline gap-2">
+        <span class="small fw-bold text-label">総勤務時間</span>
+        <div>
+          <span id="total_work_hours" class="h4 fw-bold mb-0 text-value"
+            >-</span
+          >
+          <span class="text-muted small">時間</span>
+        </div>
+      </div>
+
+      <div class="v-divider"></div>
+
+      <div class="d-flex align-items-baseline gap-2">
+        <span class="small fw-bold text-label">時間外労働</span>
+        <div>
+          <span id="total_overtime_hours" class="h4 fw-bold mb-0 text-value"
+            >-</span
+          >
+          <span class="text-muted small">時間</span>
+        </div>
+      </div>
+
+      <div class="v-divider"></div>
+
+      <div class="d-flex align-items-baseline gap-2">
+        <span class="small fw-bold text-label">休憩時間数</span>
+        <div>
+          <span id="total_break_hours" class="h4 fw-bold mb-0 text-value"
+            >-</span
+          >
+          <span class="text-muted small">時間</span>
+        </div>
+      </div>
+
+      <div class="v-divider"></div>
+
+      <div class="d-flex align-items-baseline gap-2">
+        <span class="small fw-bold text-label">外出時間数</span>
+        <div>
+          <span id="total_out_hours" class="h4 fw-bold mb-0 text-value">-</span>
+          <span class="text-muted small">時間</span>
+        </div>
+      </div>
+
+      <div class="v-divider"></div>
+
+      <div class="d-flex align-items-baseline gap-2">
+        <span class="small fw-bold text-label">休日出勤日数</span>
+        <div>
+          <span id="holiday_work_days" class="h4 fw-bold mb-0 text-value"
+            >-</span
+          >
+          <span class="text-muted small">日</span>
+        </div>
+      </div>
+
+      <div class="v-divider"></div>
+
+      <div class="d-flex align-items-baseline gap-2">
+        <span class="small fw-bold text-label">欠勤日数</span>
+        <div>
+          <span id="absent_days_count" class="h4 fw-bold mb-0 text-value"
+            >-</span
+          >
+          <span class="text-muted small">日</span>
+        </div>
+      </div>
+
+      <div class="v-divider-dashed"></div>
+
+      <div class="d-flex align-items-baseline gap-2">
+        <span class="small fw-bold text-value">交通費合計</span>
+        <div>
+          <span id="total_transportation_fee" class="h4 fw-bold mb-0 text-value"
+            >0</span
+          >
+          <span class="text-muted small">円</span>
+        </div>
+      </div>
+
+      <div class="v-divider"></div>
+
+      <div class="d-flex align-items-baseline gap-2">
+        <span class="small fw-bold text-value">その他経費合計</span>
+        <div>
+          <span id="total_expense_fee" class="h4 fw-bold mb-0 text-value"
+            >0</span
+          >
+          <span class="text-muted small">円</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card border-0 shadow-sm p-4 table-card">
+    <div class="mb-3">
+      <h3 class="fs-5 fw-bold text-value m-0">月間勤務表</h3>
+    </div>
+
+    <div class="table-responsive table-scroll-container">
+      <table class="table table-hover align-middle mb-0" id="attendance_table">
+        <thead class="table-light sticky-top table-header-area">
+          <tr>
+            <th class="cell-action">操作</th>
+            <th class="cell-date">日付</th>
+            <th>始業時刻</th>
+            <th>終業時刻</th>
+            <th>総勤務</th>
+            <th>時間外</th>
+            <th>休憩</th>
+            <th>外出</th>
+            <th class="cell-memo">備考</th>
+          </tr>
+        </thead>
+        <tbody id="attendance_tbody" class="table-body-area">
+          <tr>
+            <td class="text-center">
+              <button class="btn btn-sm btn-outline-secondary btn-table-edit">
+                編集
+              </button>
+            </td>
+            <td class="fw-bold text-muted">01日 (月)</td>
+            <td>--:--</td>
+            <td>--:--</td>
+            <td>-</td>
+            <td>-</td>
+            <td>-</td>
+            <td>-</td>
+            <td class="text-muted small">データが読み込まれていません</td>
+          </tr>
+          <tr>
+            <td class="text-center">
+              <button class="btn btn-sm btn-outline-secondary btn-table-edit">
+                編集
+              </button>
+            </td>
+            <td class="fw-bold text-muted">02日 (火)</td>
+            <td>--:--</td>
+            <td>--:--</td>
+            <td>-</td>
+            <td>-</td>
+            <td>-</td>
+            <td>-</td>
+            <td></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<div
+  class="modal fade"
+  id="editAttendanceModal"
+  tabindex="-1"
+  aria-hidden="true"
+>
+  <div class="modal-dialog">
+    <div class="modal-content attendance-modal-content">
+      <div class="modal-header border-0 pt-4 px-4 pb-2">
+        <h5 class="fw-bold mb-0 text-value modal-title-fs">勤務内容の修正</h5>
+        <button
+          type="button"
+          class="btn-close"
+          data-bs-dismiss="modal"
+          aria-label="Close"
+        ></button>
+      </div>
+      <div class="modal-body px-4">
+        <form id="attendance_edit_form">
+          <div class="p-3 mb-3 modal-date-badge">
+            <span id="work_date" class="fw-bold text-value"
+              >2026年5月18日(月)</span
+            >
+          </div>
+          <div class="row mb-3">
+            <div class="col">
+              <label class="form-label small fw-bold text-label"
+                >出勤時刻</label
+              >
+              <input
+                type="time"
+                id="clock_in"
+                class="form-control form-control-custom"
+              />
+            </div>
+            <div class="col">
+              <label class="form-label small fw-bold text-label"
+                >退勤時刻</label
+              >
+              <input
+                type="time"
+                id="clock_out"
+                class="form-control form-control-custom"
+              />
+            </div>
+          </div>
+          <div class="row mb-3">
+            <div class="col">
+              <label class="form-label small fw-bold text-label"
+                >休憩時間(分)</label
+              >
+              <input
+                type="number"
+                id="total_break_m"
+                class="form-control form-control-custom"
+                min="0"
+                max="480"
+              />
+            </div>
+            <div class="col">
+              <label class="form-label small fw-bold text-label"
+                >外出合計(時間)</label
+              >
+              <input
+                type="text"
+                id="out_hours"
+                class="form-control-plaintext fw-bold text-value ps-1"
+                readonly
+              />
+            </div>
+          </div>
+          <div class="mb-3">
+            <label class="form-label small fw-bold text-label">備考</label>
+            <textarea
+              id="memo"
+              class="form-control form-control-custom"
+              rows="3"
+              placeholder="交通費:1200 等を入れると自動集計されます"
+            ></textarea>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer border-0 px-4 pb-4 pt-2 modal-btn-layout">
+        <button
+          type="button"
+          class="btn btn-light btn-sm text-secondary btn-modal-cancel"
+          data-bs-dismiss="modal"
+        >
+          キャンセル
+        </button>
+        <button
+          type="button"
+          id="submit_button"
+          class="btn btn-sm btn-modal-submit"
+        >
+          更新する
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
