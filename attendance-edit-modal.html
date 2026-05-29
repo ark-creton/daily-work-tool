@@ -1,0 +1,195 @@
+<div
+  class="modal fade"
+  id="attendanceEditModal"
+  data-bs-backdrop="static"
+  tabindex="-1"
+  aria-labelledby="attendanceEditModalLabel"
+  aria-hidden="true"
+>
+  <div class="modal-dialog modal-dialog-centered modal-xl">
+    <div class="modal-content border-0 shadow">
+      <div class="modal-header border-bottom-0 py-3 px-4 d-flex justify-content-between align-items-center">
+        <div class="d-flex align-items-center gap-3">
+          <h5 class="modal-title fw-bold text-dark fs-5 m-0 p-0" id="attendanceEditModalLabel">勤怠データの編集</h5>
+          <span id="display_edit_date" class="fw-bold text-secondary badge bg-light text-dark px-3 py-2 fs-6 border rounded-pill"> - </span>
+        </div>
+
+        <div class="d-flex gap-1">
+          <button
+            type="button"
+            class="btn btn-sm btn-light border border-light-subtle rounded-3 p-2 d-flex align-items-center justify-content-center"
+            style="width: 36px; height: 36px"
+            title="前日"
+          >
+            <i class="bi bi-chevron-left fw-bold text-secondary"></i>
+          </button>
+          <button
+            type="button"
+            class="btn btn-sm btn-light border border-light-subtle rounded-3 p-2 d-flex align-items-center justify-content-center"
+            style="width: 36px; height: 36px"
+            title="翌日"
+          >
+            <i class="bi bi-chevron-right fw-bold text-secondary"></i>
+          </button>
+        </div>
+      </div>
+
+      <div class="modal-body px-4 pt-2 pb-3" style="min-height: 500px">
+        <form id="attendance_edit_form" novalidate>
+          <div class="row g-4">
+            <div class="col-md-5 d-flex flex-column gap-3">
+              <div>
+                <label for="edit_work_type" class="form-label fw-bold small">勤務区分</label>
+                <select id="edit_work_type" class="form-select border-2 py-2">
+                  <option value="normal" selected>通常出勤</option>
+                  <option value="paid">有給休暇</option>
+                  <option value="absent">欠勤</option>
+                </select>
+              </div>
+
+              <div class="row g-2">
+                <div class="col-6">
+                  <div class="d-flex justify-content-between align-items-center">
+                    <label for="edit_clock_in" class="form-label fw-bold small mb-0">出勤時刻</label>
+                    <span class="badge rounded-pill bg-secondary bg-opacity-10 text-secondary fw-normal" style="font-size: 0.65rem">
+                      打刻: <span id="display_original_date_in">--/--</span>
+                      <span id="display_original_clock_in">--:--</span>
+                    </span>
+                  </div>
+                  <input type="time" id="edit_clock_in" class="form-control border-2 py-2" step="900" />
+                </div>
+
+                <div class="col-6">
+                  <div class="d-flex justify-content-between align-items-center">
+                    <label for="edit_clock_out" class="form-label fw-bold small mb-0">退勤時刻</label>
+                    <span class="badge rounded-pill bg-secondary bg-opacity-10 text-secondary fw-normal" style="font-size: 0.65rem">
+                      打刻: <span id="display_original_date_out">--/--</span>
+                      <span id="display_original_clock_out">--:--</span>
+                    </span>
+                  </div>
+                  <input type="time" id="edit_clock_out" class="form-control border-2 py-2" step="900" />
+                </div>
+              </div>
+
+              <div>
+                <label for="edit_break_time" class="form-label fw-bold small">休憩時間 (分)</label>
+                <input type="number" id="edit_break_time" class="form-control border-2 py-2" placeholder="60" />
+              </div>
+
+              <div class="row g-2">
+                <div class="col-6">
+                  <label for="edit_break_start" class="form-label fw-bold small">外出開始</label>
+                  <input type="time" id="edit_break_start" class="form-control border-2 py-2" />
+                </div>
+                <div class="col-6">
+                  <label for="edit_break_end" class="form-label fw-bold small">外出終了</label>
+                  <input type="time" id="edit_break_end" class="form-control border-2 py-2" />
+                </div>
+              </div>
+
+              <div class="bg-light p-3 rounded-3 mt-auto">
+                <div class="d-flex text-center align-items-center">
+                  <div class="flex-fill">
+                    <div class="text-muted small fw-bold">総勤務</div>
+                    <div id="calc_total_work" class="fw-bold text-dark fs-8">--:--</div>
+                  </div>
+                  <div class="border-start" style="height: 30px"></div>
+                  <div class="flex-fill">
+                    <div class="text-muted small fw-bold">時間外</div>
+                    <div id="calc_overtime" class="fw-bold text-danger fs-8">--:--</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="col-md-7 d-flex flex-column gap-3">
+              <div class="card border-0 p-3 rounded-3 shadow-sm expense-memo-card d-flex flex-column" style="min-height: 350px">
+                <div class="d-flex justify-content-between align-items-center">
+                  <label class="form-label fw-bold small m-0 d-flex align-items-center expense-memo-label">
+                    <i class="bi-file-earmark-text me-1 fs-5"></i>
+                    <span style="letter-spacing: 0.05em">経費明細</span>
+                  </label>
+                </div>
+
+                <div class="pt-3 d-flex flex-column flex-grow-1 w-100 h-100">
+                  <div id="expense_list" class="d-flex flex-column gap-2 mb-3 px-1 expense-memo-list"></div>
+                  <div class="d-flex justify-content-between align-items-center pt-2 expense-memo-footer">
+                    <button type="button" class="btn btn-sm bg-white shadow-sm border-light-subtle rounded-pill px-3 fw-bold expense-add-btn">
+                      <i class="bi bi-pencil-fill small me-1"></i>経費を追加
+                    </button>
+                    <div class="fw-bold small expense-total-text">
+                      合計:
+                      <span id="total_expense" class="fs-4 mx-1 fw-bold">0</span>円
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="mt-auto d-flex flex-column gap-3">
+                <div>
+                  <label for="edit_memo" class="form-label fw-bold small">備考</label>
+                  <textarea id="edit_memo" class="form-control border-2" rows="1" placeholder="例: 直行直帰、遅延など"></textarea>
+                </div>
+                <div id="timestamps_area">
+                  <div class="p-2 bg-light rounded-3" style="font-size: 0.8rem; color: #64748b">
+                    <div class="d-flex justify-content-between">
+                      <span><i class="bi bi-pencil-square me-1"></i>最終更新:</span>
+                      <span id="display_updated_at" class="fw-medium text-dark">-</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </form>
+      </div>
+
+      <div class="modal-footer border-top-0 px-4 py-3 d-flex align-items-center">
+        <div>
+          <button type="button" id="attendance_reset_btn" class="btn btn-sm btn-outline-secondary px-3 fw-semibold">データをリセット</button>
+        </div>
+        <div class="d-flex gap-2 ms-auto">
+          <button
+            type="button"
+            id="attendance_cancel_btn"
+            class="btn btn-sm btn-link text-decoration-none text-muted fw-bold"
+            data-bs-dismiss="modal"
+          >
+            閉じる
+          </button>
+          <button
+            type="submit"
+            id="attendance_save_btn"
+            form="attendance_edit_form"
+            class="btn btn-sm btn-primary px-4 py-2 rounded-pill fw-bold shadow-sm"
+          >
+            <i class="bi bi-check2-circle me-1"></i> 保存
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 確認トースト -->
+<div class="modal fade" id="discardConfirmModal" data-bs-backdrop="static" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-sm" style="max-width: 360px; width: 95%">
+    <div class="modal-content confirm-discard-content shadow-sm border-0">
+      <div class="modal-body p-4 text-center">
+        <div class="mb-3">
+          <i class="bi bi-arrow-counterclockwise text-secondary fs-1"></i>
+        </div>
+        <h6 class="fw-bold mb-2">勤怠データのリセット</h6>
+        <p class="small text-muted mb-4">データの戻し方を選択してください。</p>
+
+        <div class="d-flex flex-column gap-2">
+          <button type="button" class="btn btn-sm btn-outline-dark w-100 py-2 fw-semibold" id="btn_clear_inputs">手入力をクリアして再入力</button>
+          <button type="button" class="btn btn-sm btn-danger w-100 py-2 fw-semibold" id="btn_completely_delete">この日の記録を完全消去</button>
+          <button type="button" class="btn btn-sm btn-link text-decoration-none text-muted w-100 mt-1 py-1 small" id="btn_discard_cancel">
+            キャンセル
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

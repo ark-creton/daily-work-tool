@@ -39,24 +39,50 @@ body {
    ローディング
    -------------------------------------------------- */
 #global-loading {
-  background-color: rgba(255, 255, 255, 0.6);
-  backdrop-filter: blur(5px);
-  -webkit-backdrop-filter: blur(5px);
+  /* 💡 最初のチカチカ・白すぎるのを防ぐため、優しめの半透明グレーに */
+  background-color: rgba(244, 244, 249, 0.2);
+
+  /* 💡 押した瞬間からしっかりボカシ（すりガラス効果）を効かせる */
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+
   position: fixed;
   top: 0;
   left: 0;
   width: 100vw;
   height: 100vh;
   z-index: 9999;
-  display: none;
+
+  display: flex;
   align-items: center;
   justify-content: center;
+
+  /* 状態の初期値 */
   opacity: 0;
-  transition: opacity 0.25s ease-in-out;
+  visibility: hidden;
+
+  /* 💡 ここが最大のポイント！
+     【現れる時】：0.05秒で爆速でボカシをかけ、一瞬の隙間を消し去る
+     【消える時】：0.25秒かけて、フワッと優しくボカシを解いていく */
+  transition:
+    opacity 0.25s ease-in-out,
+    visibility 0.25s,
+    backdrop-filter 0.25s ease-in-out,
+    -webkit-backdrop-filter 0.25s ease-in-out;
 }
+
+/* 💡 ローディング表示中（ボタンを押した瞬間） */
 #global-loading.show {
-  display: flex;
   opacity: 1;
+  visibility: visible;
+
+  /* 💡 現れる時だけ transition を「爆速の0.05秒」で上書きして、
+     準備前の画面が一瞬丸見えになるバグを強制的にシャットアウトします */
+  transition:
+    opacity 0.05s ease-out,
+    visibility 0.05s,
+    backdrop-filter 0.05s ease-out,
+    -webkit-backdrop-filter 0.05s ease-out;
 }
 
 .dots-container {
@@ -194,6 +220,125 @@ body {
 }
 .custom-toast.error .bi-exclamation-circle {
   color: #dc2626;
+}
+
+/* --------------------------------------------------
+   確認トースト（上記とデザイン統一）
+   -------------------------------------------------- */
+.confirm-discard-content {
+  background-color: rgba(241, 245, 249, 0.98) !important;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(203, 213, 225, 0.9) !important;
+  border-radius: 12px !important;
+  color: #334155;
+  box-shadow:
+    0 12px 30px -4px rgba(148, 163, 184, 0.25),
+    0 4px 12px -2px rgba(148, 163, 184, 0.15),
+    inset 0 1px 0 rgba(255, 255, 255, 1) !important;
+  overflow: hidden;
+}
+
+/* モーダル内のテキスト微調整 */
+.confirm-discard-content .modal-body i.bi-exclamation-circle {
+  font-size: 2rem;
+  color: #dc2626;
+}
+
+.confirm-discard-content .modal-body h6 {
+  color: #334155;
+  font-size: 0.95rem;
+}
+
+.confirm-discard-content .modal-body p {
+  color: #64748b;
+  line-height: 1.5;
+  font-weight: 500;
+}
+
+/* 下部のボタンエリア（ほんのりグレーの背景） */
+.confirm-discard-footer {
+  border-top: none !important;
+  background-color: rgba(226, 232, 240, 0.4);
+  padding: 1rem !important;
+}
+
+/* 「いいえ」ボタン */
+.btn-discard-cancel {
+  background-color: #fff !important;
+  border: 1px solid rgba(203, 213, 225, 0.8) !important;
+  color: #475569 !important;
+  border-radius: 8px !important;
+  font-size: 0.85rem !important;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+.btn-discard-cancel:hover {
+  background-color: #f8fafc !important;
+  color: #334155 !important;
+}
+
+/* 「はい、閉じます」ボタン（トーストのエラー配色を移植） */
+.btn-discard-yes {
+  background-color: #fee2e2 !important;
+  border: 1px solid rgba(252, 165, 165, 0.9) !important;
+  color: #991b1b !important;
+  border-radius: 8px !important;
+  font-size: 0.85rem !important;
+  box-shadow: 0 1px 2px rgba(239, 68, 68, 0.05);
+}
+.btn-discard-yes:hover {
+  background-color: #fecaca !important;
+  color: #7f1d1d !important;
+}
+
+/* 確認モーダルが開いている間、背景の暗さを維持する */
+.modal-backdrop.show {
+  opacity: 0.5 !important; /* 必要に応じて調整してください */
+}
+
+/* 背景（バックドロップ）を常時表示させ、モーダルの切り替えで消えないようにする */
+.modal-backdrop {
+  z-index: 1040 !important;
+}
+.modal {
+  z-index: 1050 !important;
+}
+
+/* モーダルにフェード効果を与える設定 */
+.modal.fade .modal-dialog {
+  transition:
+    transform 0.3s ease-out,
+    opacity 0.3s ease-in-out;
+  opacity: 0;
+  transform: translateY(-20px); /* 少し上からスッと現れる動き */
+}
+
+/* 表示状態 */
+.modal.show .modal-dialog {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* 既に設定済みのバックドロップ（背景）の制御 */
+.modal-backdrop {
+  transition: opacity 0.3s ease-in-out !important;
+}
+
+/* トーストの幅を統一 */
+.modal-dialog.modal-md {
+  max-width: 500px !important; /* 管理者画面と揃える標準幅 */
+}
+
+/* スマホ時など、より小さいトーストの場合 */
+.modal-dialog.modal-sm {
+  max-width: 420px !important; /* 先ほど決めた統一サイズ */
+}
+
+/* トースト全体の角の丸みと影 */
+.modal-content {
+  border-radius: 20px !important;
+  border: none !important;
+  box-shadow: 0 15px 50px rgba(0, 0, 0, 0.15) !important;
 }
 
 /* ==================================================
@@ -535,11 +680,11 @@ body {
 }
 
 /* ==================================================
-   5. 共通コンポーネント：ヘルプ（？マーク）
+   5. 共通コンポーネント：ヘルプ
    ================================================== */
 .help-icon {
   cursor: help;
-  color: #6c757d; /* text-secondary相当の色 */
+  color: #6c757d;
   font-size: 1rem;
   display: inline-flex;
   align-items: center;
@@ -547,5 +692,19 @@ body {
 }
 
 .help-icon:hover {
-  color: #495057; /* ホバー時に少し濃くする */
+  color: #495057;
+}
+
+/* ポップオーバー（吹き出し）のデザインを管理者画面と統一 */
+.popover {
+  border-radius: 12px !important; /* 管理者画面のような角丸 */
+  border: 1px solid #dee2e6 !important;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1) !important;
+  padding: 5px !important;
+}
+
+.popover-body {
+  color: #334155 !important; /* 文字色を統一 */
+  font-size: 0.85rem !important;
+  padding: 10px 15px !important;
 }

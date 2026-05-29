@@ -2,170 +2,409 @@
    勤怠管理画面専用スタイル
    ================================================== */
 
-/* --- 共通の文字色コントロール --- */
+/* 文字色 */
 .page-title,
 .text-value {
   color: #2b2c3a !important;
 }
-
 .text-label {
   color: #55555c !important;
 }
 
-/* タイトルの字間調整 */
-.page-title {
-  letter-spacing: 0.5px;
-}
-
-/* --- 上部・条件選択パーツ --- */
+/* フィルター */
 .filter-control {
   width: 180px !important;
-  color: #2b2c3a !important;
-  border-radius: 6px !important;
 }
 
-/* --- 1段目：月間集計結果カード --- */
-.summary-card {
+/* カードデザイン */
+.summary-card,
+.table-card {
   border-radius: 12px !important;
-  background-color: #ffffff !important;
 }
 
+/* 集計コンテナの調整 */
 .summary-container {
   row-gap: 15px;
   column-gap: 24px;
 }
-
-/* 数字部分の幅を等幅（固定幅）にしてガタつきを防ぐ */
 .summary-container .fw-bold {
   font-variant-numeric: tabular-nums;
 }
 
-/* 縦の区切り線（実線） */
+/* 縦の区切り線 */
 .v-divider {
   width: 1px;
   height: 20px;
   background-color: #dee2e6;
 }
-
-/* 経費手前の区切り線（点線） */
 .v-divider-dashed {
   border-left: 1px dashed #ced4da;
   height: 25px;
 }
 
-/* --- 2段目：月間勤務表テーブル --- */
-.table-card {
-  border-radius: 12px !important;
-  background-color: #ffffff !important;
-}
-
-/* テーブルのスクロール外枠 */
+/* テーブルのスクロールとヘッダー固定 */
 .table-scroll-container {
   max-height: 480px;
   overflow-y: auto;
   border: 1px solid #dee2e6;
   border-radius: 8px;
 }
-
-/* 固定ヘッダーの設定 */
 .table-header-area {
   z-index: 5;
 }
 
-.table-header-area tr {
-  color: #2b2c3a !important;
-  font-size: 0.85rem;
-  border-bottom: 2px solid #dee2e6;
-}
-
-/* テーブル内のデータエリア */
-.table-body-area {
-  color: #2b2c3a !important;
-  font-size: 0.9rem;
-}
-
-/* 各マスの幅・配置微調整 */
+/* 列幅の微調整（HTMLのthにクラスを当てている前提） */
 .cell-action {
-  width: 70px !important; /* 少し狭く */
+  width: 70px !important;
   text-align: center;
 }
-
 .cell-date {
-  width: 130px !important; /* 日付・曜日が収まる幅に */
+  width: 130px !important;
 }
-
 .cell-memo {
   padding-right: 15px !important;
 }
 
-/* テーブル内の編集ボタン */
+/* 編集ボタン */
 .btn-table-edit {
   font-size: 0.75rem !important;
   padding: 0px 8px !important;
 }
 
-/* --- 📋 モーダル（ポップアップ）関連 --- */
-.attendance-modal-content {
-  border-radius: 16px !important;
-  border: none !important;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.12) !important;
-}
-
-.modal-title-fs {
-  font-size: 1.15rem;
-}
-
-/* モーダル内の日付バッジ */
-.modal-date-badge {
-  background-color: #f8f9fa;
-  border: 1px solid #e9ecef;
-  border-radius: 8px;
-}
-
-/* モーダル内の入力フォーム共通 */
-.form-control-custom {
-  color: #2b2c3a !important;
-  border-radius: 8px !important;
-}
-
-/* フッターボタンの横並び固定 */
-.modal-btn-layout {
-  display: flex !important;
-  flex-wrap: nowrap !important;
-  gap: 10px !important;
-  justify-content: flex-end !important;
-}
-
-/* モーダルのキャンセルボタン */
-.btn-modal-cancel {
-  border-radius: 8px !important;
-  padding: 8px 16px !important;
-}
-
-/* モーダルの更新するボタン */
-.btn-modal-submit {
-  background-color: #8ea3c2 !important;
-  color: white !important;
-  border-radius: 8px !important;
-  padding: 8px 20px !important;
-  font-weight: bold !important;
-}
-
-/* --- テーブルのレイアウトを固定 --- */
-#attendance_table th:not(.cell-action):not(.cell-date):not(.cell-memo) {
-  width: 80px !important;
-  text-align: center;
-}
-
-/* --- 祝日・日曜日の赤背景 --- */
+/* 休日・土曜の背景色 */
 #attendance_table tbody tr.row-holiday,
 #attendance_table tbody tr.row-holiday td {
   background-color: #fff5f5 !important;
 }
 
-/* --- 土曜日の青背景 --- */
 #attendance_table tbody tr.row-saturday,
 #attendance_table tbody tr.row-saturday td {
   background-color: #f0f7ff !important;
 }
 
+/* 保存ボタン */
+#attendance_save_btn {
+  background: #8ea3c2 !important;
+  color: #ffffff !important;
+  border: none !important;
+  font-weight: 700 !important;
+  padding: 10px 20px !important;
+  border-radius: 10px !important;
+  box-shadow: 0 4px 10px -2px rgba(142, 163, 194, 0.25) !important;
+  transition: all 0.2s ease !important;
+}
+#attendance_save_btn:hover:not(:disabled) {
+  background-color: #7a99c5 !important;
+  box-shadow: 0 6px 12px -2px rgba(122, 153, 197, 0.35) !important;
+}
+
+/* 閉じるボタン */
+#attendance_cancel_btn {
+  background-color: #f8f9fa !important;
+  color: #6c757d !important;
+  border: 1px solid #dee2e6 !important; /* ボタンの輪郭を少し強調 */
+  font-weight: 600 !important;
+  padding: 10px 16px !important;
+  border-radius: 10px !important;
+  white-space: nowrap !important;
+  flex-shrink: 1 !important;
+  transition: all 0.2s ease !important;
+}
+
+#attendance_cancel_btn:hover {
+  background-color: #e9ecef !important;
+  color: #495057 !important;
+}
+
+/* 「未入力に戻す」ボタンの最適化デザイン */
+#attendance_reset_btn {
+  background-color: #ffffff !important; /* 白背景 */
+  border: 1px solid #dee2e6 !important; /* 枠線は薄いグレー（Bootstrap標準） */
+  color: #6c757d !important; /* 文字色もグレーで控えめに */
+  transition: all 0.2s ease-in-out; /* アニメーションを滑らかに */
+  font-weight: 600 !important; /* 少し太字で見やすく */
+}
+
+/* マウスを乗せた時だけ「削除系の赤」に変化させる */
+#attendance_reset_btn:hover {
+  background-color: #ef5350 !important; /* Bootstrap標準の赤背景 */
+  border-color: #ef5350 !important;
+  color: #ffffff !important; /* 文字を白抜きに */
+}
+
+/* 勤怠表のテーブルのレイアウトを固定 */
+#attendance_table {
+  table-layout: fixed;
+  width: 100%;
+}
+
+/* 1: 操作 */
+#attendance_table th:nth-child(1),
+#attendance_table td:nth-child(1) {
+  width: 65px;
+}
+
+/* 2: 日付 */
+#attendance_table th:nth-child(2),
+#attendance_table td:nth-child(2) {
+  width: 130px;
+}
+
+/* 3: 勤務時間 (07:00 〜 23:00用) */
+#attendance_table th:nth-child(3),
+#attendance_table td:nth-child(3) {
+  width: 120px;
+}
+
+/* 4: 総勤務 */
+#attendance_table th:nth-child(4),
+#attendance_table td:nth-child(4) {
+  width: 80px;
+}
+
+/* 5: 時間外 */
+#attendance_table th:nth-child(5),
+#attendance_table td:nth-child(5) {
+  width: 80px;
+}
+
+/* 6: 休憩(分) */
+#attendance_table th:nth-child(6),
+#attendance_table td:nth-child(6) {
+  width: 90px;
+}
+
+/* 7: 外出 */
+#attendance_table th:nth-child(7),
+#attendance_table td:nth-child(7) {
+  width: 65px;
+}
+
+/* 8: 経費明細（左側にだけ薄い縦線を入れて、勤務データと区切る） */
+#attendance_table th:nth-child(8),
+#attendance_table td:nth-child(8) {
+  width: 500px !important;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  border-left: 1px solid #e9ecef !important;
+  padding-left: 12px !important; /* 線と文字がくっつかないように少し余白を */
+}
+
+/* 9: 備考（残りのスペースをすべて自動で使います） */
+#attendance_table th:nth-child(9),
+#attendance_table td:nth-child(9) {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  border-left: 1px solid #e9ecef !important;
+  padding-left: 12px !important; /* 線と文字がくっつかないように少し余白を */
+}
+
+/* 💡テーブルの各行の高さを一律で固定・縦中央揃えにする（line-heightは削除） */
+#attendance_table tbody tr {
+  height: 48px !important;
+}
+
+#attendance_table tbody td {
+  vertical-align: middle !important;
+  padding-top: 4px !important;
+  padding-bottom: 4px !important;
+  white-space: nowrap; /* 💡日付や時刻が絶対に途中で改行されないように強制 */
+}
+
+/* 💡日付セルの中身（文字とハテナ）を横並びの同盟にする設定 */
+#attendance_table tbody td:nth-child(2) {
+  display: table-cell;
+  white-space: nowrap;
+}
+
+/* ポップオーバーのアイコン（?マーク）の表示領域を固定する */
+.help-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  vertical-align: -3px; /* 💡文字のベースラインと綺麗に揃うように微調整 */
+  margin-left: 4px;
+}
+
+/* 既存の入力欄（出勤時刻など）と同じ余白感に合わせる */
+.expense-row .form-select,
+.expense-row .form-control {
+  height: calc(2.25rem + 2px); /* 既存の入力欄と同じ高さ */
+  padding: 0.375rem 0.75rem;
+}
+
+/* 削除ボタンのサイズを枠線に合わせる */
+.btn-outline-danger {
+  padding: 0.375rem 0.5rem !important;
+}
+
+/* 行間の調整 */
+#expense_rows_container {
+  margin-bottom: 0.5rem;
+}
+
+/* ==========================================================================
+   経費メモエリア専用：2段組み左寄せ（ゆったり幅）スタイリング
+   ========================================================================== */
+
+/* 1. 経費エリア全体の土台カード */
+.expense-memo-card {
+  background-color: #f0f1f9 !important;
+  /* 💡 左側の「勤務区分」の文字の高さと完璧にトップラインを揃えるため、上部にだけ絶妙な隙間を作ります */
+  margin-top: 4px !important;
+}
+
+/* 2. 「経費明細」のラベル文字 */
+.expense-memo-label {
+  color: #4a4b5a !important;
+}
+.expense-memo-label i {
+  color: #7c7d8f !important;
+}
+
+/* 3. 経費エリア全体を押し広げるコンテナ設定 */
+#expenseCollapse {
+  display: block;
+  flex-grow: 1; /* 備考欄までのスペースを自動で埋める */
+  background-color: #f0f1f9 !important;
+  border-radius: 8px;
+  padding: 10px;
+}
+
+/* 4. メモ行が並ぶコンテナ（最新の詰めた設定に集約） */
+.expense-memo-list {
+  flex-grow: 1;
+  overflow-y: auto;
+  max-height: 250px; /* ここで高さを制限 */
+  gap: 2px !important; /* 行同士の隙間を2pxに集約 */
+  display: flex;
+  flex-direction: column;
+}
+
+/* 5. 合計行を常に一番下に固定 */
+.expense-memo-footer {
+  margin-top: auto;
+  border-top: 1px dashed #c4c6db !important;
+  padding-top: 8px;
+}
+.expense-add-btn {
+  color: #5a5c6e !important;
+  border-color: #dee2e6 !important;
+}
+.expense-total-text {
+  color: #4a4b5a !important;
+}
+.expense-total-text span {
+  color: #888dc5 !important;
+}
+
+/* 6. 付箋（ノート）の1行（最新の詰めた設定に集約） */
+.expense-notebook-row {
+  background-color: #ffffff !important;
+  border-left: 4px solid #a6a9ce !important;
+  padding: 2px 10px !important; /* 縦幅を2pxにスマートに固定 */
+}
+
+/* 7. ノートの罫線風入力欄（文字サイズ・高さ・パディングの設定を集約） */
+.expense-notebook-select,
+.expense-notebook-input,
+.expense-notebook-amount-field {
+  font-weight: 500 !important;
+  color: #2b2c3a !important;
+  box-shadow: none !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  height: 28px !important; /* 高さを指定して固定 */
+  line-height: 28px !important;
+  padding: 0 !important; /* 内側の余白をゼロに */
+  font-size: 0.875rem !important; /* 文字サイズを少し小さく */
+}
+
+/* フォーム全体のフォントサイズ（標準の1remから0.875remへ） */
+.form-control,
+.form-select {
+  font-size: 0.875rem !important;
+}
+.form-control::placeholder {
+  font-size: 0.875rem !important;
+}
+
+/* カテゴリ・摘要の下線設定 */
+.expense-notebook-select,
+.expense-notebook-input {
+  border-bottom: 1px solid #d2d4e8 !important;
+}
+
+/* カテゴリ選択の横幅 */
+.expense-notebook-select {
+  width: 115px !important;
+  padding-right: 1.2rem !important;
+}
+
+/* 金額入力まわり */
+.expense-notebook-amount-wrap {
+  width: 120px !important;
+  border-bottom: none !important;
+}
+.expense-notebook-amount-field {
+  width: 100% !important;
+  border: none !important;
+}
+.text-yen {
+  font-size: 0.9rem !important;
+  font-weight: 500 !important;
+  color: #7c7d8f !important;
+  flex-shrink: 0;
+}
+
+/* 金額入力欄の上下の矢印（スピンボタン）を非表示にする */
+.expense-notebook-amount-field::-webkit-outer-spin-button,
+.expense-notebook-amount-field::-webkit-inner-spin-button {
+  -webkit-appearance: none !important;
+  margin: 0 !important;
+}
+
+/* 8. 削除ボタン（最新のコンパクトサイズに集約） */
+.expense-notebook-delete-btn {
+  background: none !important;
+  width: 18px !important; /* 18pxに縮小 */
+  height: 18px !important;
+  flex-shrink: 0;
+  color: #2b2c3a !important;
+  opacity: 0.3;
+  transition: opacity 0.2s ease;
+}
+.expense-notebook-delete-btn:hover {
+  opacity: 0.8;
+  color: #e57373 !important;
+}
+.expense-notebook-delete-btn i {
+  font-size: 0.8rem !important;
+}
+
+/* 9. 他の微調整（出退勤入力欄の下の頑固な隙間をピンポイントで解消する） */
+#edit_clock_in,
+#edit_clock_out {
+  margin-bottom: -11px !important;
+}
+
+#expense_list {
+  max-height: 190px;
+  overflow-y: auto;
+  overflow-x: hidden;
+
+  /* スクロールバーをスマートにする設定 */
+  scrollbar-width: thin; /* Firefox用 */
+}
+
+/* Chrome / Safari / Edge 用のスクロールバー微調整 */
+#expense_list::-webkit-scrollbar {
+  width: 6px;
+}
+#expense_list::-webkit-scrollbar-thumb {
+  background-color: rgba(0, 0, 0, 0.15);
+  border-radius: 10px;
+}

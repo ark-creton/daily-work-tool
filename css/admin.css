@@ -368,71 +368,37 @@
   }
 }
 
-/* --------------------------------------------------
-   自作の破棄確認モーダル（トースト通知とデザイン統一）
-   -------------------------------------------------- */
-.confirm-discard-content {
-  background-color: rgba(241, 245, 249, 0.98) !important;
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  border: 1px solid rgba(203, 213, 225, 0.9) !important;
-  border-radius: 12px !important;
-  color: #334155;
-  box-shadow:
-    0 12px 30px -4px rgba(148, 163, 184, 0.25),
-    0 4px 12px -2px rgba(148, 163, 184, 0.15),
-    inset 0 1px 0 rgba(255, 255, 255, 1) !important;
-  overflow: hidden;
+/* ==================================================
+   パスワードエラーメッセージの強制救出
+   ================================================== */
+#userModal .was-validated #password_group ~ .invalid-feedback {
+  display: block !important;
+  color: #e63946 !important; /* あなたが指定したエラー赤色に統一 */
 }
 
-/* モーダル内のテキスト微調整 */
-.confirm-discard-content .modal-body i.bi-exclamation-circle {
-  font-size: 2rem;
-  color: #dc2626;
-}
+/* ==================================================
+   PC表示：テーブルエリア内のみのスクロール・見出し固定
+   ================================================== */
+@media (min-width: 768px) {
+  /* 1. テーブルの親要素に高さを制限して、はみ出たらスクロールさせる */
+  .admin-table-container {
+    /* 💡 修正：max-height から height に変更して、枠の大きさを最初から完全に固定します */
+    height: calc(100vh - 300px) !important;
 
-.confirm-discard-content .modal-body h6 {
-  color: #334155;
-  font-size: 0.95rem;
-}
+    overflow-y: auto !important;
+    position: relative;
+  }
 
-.confirm-discard-content .modal-body p {
-  color: #64748b;
-  line-height: 1.5;
-  font-weight: 500;
-}
+  /* 2. スクロールしてもテーブルの見出し（thead）が上に張り付いて残るようにする */
+  .admin-table-container #list_user_name thead {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
 
-/* 下部のボタンエリア（ほんのりグレーの背景） */
-.confirm-discard-footer {
-  border-top: none !important;
-  background-color: rgba(226, 232, 240, 0.4);
-  padding: 1rem !important;
-}
-
-/* 「いいえ」ボタン */
-.btn-discard-cancel {
-  background-color: #fff !important;
-  border: 1px solid rgba(203, 213, 225, 0.8) !important;
-  color: #475569 !important;
-  border-radius: 8px !important;
-  font-size: 0.85rem !important;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
-}
-.btn-discard-cancel:hover {
-  background-color: #f8fafc !important;
-  color: #334155 !important;
-}
-
-/* 「はい、閉じます」ボタン（トーストのエラー配色を移植） */
-.btn-discard-yes {
-  background-color: #fee2e2 !important;
-  border: 1px solid rgba(252, 165, 165, 0.9) !important;
-  color: #991b1b !important;
-  border-radius: 8px !important;
-  font-size: 0.85rem !important;
-  box-shadow: 0 1px 2px rgba(239, 68, 68, 0.05);
-}
-.btn-discard-yes:hover {
-  background-color: #fecaca !important;
-  color: #7f1d1d !important;
+  /* 3. スクロールした時に下の行の文字が見出しの背景に透けないように、背景色を固定 */
+  .admin-table-container #list_user_name thead th {
+    background-color: #f8f9fa !important;
+    border-bottom: 2px solid #dee2e6 !important;
+  }
 }

@@ -130,35 +130,5 @@
     <script src="js/admin.js"></script>
 
     <script src="js/index.js"></script>
-    <script>
-      document.addEventListener("DOMContentLoaded", function () {
-        // ポップオーバー（？マーク）の初期化関数
-        function initPopover() {
-          var popoverTriggerList = [].slice.call(
-            document.querySelectorAll('[data-bs-toggle="popover"]'),
-          );
-          popoverTriggerList.map(function (popoverTriggerEl) {
-            // 二重初期化を防ぐ
-            if (bootstrap.Popover.getInstance(popoverTriggerEl)) return;
-
-            return new bootstrap.Popover(popoverTriggerEl, {
-              trigger: "focus", // タップで表示、他を触ると閉じる
-            });
-          });
-        }
-
-        // 初回読み込み時に実行
-        initPopover();
-
-        // メインコンテンツの切り替えを検知して再適用
-        var targetArea = document.getElementById("main_content_dynamic_area");
-        if (targetArea) {
-          var observer = new MutationObserver(function () {
-            setTimeout(initPopover, 100);
-          });
-          observer.observe(targetArea, { childList: true, subtree: true });
-        }
-      });
-    </script>
   </body>
 </html>

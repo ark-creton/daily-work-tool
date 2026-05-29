@@ -2,16 +2,56 @@ document.addEventListener("DOMContentLoaded", async () => {
   console.log("インデックス（共通基盤）のJSが正常に読み込まれました");
 
   // ==========================================
+  // 共通のEnterキー誤送信防止処理
+  // ==========================================
+  window.preventFormEnterSubmit = (formId) => {
+    const form = document.getElementById(formId);
+    if (!form) return;
+
+    form.addEventListener("keydown", (event) => {
+      // Enterキーかつ、TEXTAREA（備考欄など）以外なら送信を止める
+      if (event.key === "Enter" && event.target.tagName !== "TEXTAREA") {
+        event.preventDefault();
+        console.log(
+          `共通処理: フォーム [${formId}] でのEnterキーによる送信をブロックしました。`,
+        );
+      }
+    });
+  };
+
+  // ==========================================
   // 共通ローディングの表示・非表示関数
   // ==========================================
-  function showGlobalLoading() {
+  window.showGlobalLoading = function () {
     const loader = document.getElementById("global-loading");
     if (loader) loader.classList.add("show");
-  }
+  };
 
-  function hideGlobalLoading() {
+  window.hideGlobalLoading = function () {
     const loader = document.getElementById("global-loading");
     if (loader) loader.classList.remove("show");
+  };
+
+  // ==========================================
+  // 💡 【追加】ポップオーバーの共通初期化関数（PC・スマホ自動判別）
+  // ==========================================
+  function initGlobalPopovers() {
+    const popoverTriggerList = [].slice.call(
+      document.querySelectorAll('[data-bs-toggle="popover"]'),
+    );
+    popoverTriggerList.map(function (popoverTriggerEl) {
+      // 既に初期化済みの場合はスキップして二重適用を防ぐ
+      if (bootstrap.Popover.getInstance(popoverTriggerEl)) return;
+
+      // 画面幅が768px未満（スマホ）なら 'focus'、それ以上（PC）なら 'hover focus'
+      const isMobile = window.innerWidth < 768;
+      const triggerMode = isMobile ? "focus" : "hover focus";
+
+      return new bootstrap.Popover(popoverTriggerEl, {
+        trigger: triggerMode,
+        delay: { show: 50, hide: 100 },
+      });
+    });
   }
 
   // ==========================================
@@ -113,8 +153,8 @@ document.addEventListener("DOMContentLoaded", async () => {
       window.location.href = "login.html";
     } catch (err) {
       console.error("ログアウト中にエラーが発生しました:", err.message);
-      alert("ログアウトに失敗しました。");
-      hideGlobalLoading(); // 💡 エラー時のみローディングを消す（画面遷移に失敗した時のため）
+      window.showToast("ログアウトに失敗しました。", "error");
+      hideGlobalLoading();
     }
   }
 
@@ -166,11 +206,16 @@ document.addEventListener("DOMContentLoaded", async () => {
    */
   async function loadPage(pageName) {
     try {
-      // 💡 HTMLの取得を始める瞬間にローディング画面を表示
+      // 💡 1. まずは爆速（0.05秒）でローディング（ボカシ）を表示する
       showGlobalLoading();
 
-      const response = await fetch(`./${pageName}.html`);
+      // 💡 【ここが最大のポイント！】
+      // ローディングが画面を完全に覆い尽くすまで「0.05秒」だけ処理をストップさせて、
+      // 画面のチラつきやガタつきがユーザーの目に入るのを完全にシャットアウトします。
+      await new Promise((resolve) => setTimeout(resolve, 50));
 
+      // 💡 2. ボカシの裏に完全に隠れてから、安全に画面の切り替えを開始する
+      const response = await fetch(`./${pageName}.html`);
       if (!response.ok) {
         throw new Error(`ページの読み込みに失敗しました: ${response.status}`);
       }
@@ -181,7 +226,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         dynamicArea.innerHTML = htmlContent;
       }
 
-      // 各画面の初期化JavaScriptが動き終わるのを待つ
+      // 各画面の初期化JavaScriptの実行を待つ
       if (pageName === "main" && typeof initializeMainPage === "function") {
         await initializeMainPage();
       }
@@ -194,6 +239,14 @@ document.addEventListener("DOMContentLoaded", async () => {
       ) {
         await window.initAttendanceCalendar();
       }
+
+      // 💡【引っ越し完了】HTMLが完全に描画された後、共通のポップオーバー初期化を実行
+      initGlobalPopovers();
+
+      // ブラウザが新しい画面を描き切るのを少し待つ
+      await new Promise((resolve) =>
+        requestAnimationFrame(() => requestAnimationFrame(resolve)),
+      );
     } catch (error) {
       console.error("画面の切り替え中にエラーが発生しました:", error);
       if (dynamicArea) {
@@ -204,6 +257,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         `;
       }
     } finally {
+      // 💡 3. すべてが美しく整ったら、フワッとボカシを解除
       hideGlobalLoading();
     }
   }

@@ -17,8 +17,7 @@ async function initializeAdminPage() {
   try {
     // 1. モーダルHTMLを非同期で読み込んで合体
     const response = await fetch("./admin-users-modal.html");
-    if (!response.ok)
-      throw new Error(`モーダルの読み込みエラー: ${response.status}`);
+    if (!response.ok) throw new Error(`モーダルの読み込みエラー: ${response.status}`);
     modalContainer.innerHTML = await response.text();
 
     const userModalElement = document.getElementById("userModal");
@@ -40,8 +39,7 @@ async function initializeAdminPage() {
 
     const companySelect = userModalElement.querySelector("#company_id");
     if (companySelect) {
-      companySelect.innerHTML =
-        '<option value="" selected disabled>選択してください</option>';
+      companySelect.innerHTML = '<option value="" selected disabled>選択してください</option>';
       companies.forEach((company) => {
         const option = document.createElement("option");
         option.value = company.id;
@@ -95,12 +93,8 @@ async function initializeAdminPage() {
     // メールアドレスのリアルタイム重複チェック
     // ==========================================
     const emailInput = document.getElementById("login_email");
-    const emailDuplicateFeedback = document.getElementById(
-      "email_duplicate_feedback",
-    );
-    const emailInvalidFeedback = document.getElementById(
-      "email_invalid_feedback",
-    );
+    const emailDuplicateFeedback = document.getElementById("email_duplicate_feedback");
+    const emailInvalidFeedback = document.getElementById("email_invalid_feedback");
     const submitButton = document.getElementById("submit_button");
 
     if (emailInput) {
@@ -109,8 +103,7 @@ async function initializeAdminPage() {
 
         // 空っぽ、または簡易的な形式チェック（@が含まれていないなど）の場合は処理しない
         if (!email || !email.includes("@")) {
-          if (emailDuplicateFeedback)
-            emailDuplicateFeedback.style.display = "none";
+          if (emailDuplicateFeedback) emailDuplicateFeedback.style.display = "none";
           return;
         }
 
@@ -121,10 +114,7 @@ async function initializeAdminPage() {
           console.log("メールアドレスの重複を確認中...", email);
 
           // Supabaseの user_master から同じメールアドレスを持つユーザーを1件だけ探す
-          let query = supabase
-            .from("user_master")
-            .select("id")
-            .eq("login_email", email);
+          let query = supabase.from("user_master").select("id").eq("login_email", email);
 
           // 💡 編集中の場合は「自分以外のユーザー」で重複がないかを調べる
           if (editUserId) {
@@ -140,16 +130,13 @@ async function initializeAdminPage() {
             console.warn("メールアドレスの重複を検知しました。");
 
             emailInput.classList.add("is-invalid"); // 枠線を赤くする
-            if (emailInvalidFeedback)
-              emailInvalidFeedback.style.display = "none"; // 標準エラーは隠す
-            if (emailDuplicateFeedback)
-              emailDuplicateFeedback.style.display = "block"; // 重複エラーを表示
+            if (emailInvalidFeedback) emailInvalidFeedback.style.display = "none"; // 標準エラーは隠す
+            if (emailDuplicateFeedback) emailDuplicateFeedback.style.display = "block"; // 重複エラーを表示
             if (submitButton) submitButton.disabled = true; // 保存ボタンを押せなくする
           } else {
             // ✅ 重複なし ＝ 安全！
             emailInput.classList.remove("is-invalid");
-            if (emailDuplicateFeedback)
-              emailDuplicateFeedback.style.display = "none";
+            if (emailDuplicateFeedback) emailDuplicateFeedback.style.display = "none";
             if (submitButton) submitButton.disabled = false; // ボタンを元に戻す
           }
         } catch (err) {
@@ -160,8 +147,7 @@ async function initializeAdminPage() {
       // ユーザーが文字を入力し始めたら、一旦エラー表示とボタンのロックを解除する（親切設計）
       emailInput.addEventListener("input", () => {
         emailInput.classList.remove("is-invalid");
-        if (emailDuplicateFeedback)
-          emailDuplicateFeedback.style.display = "none";
+        if (emailDuplicateFeedback) emailDuplicateFeedback.style.display = "none";
         if (submitButton) submitButton.disabled = false;
       });
     }
@@ -185,15 +171,11 @@ async function initializeAdminPage() {
     }
 
     // 確認用ミニモーダルの初期化
-    const confirmDiscardModalElement = document.getElementById(
-      "confirmDiscardModal",
-    );
+    const confirmDiscardModalElement = document.getElementById("confirmDiscardModal");
     const confirmDiscardModal = new bootstrap.Modal(confirmDiscardModalElement);
 
     // メインモーダルの右上×ボタンとキャンセルボタンを狙い撃ち
-    const mainCloseButtons = userModalElement.querySelectorAll(
-      "#cancel_button, .modal-header .btn-close",
-    );
+    const mainCloseButtons = userModalElement.querySelectorAll("#cancel_button, .modal-header .btn-close");
 
     mainCloseButtons.forEach((btn) => {
       btn.addEventListener("click", (event) => {
@@ -210,9 +192,7 @@ async function initializeAdminPage() {
     });
 
     // 確認モーダルで「いいえ（戻る）」を押した場合
-    const discardCancelBtn = document.getElementById(
-      "btn_confirm_discard_cancel",
-    );
+    const discardCancelBtn = document.getElementById("btn_confirm_discard_cancel");
     if (discardCancelBtn) {
       discardCancelBtn.addEventListener("click", (event) => {
         event.preventDefault();
@@ -237,16 +217,15 @@ async function initializeAdminPage() {
         userModal.hide(); // メインの入力画面も閉じる
 
         // 背景の暗幕バグ対策
-        document
-          .querySelectorAll(".modal-backdrop")
-          .forEach((el) => el.remove());
+        document.querySelectorAll(".modal-backdrop").forEach((el) => el.remove());
         document.body.style.overflow = "";
         document.body.style.paddingRight = "";
       });
     }
 
-    // 3. フォームの「保存」設定
+    // 3. フォームの「保存」設定　＆ Enterキーの防護設定
     setupFormSubmit(userModal);
+    window.preventFormEnterSubmit("user_form");
 
     // 一覧表示
     await fetchAndRenderUserList();
@@ -296,8 +275,7 @@ function setupModalForNew(modalEl) {
     form.classList.remove("was-validated"); // バリデーションの赤枠を消す
   }
   if (title) title.textContent = "ユーザー情報の登録";
-  if (passwordLabel)
-    passwordLabel.innerHTML = 'パスワード <span class="text-danger">*</span>';
+  if (passwordLabel) passwordLabel.innerHTML = 'パスワード <span class="text-danger">*</span>';
   if (passwordInput) {
     passwordInput.required = true;
     passwordInput.placeholder = "6〜20文字の半角英数字";
@@ -313,15 +291,6 @@ function setupModalForNew(modalEl) {
 function setupFormSubmit(userModal) {
   const form = document.getElementById("user_form");
   if (!form) return;
-
-  // 入力欄でのEnterキーによる誤送信（暴発）を防止
-  form.addEventListener("keydown", (event) => {
-    // 押されたのがEnterキー、かつ入力欄（INPUT）の中だった場合
-    if (event.key === "Enter" && event.target.tagName === "INPUT") {
-      event.preventDefault(); // フォーム送信（submit）を強制キャンセル
-      console.log("Enterキーによる誤送信を防止しました。");
-    }
-  });
 
   form.addEventListener("submit", async (event) => {
     event.preventDefault(); // ページが勝手にリロードされるのを防ぐ
@@ -371,15 +340,8 @@ function setupFormSubmit(userModal) {
       // 半角英数字のみにマッチする正規表現
       const alphanumericRegex = /^[a-zA-Z0-9]+$/;
 
-      if (
-        password.length < 6 ||
-        password.length > 20 ||
-        !alphanumericRegex.test(password)
-      ) {
-        showToast(
-          "パスワードは6〜20文字の半角英数字で入力してください。",
-          "error",
-        );
+      if (password.length < 6 || password.length > 20 || !alphanumericRegex.test(password)) {
+        showToast("パスワードは6〜20文字の半角英数字で入力してください。", "error");
         submitButton.disabled = false;
         submitButton.innerHTML = originalButtonText;
         return; // 条件に合わない場合は処理をストップ
@@ -399,15 +361,12 @@ function setupFormSubmit(userModal) {
 
         // 💡 【追加】もしパスワード欄に入力があったら、先にAuth（認証）側のパスワードを更新する
         if (password && password.length > 0) {
-          console.log(
-            "パスワードの変更を検知。Edge Functions経由で更新します。",
-          );
+          console.log("パスワードの変更を検知。Edge Functions経由で更新します。");
 
           // 先ほどアップロードした 'update-user-password' を呼び出す
-          const { data: funcData, error: funcError } =
-            await supabase.functions.invoke("update-user-password", {
-              body: { userId: editUserId, password: password },
-            });
+          const { data: funcData, error: funcError } = await supabase.functions.invoke("update-user-password", {
+            body: { userId: editUserId, password: password },
+          });
 
           if (funcError || (funcData && funcData.error)) {
             const errorMsg = funcError ? funcError.message : funcData.error;
@@ -440,12 +399,10 @@ function setupFormSubmit(userModal) {
         console.log("Supabaseへ新規ユーザー登録をリクエスト中...", loginEmail);
 
         // 1. Supabase Auth にアカウントを作成（認証ユーザーの作成）
-        const { data: authData, error: authError } = await supabase.auth.signUp(
-          {
-            email: loginEmail,
-            password: password,
-          },
-        );
+        const { data: authData, error: authError } = await supabase.auth.signUp({
+          email: loginEmail,
+          password: password,
+        });
 
         if (authError) throw authError;
         if (!authData.user) throw new Error("アカウントの作成に失敗しました。");
@@ -502,38 +459,26 @@ async function fetchAndRenderUserList() {
   const mobileContainer = document.getElementById("user_list_mobile");
 
   if (!tbody) {
-    console.warn(
-      "ユーザー一覧テーブル（tbody）が見つからないため、描画をスキップします。",
-    );
+    console.warn("ユーザー一覧テーブル（tbody）が見つからないため、描画をスキップします。");
     return;
   }
 
   try {
     // 1. ユーザー一覧を「登録が古い順（ascending: true）」で取得
-    const { data: users, error: userError } = await supabase
-      .from("user_master")
-      .select("*")
-      .order("create_at", { ascending: true });
+    const { data: users, error: userError } = await supabase.from("user_master").select("*").order("create_at", { ascending: true });
 
     if (userError) throw userError;
 
     // 2. 会社マスターから「ID」と「会社名」の一覧を取得
-    const { data: companies, error: companyError } = await supabase
-      .from("company_master")
-      .select("id, company_name");
+    const { data: companies, error: companyError } = await supabase.from("company_master").select("id, company_name");
 
     if (companyError) {
-      console.warn(
-        "会社名の取得に失敗したため、結合をスキップします:",
-        companyError,
-      );
+      console.warn("会社名の取得に失敗したため、結合をスキップします:", companyError);
     }
 
     // 3. ユーザーデータに、対応する会社名をドッキングする
     const mergedUsers = users.map((user) => {
-      const matchedCompany = companies
-        ? companies.find((c) => c.id === user.company_id)
-        : null;
+      const matchedCompany = companies ? companies.find((c) => c.id === user.company_id) : null;
 
       return {
         ...user,
@@ -569,8 +514,7 @@ function renderUserTable(users, tbody, mobileContainer) {
 
   // 2. データが空の場合の処理
   if (!users || users.length === 0) {
-    tbody.innerHTML =
-      '<tr id="no_data_row"><td colspan="7" class="text-center text-muted py-5">登録されているユーザーがいません。</td></tr>';
+    tbody.innerHTML = '<tr id="no_data_row"><td colspan="7" class="text-center text-muted py-5">登録されているユーザーがいません。</td></tr>';
     if (mobileContainer) {
       mobileContainer.innerHTML = `
         <div id="no_data_mobile" class="text-center py-5 text-muted">
@@ -598,10 +542,7 @@ function renderUserTable(users, tbody, mobileContainer) {
       : '<span class="badge bg-secondary-subtle text-secondary">無効</span>';
 
     // アバター画像の読み込み
-    const avatarPath =
-      user.avatar_url && user.avatar_url !== "default-avatar.png"
-        ? user.avatar_url
-        : "assets/default-avatar.png";
+    const avatarPath = user.avatar_url && user.avatar_url !== "default-avatar.png" ? user.avatar_url : "assets/default-avatar.png";
 
     const avatarImg = `<img src="${avatarPath}" class="rounded-circle" width="32" height="32" style="object-fit: cover; background-color: #f1f5f9;">`;
 
@@ -710,9 +651,7 @@ function setupEditButtonEvents() {
       isFormDirty = false;
 
       const userModalElement = document.getElementById("userModal");
-      const userModal =
-        bootstrap.Modal.getInstance(userModalElement) ||
-        new bootstrap.Modal(userModalElement);
+      const userModal = bootstrap.Modal.getInstance(userModalElement) || new bootstrap.Modal(userModalElement);
 
       if (userModalElement && userModal) {
         await setupModalForEdit(userModalElement, userId);
@@ -738,25 +677,18 @@ async function setupModalForEdit(modalEl, userId) {
 
   if (title) title.textContent = "ユーザー情報の編集";
 
-  if (passwordLabel)
-    passwordLabel.innerHTML =
-      'パスワード <span class="text-muted">(変更する場合のみ入力)</span>';
+  if (passwordLabel) passwordLabel.innerHTML = 'パスワード <span class="text-muted">(変更する場合のみ入力)</span>';
   if (passwordInput) {
     passwordInput.required = false; // 編集時は空欄OKにする
     passwordInput.removeAttribute("minlength"); // 空欄（0文字）を許容するために一度外す
     passwordInput.setAttribute("maxlength", "20");
-    passwordInput.placeholder =
-      "変更しない場合は空欄のまま（変更時は6〜20文字）";
+    passwordInput.placeholder = "変更しない場合は空欄のまま（変更時は6〜20文字）";
   }
 
   try {
     console.log(`Supabaseからユーザー(ID: ${userId})の最新情報を取得中...`);
 
-    const { data: user, error } = await supabase
-      .from("user_master")
-      .select("*")
-      .eq("id", userId)
-      .single();
+    const { data: user, error } = await supabase.from("user_master").select("*").eq("id", userId).single();
 
     if (error) throw error;
 
@@ -767,9 +699,7 @@ async function setupModalForEdit(modalEl, userId) {
       form.querySelector("#role").value = user.role || "staff";
 
       // データベースの状態をドロップダウンに反映
-      form.querySelector("#is_active").value = user.is_active
-        ? "true"
-        : "false";
+      form.querySelector("#is_active").value = user.is_active ? "true" : "false";
 
       form.querySelector("#avatar_url").value = user.avatar_url || "";
 
@@ -795,9 +725,7 @@ async function setupModalForEdit(modalEl, userId) {
           });
         };
 
-        createdAtText.textContent = formatDate(
-          user.created_at || user.create_at,
-        );
+        createdAtText.textContent = formatDate(user.created_at || user.create_at);
         updatedAtText.textContent = formatDate(user.updated_at);
 
         timestampsArea.style.display = "block";
@@ -815,17 +743,10 @@ async function setupModalForEdit(modalEl, userId) {
 function getFriendlyErrorMessage(error) {
   const errorMsg = (error.message || "").toLowerCase();
 
-  if (
-    errorMsg.includes("already registered") ||
-    errorMsg.includes("user_already_exists") ||
-    errorMsg.includes("duplicate key")
-  ) {
+  if (errorMsg.includes("already registered") || errorMsg.includes("user_already_exists") || errorMsg.includes("duplicate key")) {
     return "そのメールアドレスはすでに登録されています。別のメールアドレスを使用してください。";
   }
-  if (
-    errorMsg.includes("password should be") ||
-    errorMsg.includes("weak_password")
-  ) {
+  if (errorMsg.includes("password should be") || errorMsg.includes("weak_password")) {
     return "パスワードは6文字以上の英数字で入力してください。";
   }
   if (errorMsg.includes("network") || errorMsg.includes("failed to fetch")) {
