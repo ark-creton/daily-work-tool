@@ -2,6 +2,29 @@ document.addEventListener("DOMContentLoaded", async () => {
   console.log("インデックス（共通基盤）のJSが正常に読み込まれました");
 
   // ==========================================
+  // ✨ 【追加】共通の便利関数エリア
+  // ==========================================
+
+  // DB更新用：現在時刻をISO形式で取得
+  window.getNowISO = () => new Date().toISOString();
+
+  // ログ出力用：共通フォーマットで保存
+  window.addLogCommon = (tag, message) => {
+    const logArea = document.getElementById("recent_logs_area");
+    if (!logArea) return;
+
+    const now = new Date();
+    const timeStr = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
+    const newLogRow = `${timeStr} 【${tag}】 ${message}`;
+
+    logArea.value = newLogRow + "\n" + logArea.value;
+
+    // LocalStorage保存（今日のキー）
+    const todayKey = `attendance_logs_${new Date().toISOString().split("T")[0]}`;
+    localStorage.setItem(todayKey, logArea.value);
+  };
+
+  // ==========================================
   // 共通のEnterキー誤送信防止処理
   // ==========================================
   window.preventFormEnterSubmit = (formId) => {
@@ -12,9 +35,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       // Enterキーかつ、TEXTAREA（備考欄など）以外なら送信を止める
       if (event.key === "Enter" && event.target.tagName !== "TEXTAREA") {
         event.preventDefault();
-        console.log(
-          `共通処理: フォーム [${formId}] でのEnterキーによる送信をブロックしました。`,
-        );
+        console.log(`共通処理: フォーム [${formId}] でのEnterキーによる送信をブロックしました。`);
       }
     });
   };
@@ -33,12 +54,10 @@ document.addEventListener("DOMContentLoaded", async () => {
   };
 
   // ==========================================
-  // 💡 【追加】ポップオーバーの共通初期化関数（PC・スマホ自動判別）
+  // ポップオーバーの共通初期化関数（PC・スマホ自動判別）
   // ==========================================
   function initGlobalPopovers() {
-    const popoverTriggerList = [].slice.call(
-      document.querySelectorAll('[data-bs-toggle="popover"]'),
-    );
+    const popoverTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="popover"]'));
     popoverTriggerList.map(function (popoverTriggerEl) {
       // 既に初期化済みの場合はスキップして二重適用を防ぐ
       if (bootstrap.Popover.getInstance(popoverTriggerEl)) return;
@@ -59,6 +78,30 @@ document.addEventListener("DOMContentLoaded", async () => {
   // ==========================================
   async function checkAndDisplayUser() {
     try {
+      // 👇 【ここを追加！】ログイン画面が保存したキャッシュがあれば、それを使って一瞬で画面を書き換える
+      const cachedName = localStorage.getItem("cached_user_name");
+      const cachedRole = localStorage.getItem("cached_user_role");
+
+      if (cachedName && cachedRole) {
+        console.log("ログイン画面からの先取りキャッシュを使用します:", { cachedName, cachedRole });
+
+        // ヘッダーとスマホメニューの名前を反映
+        const userNameSpan = document.querySelector(".header-right .user-name");
+        if (userNameSpan) userNameSpan.innerText = `${cachedName} さん`;
+
+        const mobileUserNameSpan = document.querySelector(".sidebar-user-name");
+        if (mobileUserNameSpan) mobileUserNameSpan.innerText = `${cachedName} さん`;
+
+        // 管理者メニューの制御
+        const adminMenuItem = document.getElementById("menu_admin");
+        if (adminMenuItem) {
+          adminMenuItem.style.setProperty("display", cachedRole === "admin" ? "flex" : "none", "important");
+        }
+
+        // 💡 キャッシュで画面が作れたので、重い通信をスルーして先に進む
+        // (裏でのAuthチェックや同期はinitializeApp側のloadPage等に任せる、またはそのまま非同期で裏実行)
+      }
+
       const supabaseClient = window.supabase || supabase;
       if (!supabaseClient) {
         console.error("Supabaseが初期化されていません");
@@ -77,20 +120,13 @@ document.addEventListener("DOMContentLoaded", async () => {
         console.log("ログイン中のAuthユーザーID:", user.id);
 
         /* user_name と一緒に role（権限）も引っ張るようにします */
-        const { data: masterData, error: dbError } = await supabaseClient
-          .from("user_master")
-          .select("user_name, role")
-          .eq("id", user.id)
-          .single();
+        const { data: masterData, error: dbError } = await supabaseClient.from("user_master").select("user_name, role").eq("id", user.id).single();
 
         let userName = "ゲストユーザー";
         let userRole = "staff"; // 失敗したときの初期値（一般スタッフ）を用意
 
         if (dbError) {
-          console.warn(
-            "user_masterからの名前取得に失敗したため、代替値を使用します:",
-            dbError.message,
-          );
+          console.warn("user_masterからの名前取得に失敗したため、代替値を使用します:", dbError.message);
           userName = user.email || "ゲストユーザー";
         } else if (masterData) {
           userName = masterData.user_name;
@@ -132,29 +168,29 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
   }
 
-  // 最初にユーザーチェックを実行（非同期）
-  await checkAndDisplayUser();
-
   // ==========================================
   // ログアウト処理の共通イベント設定
   // ==========================================
   async function handleLogout() {
     try {
-      // ✨【追加】ログアウト通信が始まる瞬間にローディングを表示
-      showGlobalLoading();
-
       const supabaseClient = window.supabase || supabase;
       if (supabaseClient) {
         const { error } = await supabaseClient.auth.signOut();
         if (error) throw error;
         console.log("ログアウト成功");
       }
-      // ログアウト後はログイン画面へ
+
+      // ログアウトに成功したら、LocalStorageのキャッシュも綺麗に掃除しておく
+      localStorage.removeItem("cached_user_name");
+      localStorage.removeItem("cached_user_role");
+
+      // ロードは挟まず、そのままログイン画面へスパッと戻る
       window.location.href = "login.html";
     } catch (err) {
       console.error("ログアウト中にエラーが発生しました:", err.message);
-      window.showToast("ログアウトに失敗しました。", "error");
-      hideGlobalLoading();
+      if (typeof window.showToast === "function") {
+        window.showToast("ログアウトに失敗しました。", "error");
+      }
     }
   }
 
@@ -203,15 +239,15 @@ document.addEventListener("DOMContentLoaded", async () => {
   /**
    * 指定されたHTMLファイルを非同期で読み込んで、メインエリアに表示する関数
    * @param {string} pageName - 読み込むページ名
+   * @param {boolean} isInitial - 最初の自動読み込みかどうか（初期値はfalse）
    */
-  async function loadPage(pageName) {
+  async function loadPage(pageName, isInitial = false) {
     try {
-      // 💡 1. まずは爆速（0.05秒）でローディング（ボカシ）を表示する
-      showGlobalLoading();
+      // 💡 修正ポイント：ログイン直後の最初の起動時（isInitialがtrue）は、ロード画面を回さない！
+      if (!isInitial) {
+        showGlobalLoading();
+      }
 
-      // 💡 【ここが最大のポイント！】
-      // ローディングが画面を完全に覆い尽くすまで「0.05秒」だけ処理をストップさせて、
-      // 画面のチラつきやガタつきがユーザーの目に入るのを完全にシャットアウトします。
       await new Promise((resolve) => setTimeout(resolve, 50));
 
       // 💡 2. ボカシの裏に完全に隠れてから、安全に画面の切り替えを開始する
@@ -226,27 +262,46 @@ document.addEventListener("DOMContentLoaded", async () => {
         dynamicArea.innerHTML = htmlContent;
       }
 
+      // ==================================================================
+      // ✨【追加】メイン画面読み込み時、経費専用モーダルをセットで自動フェッチして合成する
+      // ==================================================================
+      if (pageName === "main") {
+        try {
+          const modalResponse = await fetch("./modal-expense-entry.html");
+          if (modalResponse.ok) {
+            const modalHtml = await modalResponse.text();
+            dynamicArea.insertAdjacentHTML("beforeend", modalHtml);
+            console.log("共通基盤: modal-expense-entry.html をメイン画面に正常に合流させました。");
+          } else {
+            console.warn("共通基盤: modal-expense-entry.html の読み込みに失敗しました。ファイルパスを確認してください。");
+          }
+        } catch (modalErr) {
+          console.error("共通基盤: 経費モーダルのフェッチ中にエラーが発生しました:", modalErr);
+        }
+      }
+
       // 各画面の初期化JavaScriptの実行を待つ
       if (pageName === "main" && typeof initializeMainPage === "function") {
         await initializeMainPage();
       }
+      // ✨【ここを追加！】メイン画面の初期化に続けてカレンダーを描画する
+      if (typeof renderCalendar === "function") {
+        console.log("共通基盤: main画面の同期完了を検知。カレンダーを描画します。");
+        renderCalendar();
+      }
+
       if (pageName === "admin" && typeof initializeAdminPage === "function") {
         await initializeAdminPage();
       }
-      if (
-        pageName === "attendance" &&
-        typeof window.initAttendanceCalendar === "function"
-      ) {
+      if (pageName === "attendance" && typeof window.initAttendanceCalendar === "function") {
         await window.initAttendanceCalendar();
       }
 
-      // 💡【引っ越し完了】HTMLが完全に描画された後、共通のポップオーバー初期化を実行
+      // HTMLが完全に描画された後、共通のポップオーバー初期化を実行
       initGlobalPopovers();
 
       // ブラウザが新しい画面を描き切るのを少し待つ
-      await new Promise((resolve) =>
-        requestAnimationFrame(() => requestAnimationFrame(resolve)),
-      );
+      await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
     } catch (error) {
       console.error("画面の切り替え中にエラーが発生しました:", error);
       if (dynamicArea) {
@@ -257,24 +312,44 @@ document.addEventListener("DOMContentLoaded", async () => {
         `;
       }
     } finally {
-      // 💡 3. すべてが美しく整ったら、フワッとボカシを解除
-      hideGlobalLoading();
+      // 💡 修正ポイント：最初の起動時（isInitialがtrue）は、ロード画面を消す処理もしない（最初から出ていないため）
+      if (!isInitial) {
+        hideGlobalLoading();
+      }
     }
   }
 
-  // 初期実行時（ログイン直後など）の最初のタブ名を設定
-  document.title = "メイン - 勤怠レポートツール";
+  // ==========================================
+  // 🚀 初期起動・画面初期化プロセス（完全同期・一撃出現版）
+  // ==========================================
+  async function initializeApp() {
+    try {
+      // 1. ログイン画面が保存したキャッシュを使って、一瞬でヘッダーに名前を反映
+      await checkAndDisplayUser();
 
-  // 初期実行：最初のメニュー（メイン）にアクティブ色をつける
-  const homeItem = document.querySelector(
-    '.sidebar-nav .nav-item[data-page="home"]',
-  );
-  if (homeItem) {
-    homeItem.classList.add("active");
+      // 2. 最初のタブ名を設定
+      document.title = "メイン - 勤怠レポートツール";
+
+      // 3. 最初のメニュー（メイン）にアクティブ色をつける
+      const homeItem = document.querySelector('.sidebar-nav .nav-item[data-page="home"]');
+      if (homeItem) {
+        homeItem.classList.add("active");
+      }
+
+      await loadPage("main", true);
+
+      // 🔥 5. 【すべての準備が100%完了！！！】
+      // ガワも中身もデータもすべてが組み上がったので、ここで満を持して「体全体」をスパッと出現させる！
+      document.body.style.opacity = "1";
+    } catch (initError) {
+      console.error("アプリ初期化エラー:", initError);
+      // 万が一エラーが起きた場合は、画面が真っ白のまま固まらないように保険で表示させる
+      document.body.style.opacity = "1";
+    }
   }
 
-  // 初期実行：アプリ起動時は「main.html」を自動で読み込む
-  loadPage("main");
+  // アプリの初期化処理を実行
+  initializeApp();
 
   // サイドバーのメニュークリックイベントの監視
   navItems.forEach((item) => {
@@ -282,11 +357,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       const clickedItem = e.target.closest(".nav-item");
       if (!clickedItem) return;
 
-      if (
-        clickedItem.classList.contains("mobile-logout-item") ||
-        clickedItem.classList.contains("logout-btn")
-      )
-        return;
+      if (clickedItem.classList.contains("mobile-logout-item") || clickedItem.classList.contains("logout-btn")) return;
 
       // 一旦すべてのメニューから active クラスを消す
       navItems.forEach((i) => i.classList.remove("active"));

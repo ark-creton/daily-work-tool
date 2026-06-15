@@ -55,8 +55,8 @@ document.addEventListener("DOMContentLoaded", () => {
         /* ====================================================================
          * ✨ Supabase 認証処理の組み込み
          * ==================================================================== */
-        const supabaseClient = window.supabase || supabase; 
-        
+        const supabaseClient = window.supabase || supabase;
+
         if (!supabaseClient) {
           throw new Error("Supabaseクライアントが初期化されていません。");
         }
@@ -77,21 +77,33 @@ document.addEventListener("DOMContentLoaded", () => {
         // 🟢 ログイン成功時
         if (data && data.user) {
           console.log("ログイン成功！ユーザー情報:", data.user);
-          
-          // メイン画面へ遷移
-          window.location.href = "index.html"; 
-        }
 
+          try {
+            // 💡 ログイン画面（ログイン中...）のままで、ユーザー名と権限を先読みする
+            const { data: masterData } = await supabaseClient.from("user_master").select("user_name, role").eq("id", data.user.id).single();
+
+            if (masterData) {
+              console.log("ユーザーデータをログイン画面側で先取りしました:", masterData);
+              // index.htmlへ引き継ぐためにLocalStorageに一時保存
+              localStorage.setItem("cached_user_name", masterData.user_name);
+              localStorage.setItem("cached_user_role", masterData.role);
+            }
+          } catch (e) {
+            console.warn("データ先読みに失敗しましたが、遷移を続行します:", e.message);
+          }
+
+          // 🚀 すべての裏方準備がログイン画面のままで完了したので、満を持してジャンプ！
+          window.location.href = "index.html";
+        }
       } catch (err) {
         console.error("予期せぬ例外が発生しました:", err);
         showError("システムエラーが発生しました。時間を置いて再度お試しください。", emailInput);
-      } finally {
-        // 🔄 処理が終わったら（エラー時など）ボタンを元に戻す
+
         if (loginBtn) {
           loginBtn.disabled = false;
           loginBtn.innerText = "ログイン";
         }
-      }
+      } 
     });
   }
 

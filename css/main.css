@@ -6,7 +6,7 @@
 .dashboard-container {
   display: flex;
   flex-direction: column;
-  gap: 20px; /* パーツ同士の縦の間隔 */
+  gap: 20px;
   width: 100%;
 }
 
@@ -15,24 +15,21 @@
    -------------------------------------------------- */
 .status-clock-section {
   display: flex;
-  gap: 20px; /* 時計カードとボタンカードの間隔 */
+  gap: 20px;
 }
 
-/* 時計カードの基本設定（ボタンカードは後述の個別設定で上書き） */
 .clock-card,
 .button-group-card {
   background-color: #ffffff;
   border: 1px solid #dee2e6;
   border-radius: 12px;
   padding: 20px;
-  flex: 1; /* 1:1 の等しい幅で横並びにする */
+  flex: 1;
 }
 
 /* --------------------------------------------------
    上段・左側：時計カード内部のデザイン
    -------------------------------------------------- */
-
-/* カード内のヘッダー（日付とバッジを横並びに） */
 .clock-card .card-header-title {
   display: flex;
   justify-content: space-between;
@@ -40,26 +37,23 @@
   margin-bottom: 15px;
 }
 
-/* 日付・曜日の文字スタイル */
 .date-display {
-  font-size: 1rem; /* 時計の邪魔をしない、程よい大きさに */
-  font-weight: bold; /* しっかり太字で読みやすく */
-  color: #55555c; /* 濃すぎず薄すぎない落ち着いたグレー */
-  letter-spacing: 0.5px; /* 文字の間隔を少しだけ広げてスマートに */
+  font-size: 1rem;
+  font-weight: bold;
+  color: #55555c;
+  letter-spacing: 0.5px;
 }
 
-/* デジタル時計の文字スタイル */
 .time-display {
-  font-size: 2.8rem; /* 文字を大きく */
-  font-weight: 700; /* 太字 */
-  color: #2b2c3a; /* 濃いめのグレー（見やすさ重視） */
-  text-align: center; /* 中央寄せ */
-  letter-spacing: 2px; /* 数字の間隔を少し広げてデジタル感を出す */
+  font-size: 2.8rem;
+  font-weight: 700;
+  color: #2b2c3a;
+  text-align: center;
+  letter-spacing: 2px;
   padding: 10px 0;
-  font-variant-numeric: tabular-nums; /* 数字の幅を均等にしてガタつきを防ぐ */
+  font-variant-numeric: tabular-nums;
 }
 
-/* --- ステータス表記のスタイル --- */
 .status-badge {
   padding: 6px 14px;
   font-size: 0.85rem;
@@ -70,28 +64,24 @@
   transition: all 0.3s ease;
 }
 
-/* 未出勤 */
 .status-badge.status-default {
   background-color: #f1f3f5;
   color: #495057;
   border: 1px solid #ced4da;
 }
 
-/* ①出勤中 */
 .status-badge.status-working {
   background-color: #e3f2fd !important;
   color: #0d6efd !important;
   border: 1px solid #badceb !important;
 }
 
-/* ②外出中 */
 .status-badge.status-break {
   background-color: #fff3cd !important;
   color: #856404 !important;
   border: 1px solid #ffeeba !important;
 }
 
-/* ③退勤済 */
 .status-badge.status-returned {
   background-color: #f8d7da !important;
   color: #842029 !important;
@@ -101,25 +91,21 @@
 /* --------------------------------------------------
    上段・右側：打刻ボタンエリア
    -------------------------------------------------- */
-
-/* ボタン全体を包む箱（時計カードとの共通枠線を撤廃） */
 .button-group-card {
   background: none !important;
   border: none !important;
   padding: 0 !important;
   display: flex;
   flex-direction: column;
-  gap: 12px; /* 各ボタン・エリア間のすき間 */
-  justify-content: center; /* 時計カードと高さを中央で合わせる */
+  gap: 12px;
+  justify-content: center;
 }
 
-/* 上段の「出勤」「退勤」を横並びにする箱 */
 .action-buttons-top {
   display: flex;
-  gap: 15px; /* 出勤ボタンと退勤ボタンの間隔 */
+  gap: 15px;
 }
 
-/* 3つのボタン（出勤・退勤・外出）の共通基本スタイル */
 .button-group-card .btn {
   font-size: 1.1rem;
   font-weight: bold;
@@ -131,35 +117,25 @@
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
 }
 
-/* --------------------------------------------------
-   打刻ボタンのレイアウト ＆ 統一感カラー（サイズ固定版）
-   -------------------------------------------------- */
-
-/* 出勤・退勤ボタン（上の段）は横に2等分して広げる */
 .btn-clock-in,
 .btn-clock-out {
   flex: 1;
 }
 
-/* 外出ボタン（下の段）は横幅いっぱいに広げる */
 .action-buttons-bottom,
 .btn-break {
   width: 100%;
 }
 
-/* 各ボタンの個別カラー設定（枠線なし・ステータスと同トーン） */
-
-/* ① 出勤ボタン：爽やかで優しいペールブルー */
 .btn-clock-in {
   background-color: #e3f2fd;
   color: #0d6efd;
-  border: none !important; /* 枠線を完全に無くしてサイズ崩れを防止 */
+  border: none !important;
 }
 .btn-clock-in:hover:not(:disabled) {
   background-color: #cee7fc;
 }
 
-/* ② 退勤ボタン：上品で落ち着いたローズピンク */
 .btn-clock-out {
   background-color: #f8d7da;
   color: #842029;
@@ -169,7 +145,6 @@
   background-color: #f5c2c7;
 }
 
-/* ③ 外出ボタン：柔らかなアンバーベージュ */
 .btn-break {
   background-color: #fff3cd;
   color: #856404;
@@ -179,42 +154,37 @@
   background-color: #ffeeba;
 }
 
-/* ボタンを押した瞬間の「ポチッ」とした凹み演出 */
 .button-group-card .btn:active:not(:disabled) {
   transform: scale(0.97);
   box-shadow: none;
 }
 
-/* ==================================================
-   グレーアウト（非活性：disabled）の状態
-   ================================================== */
 .button-group-card .btn:disabled {
   background-color: #f8f9fa !important;
   color: #ced4da !important;
-  border: none !important; /* 枠線を無しに */
-  opacity: 0.5; /* 半透明で存在感を薄める */
+  border: none !important;
+  opacity: 0.5;
   cursor: not-allowed;
   box-shadow: none !important;
   transform: none !important;
 }
+
 /* --------------------------------------------------
-   上段・右側：当日備考入力エリア（追加機能）
+   上段・右側：当日備考入力エリア
    -------------------------------------------------- */
 .today-remarks-area {
   margin-top: 5px;
   width: 100%;
 }
 
-/* 入力欄とボタンを横並びにする箱 */
 .remarks-input-group {
   display: flex;
   gap: 10px;
   width: 100%;
 }
 
-/* 備考のテキスト入力欄 */
 .remarks-input {
-  flex: 1; /* 入力欄を限界まで広げる */
+  flex: 1;
   height: 42px;
   font-size: 0.9rem;
   padding: 8px 12px;
@@ -227,14 +197,12 @@
     box-shadow 0.2s;
 }
 
-/* 入力欄にフォーカスした時の青い光 */
 .remarks-input:focus {
   border-color: #86b7fe;
   outline: 0;
   box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
 }
 
-/* 備考保存ボタン（こだわりの爽やかブルーグレー） */
 .btn-save-remarks {
   height: 42px;
   padding: 0 20px !important;
@@ -255,14 +223,41 @@
 }
 
 .btn-save-remarks:active {
-  transform: scale(0.97) !important; /* 他のボタンの凹み具合(0.97)と統一 */
+  transform: scale(0.97) !important;
+}
+
+.btn-expense-trigger {
+  height: 42px;
+  padding: 0 16px !important;
+  background-color: #ffffff !important;
+  color: #5c6bc0 !important;
+  border: 1px solid #5c6bc0 !important;
+  border-radius: 8px !important;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02) !important;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  transition:
+    background-color 0.2s,
+    border-color 0.2s,
+    color 0.2s,
+    transform 0.1s;
+}
+
+.btn-expense-trigger:hover {
+  background-color: #e8eaf6 !important;
+  border-color: #5c6bc0 !important;
+  color: #333333 !important;
+}
+
+.btn-expense-trigger:active {
+  transform: scale(0.97) !important;
 }
 
 /* --------------------------------------------------
    中段：直近の打刻内容（勤怠ログ）エリア
    -------------------------------------------------- */
-
-/* ログエリア全体の箱 */
 .logs-section {
   background-color: #ffffff;
   border: 1px solid #dee2e6;
@@ -271,253 +266,335 @@
   width: 100%;
 }
 
-/* 「直近の打刻内容（勤怠ログ）」という見出し文字 */
 .logs-section .section-title {
   font-size: 1rem;
   font-weight: bold;
   color: #55555c;
   margin-bottom: 12px;
+  display: flex;
+  align-items: center;
 }
 
-/* ログを表示するテキストエリア（textarea）の装飾 */
 .logs-textarea {
-  background-color: #f8f9fa !important; /* 読み取り専用とわかるように薄いグレーに */
+  background-color: #f8f9fa !important;
   border: 1px solid #e9ecef !important;
   border-radius: 8px !important;
   color: #495057 !important;
-  font-family:
-    "Courier New", Courier, monospace; /* 文字の幅が揃うフォント（ログが見やすくなります） */
+  font-family: "Courier New", Courier, monospace;
   font-size: 0.9rem !important;
-  line-height: 1.6 !important; /* 行の間隔を少し広げて読みやすく */
+  line-height: 1.6 !important;
   padding: 12px !important;
-  resize: none; /* ユーザーがマウスで右下のつまみをドラッグしてサイズ変更できないように固定 */
+  resize: none;
 }
 
-/* テキストエリアにカーソルが当たっても、変に青く光らせない設定 */
 .logs-textarea:focus {
   border-color: #e9ecef !important;
   box-shadow: none !important;
 }
 
-/* --------------------------------------------------
-   中段下：レポート新規作成ボタンエリア
-   -------------------------------------------------- */
+/* ==================================================
+   📦 枠組み：カレンダー & レポート土台枠（常時表示・左右分割配置版）
+   ================================================== */
 
-/* ボタンを配置するエリア全体の調整 */
-.report-action-section {
-  width: 100%;
-  display: flex;
-  justify-content: flex-end; /* ボタンを右寄せに配置（PC時） */
-  margin: 5px 0; /* 上下のパーツとの程よいすき間 */
-}
-
-/* レポート新規作成ボタン本体の装飾 */
-.btn-new-report {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px; /* プラス書類アイコンと文字の間隔 */
-  background-color: #69c092; /* 爽やかで目を引くフォレストグリーン */
-  color: #ffffff;
-  font-size: 1rem;
-  font-weight: bold;
-  padding: 12px 24px; /* 押しやすいように内側の余白をしっかり確保 */
-  border: none;
-  border-radius: 8px; /* 柔らかい角丸 */
-  cursor: pointer;
-  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.08); /* ほんのり立体感を出す影 */
-  transition:
-    background-color 0.2s,
-    transform 0.1s,
-    box-shadow 0.2s;
-}
-
-/* アイコン（bi-file-earmark-plus）の大きさを少し調整 */
-.btn-new-report i {
-  font-size: 1.15rem;
-}
-
-/* ボタンにマウスを乗せた時（少し深みのある緑に） */
-.btn-new-report:hover {
-  background-color: #5aad80;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.12); /* 影を少し強くして浮き上がる演出 */
-}
-
-/* ボタンをポチッと押した時の凹み効果 */
-.btn-new-report:active {
-  transform: scale(0.97);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-}
-
-/* --------------------------------------------------
-   下段：カレンダー ＆ レポート一覧（PC時は横並び）
-   -------------------------------------------------- */
 .content-grid-section {
-  display: flex;
-  gap: 20px;
-  width: 100%;
-  max-width: 100%; /* 絶対に画面幅を超えさせない */
-  box-sizing: border-box;
+  display: flex !important;
+  gap: 20px !important;
+  height: auto !important;
 }
 
-/* カレンダーとレポート一覧の共通カード設定 */
 .grid-card {
-  background-color: #ffffff;
-  border: 1px solid #dee2e6;
-  border-radius: 12px;
-  padding: 20px;
-  flex: 1;
-  min-width: 0; /* 【★超重要】Flexbox内の子要素が横にはみ出すのを防ぐ魔法の呪文 */
-  box-sizing: border-box;
+  height: auto !important;
+  display: flex !important;
+  flex-direction: column !important;
+  overflow: visible !important;
+  background-color: #ffffff !important;
+  border: 1px solid #dee2e6 !important;
+  border-radius: 12px !important;
+  padding: 20px !important;
+  flex: 1 !important;
+  min-width: 0 !important;
+  box-sizing: border-box !important;
 }
 
-/* カードの見出し部分 */
+/* 📄 タイトル行ヘッダー（見出しは左、ボタン・プルダウンは右端に引き離す） */
 .card-header-toggle {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 15px;
-  width: 100%;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important; /* ➔ これで綺麗に左右の端へ分かれます */
+  margin-bottom: 15px !important;
+  width: 100% !important;
+  flex-shrink: 0 !important;
 }
 
-/* 見出しのテキスト */
-.grid-card .section-title {
-  font-size: 1rem;
+/* 📦 各カード内の中身エリア */
+.card-body-content {
+  flex: 1 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  min-height: 0 !important;
+  margin-top: 10px !important;
+}
+
+/* 📅 カレンダーの枠組み */
+.custom-calendar {
+  width: 100%;
+  height: 100% !important;
+  display: flex !important;
+  flex-direction: column !important;
+  min-height: 280px !important;
+}
+
+/* 曜日行 */
+.calendar-weekdays {
+  display: grid !important;
+  grid-template-columns: repeat(7, 1fr) !important;
+  flex-shrink: 0 !important;
+  text-align: center;
+  border-bottom: 1px solid #dee2e6;
   font-weight: bold;
-  color: #55555c;
+  margin-bottom: 6px !important;
 }
 
-/* プルダウンメニュー（セレクトボックス）の横幅を固定して暴走を防ぐ */
-.grid-card .form-select-sm {
-  width: 110px !important; /* ★横幅をカチッと固定してはみ出しを強制ストップ */
-  font-size: 0.85rem;
-  border-radius: 6px;
-  cursor: pointer;
-}
-
-/* --------------------------------------------------
-   下段・左側：カレンダーの仮表示エリア（高さを安全に）
-   -------------------------------------------------- */
-.calendar-placeholder {
-  background-color: #f8f9fa;
-  border: 1px dashed #ced4da;
-  border-radius: 8px;
-  min-height: 200px; /* ★固定の高さではなく、最低限の高さにして縦の突き抜けを防止 */
-  padding: 40px 10px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #adb5bd;
-  font-size: 0.95rem;
-  box-sizing: border-box;
-}
-
-/* --------------------------------------------------
-   下段・右側：レポート一覧 ＆ ページネーション（安全版）
-   -------------------------------------------------- */
-
-/* レポート一覧を縦に並べる箱 */
-.report-list-group {
-  display: flex;
-  flex-direction: column;
-  gap: 8px; /* 行と行のすき間 */
-  margin-bottom: 15px;
-  width: 100%;
-}
-
-/* レポートの1行（日付・タイトル・矢印） */
-.report_row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 10px 12px;
-  background-color: #f8f9fa;
-  border: 1px solid #e9ecef;
-  border-radius: 8px;
-  font-size: 0.9rem;
+.calendar-weekdays > div {
+  font-size: 0.72rem !important;
   color: #495057;
-  width: 100%;
-  box-sizing: border-box; /* はみ出し防止 */
-  transition: all 0.2s ease;
+  padding-bottom: 6px;
 }
 
-/* クリックできるレポート項目のホバー演出 */
-.clickable-report-item {
-  cursor: pointer;
+.calendar-weekdays > div:nth-child(1) {
+  color: #dc3545 !important;
 }
-.clickable-report-item:hover {
-  background-color: #f0f2f5; /* 背景を少し濃く */
-  border-color: #ced4da;
-  transform: translateX(3px); /* 右にちょこっと動く可愛い演出 */
+.calendar-weekdays > div:nth-child(7) {
+  color: #0d6efd !important;
 }
 
-/* レポート内の日付 */
-.report-date {
+/* 日付グリッド全体 */
+#calendar-days {
+  display: grid !important;
+  grid-template-columns: repeat(7, 1fr) !important;
+  grid-auto-rows: 1fr !important;
+  gap: 6px !important;
+  padding: 0px 4px 4px 4px !important;
+  width: 100% !important;
+  height: 100% !important;
+  flex-grow: 1 !important;
+  box-sizing: border-box !important;
+}
+
+#calendar-days > div {
+  position: relative !important;
+  display: flex !important;
+  flex-direction: column !important; /* 中身を縦並びにする */
+  padding: 6px !important;
+  border: 1px solid #e9ecef !important;
+  background-color: #ffffff !important;
+  border-radius: 6px !important;
+}
+
+#calendar-days > div.is-sat {
+  color: #0d6efd !important;
+}
+
+#calendar-days > div.is-sunday,
+#calendar-days > div.is-holiday {
+  color: #dc3545 !important;
+}
+
+#calendar-days > div.is-today {
+  border: 1px solid #9fa8da !important;
+  color: #4f5b93 !important;
+  font-weight: bold !important;
+  box-shadow: inset 0 0 0 1px #9fa8da !important;
+}
+
+/* マスの中の要素配置（左上固定用） */
+.calendar-day-header {
+  display: flex !important;
+  align-items: center !important; /* これで高さが中央揃えになります */
+  justify-content: flex-start !important;
+  gap: 6px !important;
+  position: absolute !important;
+  top: 6px !important;
+  left: 6px !important;
+  width: calc(100% - 12px) !important;
+  pointer-events: none; /* 下の要素と干渉させない */
+}
+
+.day-number {
+  font-size: 0.8rem !important;
+  font-weight: bold !important;
+  line-height: 1 !important;
+  color: inherit;
+}
+
+.calendar-day-badge-area {
+  display: flex !important;
+  align-items: center !important;
+  gap: 4px !important;
+  pointer-events: auto; /* ラベルはクリックできるようにする */
+}
+
+.cal-status-text {
+  font-size: 0.65rem;
+  padding: 1px 4px;
+  border-radius: 3px;
   font-weight: bold;
-  color: #6c757d;
-  margin-right: 15px;
-  white-space: nowrap; /* 日付が途中で改行されるのを防ぐ */
-}
-
-/* レポート内のタイトル */
-.report-summary {
-  flex: 1;
   white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis; /* 【プロの技】文字が長すぎたら自動で「...」にする */
-  min-width: 0; /* タイトルが突っ張ってはみ出るのを防ぐ魔法 */
+  line-height: 1.2;
+}
+/* 💚 有給：白背景に濃い緑の文字・枠線 */
+.label-paid {
+  background-color: #ffffff !important;
+  color: #15803d !important;
+  border: 1px solid #bbf7d0 !important;
+  font-size: 0.65rem !important;
+  padding: 1px 4px !important;
+  border-radius: 4px !important;
+  font-weight: bold !important;
+  white-space: nowrap !important;
 }
 
-/* レポート右端の「＞」アイコン */
-.report_row .bi-chevron-right {
-  color: #adb5bd;
-  font-size: 0.85rem;
-  margin-left: 10px;
+/* 🖤 欠勤：薄いグレー背景に濃いグレーの文字 */
+.label-absent {
+  background-color: #cbd5e1 !important;
+  color: #475569 !important;
+  border: 1px solid #94a3b8 !important;
+  font-size: 0.65rem !important;
+  padding: 1px 4px !important;
+  border-radius: 4px !important;
+  font-weight: bold !important;
+  white-space: nowrap !important;
 }
 
-/* ページネーション（前へ 1 次へ）の調整 */
-.reports-pagination {
-  margin-top: auto; /* カードの一番下に綺麗に押しつける */
-  width: 100%;
+.calendar-day-body {
+  position: absolute !important;
+  top: 6px !important;
+  left: 6px !important;
+  width: calc(100% - 12px) !important;
+  pointer-events: none;
 }
-.reports-pagination .page-link {
-  color: #6c757d;
-  border-radius: 4px;
+
+.calendar-icons-area {
+  display: flex !important;
+  align-items: center !important;
+  gap: 4px !important;
+  pointer-events: auto;
 }
-/* ページ現在地（1）に、お気に入りのブルーグレーを連動！ */
-.reports-pagination .page-item.active .page-link {
-  background-color: #8ea3c2;
-  border-color: #8ea3c2;
-  color: #ffffff;
+
+.cal-icon-working {
+  color: #7986cb !important;
+  font-size: 0.9rem !important;
+}
+.cal-icon-done {
+  color: #61b4ce !important;
+  font-size: 0.9rem !important;
+}
+
+#calendar-days > div.is-other-month {
+  color: #c1c9d0 !important;
+  background-color: #fafbfc !important;
+  border-color: #f1f3f5 !important;
+}
+#calendar-days > div.is-other-month .day-number {
+  color: #c1c9d0 !important;
+  font-weight: normal !important;
+}
+
+/* --------------------------------------------------
+   過去のレポート：新規作成ボタン（淡い緑色スタイル）
+   -------------------------------------------------- */
+.btn-create-report {
+  background-color: #e8f5e9 !important; /* 出勤や外出に合わせた淡いパステル緑 */
+  color: #2e7d32 !important; /* 文字は視認性の良い濃いめの緑 */
+  font-weight: bold !important;
+  font-size: 0.85rem !important;
+  padding: 4px 12px !important;
+  border: none !important;
+  border-radius: 6px !important;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05) !important;
+  transition: all 0.2s ease !important;
+}
+
+/* マウスホバー時：少し濃いめの淡い緑に */
+.btn-create-report:hover:not(:disabled) {
+  background-color: #c8e6c9 !important;
+  color: #1b5e20 !important;
+}
+
+/* ボタンクリック時：少し縮むアニメーション */
+.btn-create-report:active {
+  transform: scale(0.97) !important;
+  box-shadow: none !important;
 }
 
 /* ==================================================
-   メイン画面：スマホ用レイアウト (767px以下)
+   📱 メイン画面：スマホ用レイアウト (767px以下)
    ================================================== */
 @media (max-width: 767px) {
-  /* PC時に横並びだったエリアを縦並びにリセット */
   .status-clock-section,
   .content-grid-section {
     flex-direction: column;
     gap: 15px;
   }
 
-  /* タップしやすいように見出しの余白を調整 */
-  .card-header-toggle {
-    margin-bottom: 0;
-    cursor: pointer;
-    padding: 5px 0;
+  .grid-card {
+    padding: 15px 10px !important;
   }
 
-  /* 初期状態は「閉」にするため非表示に */
-  .card-body-content {
-    display: none;
-    padding-top: 15px;
+  .custom-calendar {
+    min-height: 300px !important;
   }
 
-  /* スマホメニューが開いた（activeになった）時の中身表示 */
-  .grid-card.accordion-active .card-body-content {
-    display: block;
+  #calendar-days {
+    gap: 4px !important;
+    padding: 0px 2px 4px 2px !important;
+  }
+
+  .day-number {
+    font-size: 0.7rem !important;
+  }
+  .cal-status-text {
+    font-size: 0.55rem !important;
+    padding: 0px 2px !important;
+  }
+  .calendar-icons-area {
+    gap: 2px !important;
+    justify-content: center !important;
+  }
+  .cal-icon-working,
+  .cal-icon-done {
+    font-size: 0.75rem !important;
   }
 }
 
+/* ==========================================================
+   🚨 JSによる上書きやアコーディオン表示バグを防ぐ強制表示設定
+   ========================================================== */
+#collapseLogs,
+#collapseCalendar,
+#collapseReports {
+  display: block !important;
+  visibility: visible !important;
+  height: auto !important;
+  opacity: 1 !important;
+}
 
+/* ==========================================================
+   経費登録モーダル用のスクロールバーカスタマイズ
+   ========================================================== */
+#expense_entry_list {
+  scrollbar-width: thin !important;
+}
+#expense_entry_list::-webkit-scrollbar {
+  width: 5px !important;
+}
+#expense_entry_list::-webkit-scrollbar-track {
+  background: transparent !important;
+}
+#expense_entry_list::-webkit-scrollbar-thumb {
+  background-color: rgba(136, 141, 197, 0.3) !important;
+  border-radius: 10px !important;
+}
+#expense_entry_list::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(136, 141, 197, 0.6) !important;
+}

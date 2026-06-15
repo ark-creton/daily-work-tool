@@ -1,0 +1,83 @@
+<div class="modal fade" id="expenseEntryModal" data-bs-backdrop="static" tabindex="-1" aria-labelledby="expenseEntryModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-md">
+    <div class="modal-content border-0 shadow">
+      <div class="modal-header border-bottom-0 py-3 px-4 d-flex justify-content-between align-items-center">
+        <div class="d-flex align-items-center gap-3">
+          <h5 class="modal-title fw-bold text-dark fs-5 m-0 p-0" id="expenseEntryModalLabel">経費登録</h5>
+
+          <span
+            id="expense_modal_date_display"
+            class="fw-bold text-dark border rounded-pill d-inline-flex align-items-center justify-content-center bg-light"
+            style="width: 160px; height: 38px; line-height: 1; padding: 0; font-size: 0.95rem; letter-spacing: -0.06em; text-indent: 0.06em"
+            >-</span
+          >
+        </div>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" style="box-shadow: none !important"></button>
+      </div>
+
+      <div class="modal-body px-4 pt-2 pb-3">
+        <form id="expense_entry_form" novalidate>
+          <div class="card border-0 p-3 rounded-3 shadow-sm expense-memo-card d-flex flex-column" style="min-height: 380px">
+            <div class="d-flex justify-content-between align-items-center">
+              <label class="form-label fw-bold small m-0 d-flex align-items-center expense-memo-label">
+                <i class="bi-file-earmark-text me-1 fs-5"></i>
+                <span style="letter-spacing: 0.05em">経費明細</span>
+              </label>
+            </div>
+
+            <div class="pt-3 d-flex flex-column flex-grow-1 w-100" style="overflow: hidden">
+              <div
+                id="expense_entry_list"
+                class="expense-memo-list mb-3 px-1"
+                style="max-height: 200px !important; overflow-y: auto !important; overflow-x: hidden !important"
+              ></div>
+
+              <div class="d-flex justify-content-between align-items-center expense-memo-footer">
+                <div class="d-flex gap-2">
+                  <button
+                    type="button"
+                    id="btn_add_expense_entry_row"
+                    class="btn btn-sm bg-white shadow-sm rounded-pill px-3 fw-bold expense-add-btn"
+                  >
+                    <i class="bi bi-pencil-fill small me-1"></i>経費を追加
+                  </button>
+
+                  <button type="button" id="btn_clear_all_expenses" class="btn btn-sm btn-outline-danger shadow-sm rounded-pill px-3 fw-bold">
+                    <i class="bi bi-trash3-fill small me-1"></i>一括クリア
+                  </button>
+                </div>
+
+                <div class="fw-bold small expense-total-text">
+                  合計:
+                  <span id="expense_entry_total_display" class="fs-4 mx-1 fw-bold" style="font-variant-numeric: tabular-nums">0</span>円
+                </div>
+              </div>
+            </div>
+          </div>
+        </form>
+      </div>
+
+      <div class="modal-footer border-top-0 px-4 py-3 d-flex align-items-center">
+        <div class="d-flex gap-2 ms-auto">
+          <button
+            type="button"
+            id="btn_cancel_expense_entry"
+            class="btn btn-sm btn-link text-decoration-none text-muted fw-bold"
+            data-bs-dismiss="modal"
+          >
+            閉じる
+          </button>
+          <button
+            type="submit"
+            id="btn_save_expense_entry"
+            form="expense_entry_form"
+            class="btn btn-sm px-4 py-2 rounded-pill fw-bold shadow-sm text-white"
+            style="background-color: #888dc5; border: none"
+          >
+            <i class="bi bi-check2-circle me-1"></i> 登録する
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

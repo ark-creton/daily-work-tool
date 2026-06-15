@@ -18,84 +18,86 @@
       </div>
 
       <div class="today-remarks-area">
-        <div class="remarks-input-group">
+        <div class="remarks-input-group d-flex gap-2 align-items-center">
           <input
             type="text"
             id="today_remarks_input"
             class="form-control remarks-input"
-            placeholder="本日の備考（遅刻理由等）を入力"
+            placeholder="本日の備考を入力"
             maxlength="100"
+            autocomplete="off"
           />
           <button id="btn_save_remarks" class="btn btn-save-remarks">保存</button>
+
+          <button
+            id="btn_open_expense_modal"
+            class="btn btn-outline-primary btn-expense-trigger d-flex align-items-center gap-1"
+            data-bs-target="#expenseEntryModal"
+          >
+            <i class="bi bi-currency-yen"></i>経費登録
+          </button>
         </div>
       </div>
     </div>
   </div>
 
   <div class="logs-section">
-    <div class="section-title">直近の打刻内容（勤怠ログ）</div>
-    <textarea
-      id="recent_logs_area"
-      class="form-control logs-textarea"
-      readonly
-      rows="4"
-      placeholder="打刻履歴や備考の保存ログがここに表示されます"
-    ></textarea>
-  </div>
-
-  <div class="report-action-section">
-    <button id="btn_new_report" class="btn btn-new-report"><i class="bi bi-file-earmark-plus"></i> レポート新規作成</button>
+    <div class="section-title">
+      <span>直近の打刻内容（勤怠ログ）</span>
+    </div>
+    <div id="collapseLogs">
+      <textarea
+        id="recent_logs_area"
+        class="form-control logs-textarea mt-2"
+        readonly
+        rows="4"
+        placeholder="打刻履歴や備考の保存ログがここに表示されます"
+      ></textarea>
+    </div>
   </div>
 
   <div class="content-grid-section">
-    <div class="grid-card calendar-card">
-      <div class="card-header-toggle" id="calendar-toggle-header">
-        <span class="section-title">カレンダー</span>
-        <div class="switcher-area">
-          <select id="period_switcher" class="form-select form-select-sm">
-            <option value="current">2026/05</option>
-          </select>
+    <div class="grid-card">
+      <div class="card-header-toggle d-flex justify-content-between align-items-center">
+        <span class="fw-bold" style="font-size: 1rem; color: #55555c">カレンダー</span>
+
+        <div class="calendar-selector-wrapper d-flex align-items-center gap-2">
+          <select id="calendar-month-selector" class="form-select form-select-sm" style="width: auto"></select>
         </div>
-        <i class="bi bi-chevron-down accordion-icon d-md-none"></i>
       </div>
-      <div class="card-body-content" id="calendar-body">
-        <div id="attendance_calendar" class="calendar-placeholder">カレンダー表示エリア</div>
+
+      <div id="collapseCalendar" class="w-100 h-100 d-flex flex-column">
+        <div class="card-body-content pt-2">
+          <div class="custom-calendar">
+            <div class="calendar-weekdays">
+              <div>日</div>
+              <div>月</div>
+              <div>火</div>
+              <div>水</div>
+              <div>木</div>
+              <div>金</div>
+              <div>土</div>
+            </div>
+            <div id="calendar-days"></div>
+          </div>
+        </div>
       </div>
     </div>
 
-    <div class="grid-card reports-card">
-      <div class="card-header-toggle" id="reports-toggle-header">
-        <span class="section-title">過去のレポート 一覧表示</span>
-        <div class="page-limit-area">
-          <select id="page_limit" class="form-select form-select-sm">
-            <option value="5">5件</option>
-            <option value="10">10件</option>
+    <div class="grid-card">
+      <div class="card-header-toggle d-flex justify-content-between align-items-center">
+        <span class="fw-bold" style="font-size: 1rem; color: #55555c">過去のレポート</span>
+
+        <div class="d-flex gap-2 align-items-center">
+          <button class="btn btn-sm btn-create-report">＋ 新規作成</button>
+          <select class="form-select form-select-sm" style="width: auto">
+            <option>5件</option>
           </select>
         </div>
-        <i class="bi bi-chevron-down accordion-icon d-md-none"></i>
       </div>
-      <div class="card-body-content" id="reports-body">
-        <div class="report-list-group">
-          <div class="report_row clickable-report-item">
-            <span class="report-date">2026/05/18</span>
-            <span class="report-summary">日報タイトルなど...</span>
-            <i class="bi bi-chevron-right"></i>
-          </div>
-        </div>
 
-        <nav class="reports-pagination">
-          <ul class="pagination pagination-sm justify-content-center">
-            <li class="page-item disabled">
-              <a class="page-link" href="#">前へ</a>
-            </li>
-            <li class="page-item active">
-              <a class="page-link" href="#">1</a>
-            </li>
-            <li class="page-item">
-              <a class="page-link" href="#">次へ</a>
-            </li>
-          </ul>
-        </nav>
+      <div id="collapseReports" class="w-100">
+        <div class="card-body-content pt-2"></div>
       </div>
     </div>
   </div>

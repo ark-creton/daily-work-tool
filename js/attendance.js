@@ -1,14 +1,94 @@
+window.isUserWorking = async () => {
+  try {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) return false;
+
+    const today = new Date().toISOString().split("T")[0];
+    const { data: record, error } = await supabase
+      .from("attendance_data")
+      .select("status, registration_mode")
+      .match({ user_id: user.id, work_date: today, is_active: true })
+      .maybeSingle();
+
+    if (error) throw error;
+
+    // ステータスが出勤中/外出中、かつ「通常打刻」で登録されたデータの場合のみ「打刻中(ロック)」とする
+    if (record && record.registration_mode === "button" && (record.status === "working" || record.status === "going_out")) {
+      return true;
+    }
+
+    // registration_mode === "modal" の場合は、ここをすり抜けて false を返すためロックされません
+    return false;
+  } catch (e) {
+    console.error("isUserWorkingエラー:", e);
+    return false;
+  }
+};
+
 window.initAttendanceCalendar = async () => {
   const displayPeriodInput = document.getElementById("display_period");
   const attendanceTbody = document.getElementById("attendance_tbody");
   const modalContainer = document.getElementById("modal_container");
 
-  // もし必要な要素がなければ処理を終了
   if (!displayPeriodInput || !attendanceTbody) {
     return;
   }
 
-  // --- 1. 初期化・読み込み処理 内の修正 ---
+  // ◆ 表示対象ユーザー（ドロップダウン）の初期化とログインユーザー優先ソート
+  // 【目的】マスタから有効なユーザー一覧を取得して選択肢を作り、操作中のユーザーを初期選択・最上位にする
+  const userSwitcher = document.getElementById("target_user_id");
+  if (userSwitcher) {
+    try {
+      // Step1: 有効なユーザー一覧（user_master）を名前順で取得
+      const { data: users, error: masterError } = await supabase
+        .from("user_master")
+        .select("id, user_name")
+        .eq("is_active", true)
+        .order("user_name", { ascending: true });
+
+      if (masterError) throw masterError;
+
+      // Step2: 現在ログインしているユーザーの情報を取得
+      const {
+        data: { user: currentUser },
+      } = await supabase.auth.getUser();
+
+      // Step3: ログインユーザーが一覧にあれば、ドロップダウンの先頭（インデックス-1）に並び替える
+      if (currentUser && users) {
+        users.sort((a, b) => {
+          if (a.id === currentUser.id) return -1;
+          if (b.id === currentUser.id) return 1;
+          return 0;
+        });
+      }
+
+      // Step4: 生成したユーザーリストをドロップダウンにDOM反映
+      userSwitcher.innerHTML = "";
+      users.forEach((u) => {
+        const option = document.createElement("option");
+        option.value = u.id;
+        option.textContent = u.user_name;
+        userSwitcher.appendChild(option);
+      });
+
+      // Step5: ログインユーザーを初期選択状態にして最初のデータ読み込みを開始
+      if (currentUser) {
+        userSwitcher.value = currentUser.id;
+        await handlePeriodChange();
+      }
+
+      // 二重登録を防ぐためイベントをリセットして再登録
+      userSwitcher.removeEventListener("change", handlePeriodChange);
+      userSwitcher.addEventListener("change", handlePeriodChange);
+    } catch (err) {
+      console.error("❌ 表示対象ユーザーの取得に失敗しました:", err);
+    }
+  }
+
+  // ◆ 編集モーダル用テンプレートHTMLの非同期読み込み
+  // 【目的】メイン画面のHTMLを軽量に保つため、モーダル部分のHTMLを外部ファイルから動的に取得して埋め込む
   if (modalContainer && modalContainer.innerHTML.trim() === "") {
     try {
       const response = await fetch("./attendance-edit-modal.html?v=3");
@@ -16,16 +96,16 @@ window.initAttendanceCalendar = async () => {
       modalContainer.innerHTML = html;
       console.log("✅ モーダルHTMLを読み込みました");
 
-      // 既存の勤怠計算リスナー
+      // モーダルが埋め込まれた直後に、時間・経費の計算リスナーを初期化する
       attachAttendanceCalculationListeners();
-      // 経費明細のボタンイベント初期化
       initExpenseCalculationListeners();
     } catch (err) {
       console.error("モーダル読み込み失敗:", err);
     }
   }
 
-  // --- 2. 期間設定とイベント登録 ---
+  // ◆ 初期表示用の日付セット（当月）と期間変更イベントの登録
+  // 【目的】起動時に自動で現在の「年-月」を算出して入力欄にセットし、月変更を検知できるようにする
   const now = new Date();
   const currentYear = now.getFullYear();
   const currentMonth = String(now.getMonth() + 1).padStart(2, "0");
@@ -37,64 +117,76 @@ window.initAttendanceCalendar = async () => {
   displayPeriodInput.removeEventListener("change", handlePeriodChange);
   displayPeriodInput.addEventListener("change", handlePeriodChange);
 
-  // 初期表示のためにカレンダー生成処理をキック
   await handlePeriodChange();
 
-  // ==========================================
-  // 各種メイン処理
-  // ==========================================
-
+  // ========================================================
+  // メインロジック・内部関数定義
+  // ========================================================
+  // ◆ 外部APIから祝日データを取得し、holiday_masterへUpsert同期
+  // 【目的】日本の祝日APIから対象年の祝日一覧を取得し、データベースの祝日マスタを最新状態に上書きする
   async function syncHolidaysFromExternalAPI(year) {
     try {
-      console.log(`🌐 ${year}年の祝日データを外部APIから取得中...`);
       const response = await fetch(`https://holidays-jp.github.io/api/v1/${year}/date.json`);
       if (!response.ok) throw new Error("外部祝日APIの取得に失敗しました");
       const holidayData = await response.json();
       const nowIso = new Date().toISOString();
+
+      // APIのJSON構造をデータベースのカラム構造にマッピング
       const upsertRows = Object.entries(holidayData).map(([dateStr, name]) => ({
         holiday_date: dateStr,
         name: name,
         updated_at: nowIso,
       }));
+
       if (upsertRows.length === 0) return;
       const { error } = await supabase.from("holiday_master").upsert(upsertRows, { onConflict: "holiday_date" });
       if (error) throw error;
-      console.log(`✅ ${year}年の祝日データをSupabaseに自動同期しました！`);
     } catch (err) {
       console.error("❌ 祝日の自動同期に失敗しました:", err);
     }
   }
 
+  // ◆ 選択期間・ユーザーに応じた勤怠データ、および祝日マスターの取得
+  // 【目的】画面で指定された「年月」「ユーザー」を条件に、表示に必要なデータをDBからまとめてロードする
   async function handlePeriodChange() {
     const periodValue = displayPeriodInput.value;
     if (!periodValue) return;
 
     try {
       const [year, month] = periodValue.split("-").map(Number);
+
       const {
-        data: { user },
+        data: { user: currentUser },
       } = await supabase.auth.getUser();
+      if (!currentUser) throw new Error("ログインユーザーが取得できません");
+
+      // 対象月の開始日（01日）と最終日を算出して検索範囲（範囲文字列）を作る
       const startStr = `${year}-${String(month).padStart(2, "0")}-01`;
       const lastDay = new Date(year, month, 0).getDate();
       const endStr = `${year}-${String(month).padStart(2, "0")}-${String(lastDay).padStart(2, "0")}`;
 
+      const selectedUserId = document.getElementById("target_user_id")?.value || currentUser.id;
+
+      // Step1: 勤怠明細（関連する経費レコードも同時結合）と祝日データを一斉に並列取得
       let [recordsResult, holidaysResult] = await Promise.all([
         supabase
           .from("attendance_data")
           .select("*, expense_records(*)")
-          .eq("user_id", user.id)
+          .eq("user_id", selectedUserId)
           .eq("is_active", true)
           .gte("work_date", startStr)
           .lte("work_date", endStr),
         supabase.from("holiday_master").select("holiday_date, name").gte("holiday_date", startStr).lte("holiday_date", endStr),
       ]);
 
+      // Step2: 祝日マスタが空、または未来月の場合は外部APIから祝日データを取得してマスタを補填
       const currentYear = new Date().getFullYear();
       if (year >= currentYear || !holidaysResult.data || holidaysResult.data.length === 0) {
         await syncHolidaysFromExternalAPI(year);
         holidaysResult = await supabase.from("holiday_master").select("holiday_date, name").gte("holiday_date", startStr).lte("holiday_date", endStr);
       }
 
+      // Step3: 祝日データを「日」を取り出したオブジェクト型ハッシュに集約
       const holidays = {};
       if (holidaysResult.data) {
         holidaysResult.data.forEach((h) => {
@@ -103,6 +195,7 @@ window.initAttendanceCalendar = async () => {
         });
       }
 
+      // Step4: 取得した勤怠レコードを「日」をキーにしたMap構造に変換（描画時の検索高速化のため
       const recordMap = new Map();
       if (recordsResult.data) {
         recordsResult.data.forEach((r) => {
@@ -110,18 +203,30 @@ window.initAttendanceCalendar = async () => {
           recordMap.set(day, r);
         });
       }
-      generateCalendar(year, month, holidays, recordMap, user);
+
+      // データの準備が完了したら、カレンダーのHTML生成処理へ渡す
+      const targetUserObject = { id: selectedUserId };
+
+      await generateCalendar(year, month, holidays, recordMap, targetUserObject, currentUser);
+      await renderCalendarGrid(year, month, holidays, recordMap, targetUserObject, currentUser);
+
+      const weekDays = ["日", "月", "火", "水", "木", "金", "土"];
+
+      setupEditButtonEvents(recordMap, currentUser, year, month, holidays, weekDays);
     } catch (err) {
       console.error("データ取得中にエラーが発生しました:", err);
     }
   }
 
-  function generateCalendar(year, month, holidays, recordMap, user) {
+  // ◆ カレンダーHTMLの組み立て・サマリー計算・DOM反映・UI初期化
+  // 【目的】1ヶ月分のデータを1日ずつループ処理し、カレンダーの表（行）の組み立てと月間合計サマリーの集計を行う
+  async function generateCalendar(year, month, holidays, recordMap, targetUser, loginUser) {
+    const isMyData = loginUser && targetUser && loginUser.id === targetUser.id;
     const lastDay = new Date(year, month, 0).getDate();
     const weekDays = ["日", "月", "火", "水", "木", "金", "土"];
     let htmlRows = "";
 
-    // 集計用カウンター
+    // 月間総合サマリーエリア用の各数値を溜めるカウンター
     const summary = {
       workDays: 0,
       totalWorkMin: 0,
@@ -130,28 +235,48 @@ window.initAttendanceCalendar = async () => {
       outingMin: 0,
       holidayWorkDays: 0,
       totalExpenseFee: 0,
+      paidLeaveDays: 0,
+      transportFee: 0,
+      otherFee: 0,
     };
 
-    // カレンダーの行を1日ずつ作る
+    // 1日から月末日まで1日ずつ検証・構築するメインループ
     for (let day = 1; day <= lastDay; day++) {
       const dateObj = new Date(year, month - 1, day);
       const dayOfWeekNum = dateObj.getDay();
-
-      // 曜日は常に「月」「火」などの1文字を保持します
       const dayOfWeekStr = weekDays[dayOfWeekNum];
       const holidayName = holidays[day];
       const record = recordMap ? recordMap.get(day) : null;
 
-      // この日に紐づくアクティブな経費レコードの金額を、1ヶ月の総合計に加算する
+      // Step1: 有効な（is_active: true）経費レコードのみを月間合計カウンターに加算
       if (record?.expense_records && Array.isArray(record.expense_records)) {
         record.expense_records.forEach((e) => {
           if (e.is_active) {
-            summary.totalExpenseFee += Number(e.amount || 0);
+            const amt = Number(e.amount || 0);
+            summary.totalExpenseFee += amt;
+            if (e.expense_type === "transportation") {
+              summary.transportFee += amt;
+            } else if (e.expense_type === "other") {
+              summary.otherFee += amt;
+            }
           }
         });
       }
 
-      // 祝日や土日の見た目・曜日表記の設定
+      // 各日付の表示文言（モーダルのタイトル等で使い回す共通文字列）の組み立て
+      let viewDateStr = `${month}月${day}日（${dayOfWeekStr}`;
+      if (holidayName) {
+        const isSubstitute = holidayName.includes("振替休日");
+        viewDateStr += isSubstitute ? "・振）" : "・祝）";
+      } else {
+        viewDateStr += "）";
+      }
+
+      if (record) {
+        record.view_date_str = viewDateStr;
+      }
+
+      // Step2: 曜日・祝日判定に応じたCSSクラスおよび日付表示文字（ポップオーバー含む）の決定
       let dayColorClass = "";
       let rowClass = "";
       let dateDisplayStr = "";
@@ -160,7 +285,6 @@ window.initAttendanceCalendar = async () => {
       if (holidayName) {
         dayColorClass = "text-danger";
         rowClass = "row-holiday";
-        // 祝日の場合は、元の曜日(日・月など)に「祝」や「振」を組み合わせ、その横に？マークを配置
         const isSubstitute = holidayName.includes("振替休日");
         const suffix = isSubstitute ? "・振" : "・祝";
         dateDisplayStr = `${month}/${day} (${dayOfWeekStr}${suffix}) <span class="help-icon" data-bs-toggle="popover" data-bs-content="${holidayName}" tabindex="0" style="cursor: pointer;"><i class="bi bi-question-circle text-muted" style="font-size: 0.85rem;"></i></span>`;
@@ -176,7 +300,7 @@ window.initAttendanceCalendar = async () => {
         dateDisplayStr = `${month}/${day} (${dayOfWeekStr})`;
       }
 
-      // 消えていた時刻フォーマット関数をここに再定義
+      // ISOタイムスタンプから「時:分」形式の文字列を生成するインライン関数
       const formatTime = (iso) =>
         iso
           ? new Date(iso).toLocaleTimeString([], {
@@ -185,154 +309,388 @@ window.initAttendanceCalendar = async () => {
             })
           : "--:--";
 
-      // 計算ロジック
       let totalWorkStr = "-",
         overtimeStr = "-",
         outingStr = "-";
 
-      // 有給(paid)・欠勤(absent)の場合はテーブル上の計算をスキップして「-」表示にする
-      if (record && record.work_type !== "paid" && record.work_type !== "absent" && record.clock_in && record.clock_out) {
-        const toM = (iso) => {
-          const d = new Date(iso);
-          return d.getHours() * 60 + d.getMinutes();
-        };
-        const outingM = record.break_start && record.break_end ? Math.max(0, toM(record.break_end) - toM(record.break_start)) : 0;
-        const totalM = Math.max(0, toM(record.clock_out) - toM(record.clock_in) - (record.total_break_m || 0) - outingM);
-        const overtimeM = Math.max(0, totalM - 8 * 60);
+      // Step3: 通常勤務日における各実労働時間の計算とカウンター加算
+      if (record && record.work_type !== "paid" && record.work_type !== "absent" && record.clock_in) {
+        // 退勤（clock_out）も揃っている場合のみ計算
+        if (record.clock_out) {
+          const toM = (iso) => {
+            return Math.floor(new Date(iso).getTime() / (1000 * 60));
+          };
 
-        totalWorkStr = `${Math.floor(totalM / 60)}:${String(totalM % 60).padStart(2, "0")}`;
-        overtimeStr = `${Math.floor(overtimeM / 60)}:${String(overtimeM % 60).padStart(2, "0")}`;
-        outingStr = `${Math.floor(outingM / 60)}:${String(outingM % 60).padStart(2, "0")}`;
+          // 💡 それぞれの「分の数値」を取得
+          const startM = toM(record.clock_in);
+          let endM = toM(record.clock_out);
 
-        summary.workDays++;
-        summary.totalWorkMin += totalM;
-        summary.overtimeMin += overtimeM;
-        summary.breakMin += record.total_break_m || 0;
-        summary.outingMin += outingM;
-        if (isHolidayOrWeekend) summary.holidayWorkDays++;
+          // 【重要・日またぎ補正】
+          if (endM < startM) {
+            endM += 24 * 60; // 24時間分（1440分）を加算して翌日の時間にする
+          }
+
+          // 外出（休憩）時間の計算
+          const outingM = record.break_start && record.break_end ? Math.max(0, toM(record.break_end) - toM(record.break_start)) : 0;
+
+          // 総労働時間の計算
+          const totalM = Math.max(0, endM - startM - (Number(record.total_break_m) || 0) - outingM);
+          const overtimeM = Math.max(0, totalM - 8 * 60);
+
+          totalWorkStr = totalM >= 0 ? `${Math.floor(totalM / 60)}:${String(totalM % 60).padStart(2, "0")}` : "-";
+          overtimeStr = overtimeM > 0 ? `${Math.floor(overtimeM / 60)}:${String(overtimeM % 60).padStart(2, "0")}` : "-";
+          outingStr = outingM > 0 ? `${Math.floor(outingM / 60)}:${String(outingM % 60).padStart(2, "0")}` : "-";
+
+          summary.workDays++;
+          summary.totalWorkMin += totalM;
+          summary.overtimeMin += overtimeM;
+          summary.breakMin += record.total_break_m || 0;
+          summary.outingMin += outingM;
+          if (isHolidayOrWeekend) summary.holidayWorkDays++;
+        } else {
+          totalWorkStr = "-";
+          overtimeStr = "-";
+          outingStr = "-";
+        }
       }
 
-      // 勤務区分に応じて行のメモの前にバッジを出すなどの装飾用のテキスト
-      let statusBadge = "";
-      if (record?.work_type === "paid") statusBadge = '<span class="badge bg-success me-1">有給</span>';
-      if (record?.work_type === "absent") statusBadge = '<span class="badge bg-danger me-1">欠勤</span>';
+      // 有給日数の計算
+      if (record?.work_type === "paid") {
+        summary.paidLeaveDays++;
+      }
 
-      // ==========================================
-      // 表示用データの整形
-      // ==========================================
+      // 有給・欠勤のステータスバッジの作成
+      let statusBadge = "";
+      if (record?.work_type === "paid") {
+        statusBadge = '<span class="at-status-badge is-paid">有給</span>';
+      } else if (record?.work_type === "absent") {
+        statusBadge = '<span class="at-status-badge is-absent">欠勤</span>';
+      }
+
+      // Step4: セル表示用データの文字列整形とツールチップ用テキストの生成
       const isLeave = record?.work_type === "paid" || record?.work_type === "absent";
 
-      // 始業と終業を「〜」で繋ぐ（データがない、または有給・欠勤時は「-」）
-      const timeRangeStr =
-        isLeave || !record?.clock_in || !record?.clock_out ? "-" : `${formatTime(record.clock_in)} 〜 ${formatTime(record.clock_out)}`;
+      let timeRangeStr = "-";
+      if (!isLeave && record?.clock_in) {
+        const startTime = formatTime(record.clock_in);
+        if (record.clock_out) {
+          timeRangeStr = `${startTime} 〜 ${formatTime(record.clock_out)}`;
+        } else {
+          timeRangeStr = `${startTime} 〜`;
+        }
+      }
 
-      // 休憩時間に「分」を付ける（データがない、または有給・欠勤時は「-」）
       const breakTimeDisplay = isLeave || !record?.total_break_m ? "-" : `${record.total_break_m} 分`;
-      // ==========================================
 
+      // 経費内訳のバッジ風テキストの結合
+      const expenseText =
+        record?.expense_records && record.expense_records.length > 0
+          ? record.expense_records
+              .filter((e) => e.is_active && (e.expense_type || e.amount || e.memo))
+              .map((e) => `【${e.memo || e.expense_type || ""} ${Number(e.amount || 0).toLocaleString()}円】`)
+              .join(", ")
+          : "";
+
+      const memoText = record?.memo || "";
+
+      // 操作権限（ログインユーザー自身のデータか否か）によるボタンの出し分け+勤怠ボタンで打刻中の制御
+      let editButtonHtml = "";
+      const todayNum = new Date().getDate();
+      const isToday = year === new Date().getFullYear() && month === new Date().getMonth() + 1 && day === todayNum;
+
+      // 💡 修正：引数で渡されている「recordMap」から対象日の勤怠レコードを正しく取得
+      const dayRecord = recordMap ? recordMap.get(day) : null;
+
+      // 💡判定ロジックのアップデート
+      // 1. 今日、かつ現在進行形で「通常打刻の出勤中」か
+      const isStillWorkingToday = isToday ? await window.isUserWorking() : false;
+
+      // 2. 今日、かつ「すでに通常打刻（button）で行われたデータ」がDBに存在するケース
+      const hasClockedToday = isToday && dayRecord && dayRecord.registration_mode === "button";
+
+      let finalRowClass = rowClass || "";
+
+      if (isMyData) {
+        // 💡 修正判定：今日、かつ「現在出勤中」または「まだ退勤ボタンを押していない（statusがfinished以外）」場合のみロックする
+        const isNotFinishedYet = dayRecord && dayRecord.status !== "finished";
+
+        if (isStillWorkingToday || (hasClockedToday && isNotFinishedYet)) {
+          // 出勤中の場合は「打刻中」ボタンにする（見た目だけ黄色、クリックは不可っぽくする）
+          editButtonHtml = `<button class="btn btn-sm btn-table-edit" data-day="${day}" style="background-color: #fbbf24 !important; color: #ffffff !important; font-weight: bold !important; border: none !important; cursor: not-allowed !important;">打刻中</button>`;
+
+          finalRowClass += " at-row-working-now";
+        } else {
+          // 今日以外、または今日退勤ボタンまで押し終わった（status === 'finished'）場合は、普通に「編集」ボタンにする！
+          editButtonHtml = `<button class="btn btn-sm btn-outline-secondary btn-table-edit" data-day="${day}">編集</button>`;
+        }
+      } else {
+        editButtonHtml = `<button class="btn btn-sm btn-table-edit btn-table-view-only" style="pointer-events: none;">閲覧</button>`;
+      }
+
+      // 有給・欠勤のクラス判定
+      if (record?.work_type === "paid") {
+        finalRowClass += " at-row-paid";
+      } else if (record?.work_type === "absent") {
+        finalRowClass += " at-row-absent";
+      }
+      // Step5: 組み立てたデータを行（tr）テンプレートHTMLにバインド
       htmlRows += `
-        <tr class="${rowClass}">
-          <td class="text-center"><button class="btn btn-sm btn-outline-secondary btn-table-edit" data-day="${day}">編集</button></td>
+        <tr class="${finalRowClass}">
+          <td class="text-center">${editButtonHtml}</td> 
           <td class="fw-bold ${dayColorClass}">${dateDisplayStr}</td>
-          
           <td class="text-center">${timeRangeStr}</td>
-          
           <td class="text-center">${totalWorkStr}</td>
           <td class="text-center">${overtimeStr}</td>
-          
           <td class="text-center">${breakTimeDisplay}</td>
-          
           <td class="text-center">${outingStr}</td>
           
-         <td class="text-start text-truncate small cell-expense">
-            ${
-              record?.expense_records && record.expense_records.length > 0
-                ? record.expense_records
-                    .filter((e) => e.is_active && (e.expense_type || e.amount || e.memo))
-                    .map((e) => `【${e.memo || e.expense_type || ""} ${Number(e.amount || 0).toLocaleString()}円】`)
-                    .join(", ")
-                : ""
-            }
+          <td class="text-start small cell-expense" 
+            style="max-width: 180px; cursor: help; padding-top: 4px; padding-bottom: 4px;" 
+            data-bs-toggle="tooltip" 
+            data-bs-placement="top" 
+            title="${expenseText}">
+            <div class="cell-expense-clamp">${expenseText}</div>
           </td>
           
-          <td class="text-truncate">${statusBadge}${record?.memo || ""}</td>
+          <td class="small cell-memo" 
+            style="max-width: 150px; cursor: help; padding-top: 4px; padding-bottom: 4px;" 
+            data-bs-toggle="tooltip" 
+            data-bs-placement="top" 
+            title="${memoText}">
+            <div class="cell-memo-clamp">${statusBadge}${memoText}</div>
+          </td>
         </tr>`;
     }
 
+    // テーブル本体のHTMLを差し替え
     attendanceTbody.innerHTML = htmlRows;
 
-    const formatMin = (m) => (m > 0 ? (m / 60).toFixed(1).replace(/\.0$/, "") : "0");
+    try {
+      await renderCalendarGrid(year, month, holidays, recordMap, targetUser, loginUser);
+    } catch (error) {
+      console.error("グリッドカレンダーの描画中にエラーが発生しました:", error);
+    }
 
-    document.getElementById("work_days_count").textContent = summary.workDays;
-    document.getElementById("total_work_hours").textContent = formatMin(summary.totalWorkMin);
-    document.getElementById("total_overtime_hours").textContent = formatMin(summary.overtimeMin);
-    document.getElementById("total_out_hours").textContent = formatMin(summary.outingMin);
+    // Step6: 画面最下部の「月間合計サマリー欄」のDOMテキスト書き換え
+    document.getElementById("work_days_count").textContent = summary.workDays > 0 ? summary.workDays : "-";
+
+    // 総勤務時間
+    if (summary.totalWorkMin > 0) {
+      const h = Math.floor(summary.totalWorkMin / 60);
+      const min = summary.totalWorkMin % 60;
+      document.getElementById("total_work_hours").textContent = h > 0 ? h : "-";
+      document.getElementById("total_work_minutes").textContent = min;
+    } else {
+      document.getElementById("total_work_hours").textContent = "-";
+      document.getElementById("total_work_minutes").textContent = "-";
+    }
+
+    // 時間外労働
+    if (summary.overtimeMin > 0) {
+      const h = Math.floor(summary.overtimeMin / 60);
+      const min = summary.overtimeMin % 60;
+      document.getElementById("total_overtime_hours").textContent = h > 0 ? h : "-";
+      document.getElementById("total_overtime_minutes").textContent = min;
+    } else {
+      document.getElementById("total_overtime_hours").textContent = "-";
+      document.getElementById("total_overtime_minutes").textContent = "-";
+    }
+
+    // 外出時間数
+    if (summary.outingMin > 0) {
+      const h = Math.floor(summary.outingMin / 60);
+      const min = summary.outingMin % 60;
+      document.getElementById("total_out_hours").textContent = h > 0 ? h : "-";
+      document.getElementById("total_out_minutes").textContent = min;
+    } else {
+      document.getElementById("total_out_hours").textContent = "-";
+      document.getElementById("total_out_minutes").textContent = "-";
+    }
 
     const holidayWorkDaysEl = document.getElementById("holiday_work_days");
     if (holidayWorkDaysEl) {
-      holidayWorkDaysEl.textContent = summary.holidayWorkDays;
+      holidayWorkDaysEl.textContent = summary.holidayWorkDays > 0 ? summary.holidayWorkDays : "-";
     }
 
-    // 計算した1ヶ月全体の経費合計をメイン画面の「total_expense_fee」要素に反映する
+    // 有給
+    const paidLeaveDaysEl = document.getElementById("paid_leave_days");
+    if (paidLeaveDaysEl) {
+      paidLeaveDaysEl.textContent = summary.paidLeaveDays > 0 ? summary.paidLeaveDays : "-";
+    }
+
+    // 経費合計・内訳テキストの書き換え
     const totalExpenseFeeEl = document.getElementById("total_expense_fee");
-    if (totalExpenseFeeEl) {
-      totalExpenseFeeEl.textContent = summary.totalExpenseFee.toLocaleString();
+    const breakdownEl = document.getElementById("expense_breakdown");
+
+    if (summary.totalExpenseFee > 0) {
+      if (totalExpenseFeeEl) {
+        totalExpenseFeeEl.textContent = summary.totalExpenseFee.toLocaleString();
+      }
+      if (breakdownEl) {
+        breakdownEl.innerHTML = `交通費: ${summary.transportFee.toLocaleString()}円<br>その他: ${summary.otherFee.toLocaleString()}円`;
+      }
+    } else {
+      if (totalExpenseFeeEl) {
+        totalExpenseFeeEl.textContent = "-";
+      }
+      if (breakdownEl) {
+        breakdownEl.innerHTML = `交通費: -<br>その他: -`;
+      }
     }
 
-    // 欠勤日数の計算
+    // Step7: 有効な（is_active: true）当月の「欠勤日数」を別途ループカウントして反映
     let absent = 0;
-
     for (let d = 1; d <= lastDay; d++) {
       const rec = recordMap.get(d);
-
-      // 画面で「欠勤」が選ばれていて、データがアクティブ（削除されていない）状態のものだけをカウント
       if (rec && rec.work_type === "absent" && rec.is_active === true) {
         absent++;
       }
     }
 
-    // 画面の「欠勤日数」パーツに反映
     const absentDaysCountEl = document.getElementById("absent_days_count");
     if (absentDaysCountEl) {
-      absentDaysCountEl.textContent = absent;
+      absentDaysCountEl.textContent = absent > 0 ? absent : "-";
     }
 
+    // Step8: Bootstrapポップオーバーおよび文字溢れ時限定のツールチップ初期化処理
     const popoverTriggerList = [].slice.call(attendanceTbody.querySelectorAll('[data-bs-toggle="popover"]'));
     const triggerMode = window.innerWidth < 768 ? "focus" : "hover focus";
     popoverTriggerList.map((el) => new bootstrap.Popover(el, { trigger: triggerMode }));
 
-    setupEditButtonEvents(recordMap, user);
+    setTimeout(() => {
+      const tooltipTriggerList = [].slice.call(attendanceTbody.querySelectorAll('[data-bs-toggle="tooltip"]'));
+      tooltipTriggerList.map((el) => {
+        const fullText = el.getAttribute("title")?.trim() || "";
+        if (fullText === "") return;
+
+        const clampEl = el.querySelector(".cell-expense-clamp") || el.querySelector(".cell-memo-clamp");
+        if (clampEl) {
+          const rect = clampEl.getBoundingClientRect();
+          const isClamped = clampEl.scrollHeight > rect.height + 1; // 実際に省略（...）されているか判定
+
+          if (isClamped) {
+            return new bootstrap.Tooltip(el, { trigger: triggerMode });
+          } else {
+            el.setAttribute("title", "");
+            el.removeAttribute("data-bs-toggle");
+          }
+        } else {
+          return new bootstrap.Tooltip(el, { trigger: triggerMode });
+        }
+      });
+    }, 50);
   }
 
-  // 有給・欠勤の時に入力欄をグレーアウト＆値をリセットする制御関数
+  // ◆ 選択された行の日付や取得済データを編集モーダル内の各入力項目にマッピング
+  // 【目的】カレンダーで編集ボタンを押した際、またはモーダル内で前日・翌日移動した際に、インプットの値を最新データに同期する
+  function fillModalFields(record, dateObj, recordMap) {
+    // Step1: モーダルヘッダータイトルの日付表記更新
+    const editDateEl = document.getElementById("display_edit_date");
+    if (editDateEl) {
+      editDateEl.textContent = `${dateObj.toLocaleDateString("ja-JP", { year: "numeric", month: "long", day: "numeric" })} (${dateObj.toLocaleDateString("ja-JP", { weekday: "short" })})`;
+    }
+
+    const workTypeSelect = document.getElementById("edit_work_type");
+    if (workTypeSelect) workTypeSelect.value = record?.work_type || "normal";
+
+    const setVal = (id, val) => {
+      const el = document.getElementById(id);
+      if (el) el.value = val;
+    };
+    const formatToTimeInput = (isoString) => {
+      if (!isoString) return "";
+      const date = new Date(isoString);
+      return `${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`;
+    };
+
+    // Step2: 取得データを各種時間インプット・メモ欄へ流し込み
+    setVal("edit_clock_in", record?.clock_in ? formatToTimeInput(record.clock_in) : "");
+    setVal("edit_clock_out", record?.clock_out ? formatToTimeInput(record.clock_out) : "");
+    setVal("edit_memo", record?.memo || "");
+    setVal("edit_break_start", record?.break_start ? formatToTimeInput(record.break_start) : "");
+    setVal("edit_break_end", record?.break_end ? formatToTimeInput(record.break_end) : "");
+
+    // 勤務区分に基づき時間入力項目の入力禁止（disabled）をスイッチ
+    toggleModalInputsByWorkType(workTypeSelect?.value || "normal");
+    setVal("total_break_m", record?.total_break_m || "");
+
+    // Step3: モーダル内の経費明細リストの生成
+    const expenseList = document.getElementById("expense_list");
+    if (expenseList) expenseList.innerHTML = "";
+
+    if (record?.expense_records && Array.isArray(record.expense_records)) {
+      // 論理削除（is_active = false）されていない有効な経費データのみを抽出
+      const activeExpenses = record.expense_records.filter((item) => item.is_active !== false);
+
+      if (activeExpenses.length > 0) {
+        activeExpenses.forEach((item) =>
+          addExpenseRow({
+            id: item.id,
+            category: item.expense_type,
+            detail: item.memo,
+            amount: item.amount,
+          }),
+        );
+      } else {
+        addExpenseRow({ id: null, category: "交通費", detail: "", amount: "" });
+      }
+    } else {
+      addExpenseRow({ id: null, category: "交通費", detail: "", amount: "" });
+    }
+    // 値を詰め終わった後に、労働時間等の表示値を最新値に再計算させる
+    calculateAttendance();
+  }
+
+  // ◆ 勤務区分（有給・欠勤）に伴う入力欄の制御
+  // 【目的】「有給」「欠勤」の時は、出退勤時間や休憩時間の入力を禁止(disabled)にし、不要なデータをクリアする
   function toggleModalInputsByWorkType(workType) {
-    const timeInputs = ["edit_clock_in", "edit_clock_out", "edit_break_time", "edit_break_start", "edit_break_end"];
+    const timeInputs = ["edit_clock_in", "edit_clock_out", "total_break_m", "edit_break_start", "edit_break_end"];
 
     if (workType === "paid" || workType === "absent") {
-      // 有給・欠勤の場合は時間入力を不可にして、値をクリアする
+      // Step1: 有給・欠勤時は時間入力をすべて無効化し、値をクリア（休憩は0分）
       timeInputs.forEach((id) => {
         const el = document.getElementById(id);
         if (el) {
           el.disabled = true;
-          // 休憩時間(number)は0に、それ以外(time)は空文字にする
-          el.value = id === "edit_break_time" ? "0" : "";
+          el.value = id === "total_break_m" ? "0" : "";
         }
       });
+
+      // Step2: 画面上の経費入力欄をすべて消去し、登録されていた経費は「削除対象（論理削除）」としてリストに退避
+      const expenseList = document.getElementById("expense_list");
+      if (expenseList) {
+        const expenseRows = expenseList.querySelectorAll(".expense-notebook-row");
+        expenseRows.forEach((row) => {
+          const dbId = row.getAttribute("data-db-id");
+          if (dbId && !deletedExpenseIds.includes(dbId)) {
+            deletedExpenseIds.push(dbId);
+          }
+        });
+        expenseList.innerHTML = "";
+        // 最低1行は空の経費入力欄を表示しておく
+        if (typeof addExpenseRow === "function") {
+          addExpenseRow({ id: null, category: "交通費", detail: "", amount: "" });
+        }
+      }
     } else {
-      // 通常出勤の場合はすべて解放
+      // Step3: 通常勤務などの場合は、時間入力をすべて編集可能に戻す
       timeInputs.forEach((id) => {
         const el = document.getElementById(id);
         if (el) el.disabled = false;
       });
     }
-    // グレーアウト状態を反映させて再計算
+    // 金額や勤務時間の再計算を走らせる
     calculateAttendance();
   }
 
-  /**
-   * モーダル編集イベント登録
-   */
-  function setupEditButtonEvents(recordMap, user) {
+  // 【状態管理】現在モーダルで開いているデータの一時保管場所
+  let currentModalDate = null; // 開いている「日付（Dateオブジェクト）」
+  let currentModalRecord = null; // DBから取得した「勤怠レコードの生データ」
+  let deletedExpenseIds = []; // ユーザーがモーダル内で「削除」を押した経費のIDリスト（保存時に一括更新するため）
+
+  // ◆ モーダル内編集イベント・保存制御
+  // 【目的】カレンダーからモーダルを開いた後の、前日・翌日移動や、入力内容をDBに保存する処理をセットアップする
+  function setupEditButtonEvents(recordMap, user, year, month, holidays, weekDays) {
     const formatToBadgeDisplay = (isoString) => {
       if (!isoString) return { date: "--/--", time: "--:--" };
       const date = new Date(isoString);
@@ -342,29 +700,177 @@ window.initAttendanceCalendar = async () => {
       };
     };
 
+    // 【補助関数】ISO文字列からHTMLの <input type="time"> が認識できる「時:分」の形式に変換する
     const formatToTimeInput = (isoString) => {
       if (!isoString) return "";
       const date = new Date(isoString);
       return `${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`;
     };
 
+    // 【補助関数】前日・翌日移動ボタンの活性/非活性判定
+    // 1日の時は「前日」を、月末の時は「翌日」を押せないようにロックする
+    const updateNavButtonStates = () => {
+      const prevBtn = document.getElementById("btn_prev_day");
+      const nextBtn = document.getElementById("btn_next_day");
+      if (!currentModalDate || !displayPeriodInput.value) return;
+
+      const [targetYear, targetMonth] = displayPeriodInput.value.split("-").map(Number);
+      const lastDayNum = new Date(targetYear, targetMonth, 0).getDate();
+      const currentDayNum = currentModalDate.getDate();
+
+      if (prevBtn) {
+        prevBtn.disabled = currentDayNum === 1;
+      }
+      if (nextBtn) {
+        nextBtn.disabled = currentDayNum === lastDayNum;
+      }
+    };
+
+    // 【補助関数】日付切り替え時のモーダル内データ再読込
+    // モーダルを開いたまま「前日」や「翌日」へ移動した際、中身のデータを次の日のものに差し替える
+    const updateModalDate = async (offset) => {
+      // ✨ 非同期チェックをするため async を追加
+      if (!currentModalDate || !displayPeriodInput.value) return;
+
+      const [targetYear, targetMonth] = displayPeriodInput.value.split("-").map(Number);
+      const nextDate = new Date(currentModalDate);
+      nextDate.setDate(nextDate.getDate() + offset);
+
+      // 月をまたぐ移動はバグの元になるためブロックする
+      if (nextDate.getFullYear() !== targetYear || nextDate.getMonth() + 1 !== targetMonth) {
+        return;
+      }
+
+      // 移動先の日付が「本日かつ打刻中」なら移動を阻止する
+      const nextDayNum = nextDate.getDate();
+      const today = new Date();
+      const isNextDayToday = year === today.getFullYear() && month === today.getMonth() + 1 && nextDayNum === today.getDate();
+
+      // 移動ボタンを押した時と同じ window.isUserWorking() で厳密にチェック
+      const isNextDayWorking = isNextDayToday ? await window.isUserWorking() : false;
+
+      // 💡【追加】移動先の日付のレコードを取得し、すでに通常打刻（button）がされているかチェック
+      const nextDayRecord = recordMap ? recordMap.get(nextDayNum) : null;
+      const isNextDayClocked = isNextDayToday && nextDayRecord && nextDayRecord.registration_mode === "button";
+
+      // 💡 条件に「または通常打刻済みの場合」を追加
+      if (isNextDayWorking || isNextDayClocked) {
+        // 退勤ステータスに合わせてメッセージを親切に変更
+        const msg =
+          nextDayRecord && nextDayRecord.status === "finished"
+            ? "本日は通常打刻データがあるため、移動・編集はできません。"
+            : "本日は現在打刻中のため、移動・編集はできません。\n退勤後に編集が可能になります。";
+
+        window.showToast(msg, "error");
+        return; // ❌ ここで処理を終了し、日付の移動を絶対にさせない
+      }
+
+      deletedExpenseIds = [];
+      currentModalDate.setDate(currentModalDate.getDate() + offset);
+
+      const newDayNum = currentModalDate.getDate();
+      const newRecord = recordMap.get(newDayNum);
+      currentModalRecord = newRecord;
+
+      // 新しい日付のデータを入力欄に流し込む
+      fillModalFields(newRecord, currentModalDate, recordMap);
+
+      // モーダル上部のヘッダータイトル（◯月◯日(曜)）を更新
+      const editDateEl = document.getElementById("display_edit_date");
+      if (editDateEl) {
+        if (newRecord?.view_date_str) {
+          editDateEl.textContent = `${currentModalDate.getFullYear()}年${newRecord.view_date_str}`;
+        } else {
+          const hName = holidays[currentModalDate.getDate()];
+          let fallbackStr = `${currentModalDate.getMonth() + 1}月${currentModalDate.getDate()}日（${weekDays[currentModalDate.getDay()]}`;
+          fallbackStr += hName ? (hName.includes("振替休日") ? "・振）" : "・祝）") : "）";
+          editDateEl.textContent = `${currentModalDate.getFullYear()}年${fallbackStr}`;
+        }
+      }
+
+      // 「元々の打刻データ（修正前）」の表示情報を更新
+      const inData = formatToBadgeDisplay(newRecord?.original_clock_in);
+      const outData = formatToBadgeDisplay(newRecord?.original_clock_out);
+
+      const setTxt = (id, val) => {
+        const el = document.getElementById(id);
+        if (el) el.textContent = val;
+      };
+      setTxt("display_original_date_in", inData.date);
+      setTxt("display_original_clock_in", inData.time);
+      setTxt("display_original_date_out", outData.date);
+      setTxt("display_original_clock_out", outData.time);
+      setTxt(
+        "display_updated_at",
+        newRecord?.updated_at
+          ? `${currentModalDate.getFullYear()}/${String(currentModalDate.getMonth() + 1).padStart(2, "0")}/${String(newDayNum).padStart(2, "0")} ${new Date(newRecord.updated_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`
+          : "-",
+      );
+      updateNavButtonStates();
+    };
+
+    // 前日・翌日ボタンにクリックイベントを設定
+    const prevBtn = document.getElementById("btn_prev_day");
+    const nextBtn = document.getElementById("btn_next_day");
+    if (prevBtn) prevBtn.onclick = () => updateModalDate(-1);
+    if (nextBtn) nextBtn.onclick = () => updateModalDate(1);
+
+    // ◆ カレンダー各行の「編集」ボタンが押された時の処理
     document.querySelectorAll(".btn-table-edit").forEach((button) => {
-      button.addEventListener("click", (e) => {
+      button.addEventListener("click", async (e) => {
+        // 💡 元のシンプルな形に戻します
         const dayStr = e.target.getAttribute("data-day");
-        const dayNum = parseInt(dayStr);
+        let dayNum = parseInt(dayStr);
         const record = recordMap.get(dayNum);
+
+        // 今日、かつ未退勤のときだけアラートを出す
+        const todayNum = new Date().getDate();
+        const isToday = year === new Date().getFullYear() && month === new Date().getMonth() + 1 && dayNum === todayNum;
+
+        // 2. 正しい関数名 window.isUserWorking() を「await」付きで呼び出す
+        const isStillWorkingToday = isToday ? await window.isUserWorking() : false;
+
+        // この日（今日）すでに通常打刻（button）されたデータがあるかチェック
+        const hasClockedToday = isToday && record && record.registration_mode === "button";
+
+        // 通常打刻があっても、まだ退勤していない（finished 以外）ときだけロック対象にする
+        const isNotFinishedYet = record && record.status !== "finished";
+
+        // 「現在出勤中」または「今日通常打刻があって、まだ退勤していない」ならブロック
+        if (isStillWorkingToday || (hasClockedToday && isNotFinishedYet)) {
+          window.showToast("本日は現在打刻中のため、編集できません。\n退勤後に編集が可能になります。", "error");
+          return; // モーダルを開かない
+        }
+
+        // モーダルを開いた瞬間の初期状態をセット
+        currentModalRecord = record;
+        deletedExpenseIds = [];
+
         const modalEl = document.getElementById("attendanceEditModal");
         if (!modalEl) return;
 
-        // --- 安全な要素取得と値セット ---
-        const [y, m] = displayPeriodInput.value.split("-").map(Number);
-        const dateObj = new Date(y, m - 1, dayNum);
+        const dateObj = new Date(year, month - 1, dayNum);
+        currentModalDate = dateObj;
 
+        // --- モーダル内の表示テキスト（日付）の初期化 ---
         const editDateEl = document.getElementById("display_edit_date");
         if (editDateEl) {
-          editDateEl.textContent = `${dateObj.toLocaleDateString("ja-JP", { year: "numeric", month: "long", day: "numeric" })} (${dateObj.toLocaleDateString("ja-JP", { weekday: "short" })})`;
+          // record が存在し、かつ view_date_str を持っている場合のみ使用
+          if (record && record.view_date_str) {
+            editDateEl.textContent = `${year}年${record.view_date_str}`;
+          } else {
+            // ✨ record が undefined（消去後）でもクラッシュしないように安全にフォールバックを組み立てる
+            const holidayName = holidays ? holidays[dayNum] : null;
+            const dayOfWeekNum = dateObj.getDay();
+            const dayOfWeekStr = weekDays ? weekDays[dayOfWeekNum] : ["日", "月", "火", "水", "木", "金", "土"][dayOfWeekNum];
+
+            let fallbackStr = `${month}月${dayNum}日（${dayOfWeekStr}`;
+            fallbackStr += holidayName ? (holidayName.includes("振替休日") ? "・振）" : "・祝）") : "）";
+            editDateEl.textContent = `${year}年${fallbackStr}`;
+          }
         }
 
+        // --- 各入力要素（input / select）への既存データの割り当て ---
         const workTypeSelect = document.getElementById("edit_work_type");
         if (workTypeSelect) {
           workTypeSelect.value = record?.work_type || "normal";
@@ -375,15 +881,19 @@ window.initAttendanceCalendar = async () => {
           if (el) el.value = val;
         };
 
-        setVal("edit_clock_in", record?.clock_in ? formatToTimeInput(record.clock_in) : "09:00");
-        setVal("edit_clock_out", record?.clock_out ? formatToTimeInput(record.clock_out) : "18:00");
-        setVal("edit_break_time", record?.total_break_m || "60");
+        setVal("edit_clock_in", record?.clock_in ? formatToTimeInput(record.clock_in) : "");
+        setVal("edit_clock_out", record?.clock_out ? formatToTimeInput(record.clock_out) : "");
         setVal("edit_memo", record?.memo || "");
         setVal("edit_break_start", record?.break_start ? formatToTimeInput(record.break_start) : "");
         setVal("edit_break_end", record?.break_end ? formatToTimeInput(record.break_end) : "");
 
+        // 勤務区分に応じた入力項目の活性・非活性制御
         toggleModalInputsByWorkType(workTypeSelect?.value || "normal");
 
+        // 他の初期化や自動計算が走りきったあとに、満を持してDBの休憩時間をセットする
+        setVal("total_break_m", record?.total_break_m || "");
+
+        // 勤務区分を変更した時にリアルタイムで入力制限が切り替わるようにイベント登録
         if (workTypeSelect) {
           workTypeSelect.removeEventListener("change", handleWorkTypeChange);
           workTypeSelect.addEventListener("change", handleWorkTypeChange);
@@ -392,7 +902,7 @@ window.initAttendanceCalendar = async () => {
           toggleModalInputsByWorkType(ev.target.value);
         }
 
-        // 実績表示のセット
+        // 修正前のオリジナル打刻時間のセット
         const inData = formatToBadgeDisplay(record?.original_clock_in);
         const outData = formatToBadgeDisplay(record?.original_clock_out);
 
@@ -406,106 +916,161 @@ window.initAttendanceCalendar = async () => {
         setTxt("display_original_date_out", outData.date);
         setTxt("display_original_clock_out", outData.time);
 
-        // 1. 最終更新日時のフォーマット関数（重複を排除して1つだけにします）
+        // 最終更新日時のセット
         const formatToFullDisplay = (isoString) => {
           if (!isoString) return "-";
           const date = new Date(isoString);
           return `${date.getFullYear()}/${String(date.getMonth() + 1).padStart(2, "0")}/${String(date.getDate()).padStart(2, "0")} ${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`;
         };
-
         setTxt("display_updated_at", formatToFullDisplay(record?.updated_at));
 
-        // ==========================================
-        // 🔄 経費明細エリアのリセットと初期2行生成
-        // ==========================================
+        // --- 経費データの読み込みと行生成 ---
         const expenseList = document.getElementById("expense_list");
-        if (expenseList) expenseList.innerHTML = ""; // 前回の残りをクリア
+        if (expenseList) expenseList.innerHTML = "";
 
-        // データベースに保存済みの経費があるかチェック
         if (record?.expense_records && Array.isArray(record.expense_records) && record.expense_records.length > 0) {
-          // すでにデータがあれば登録されている件数分すべて展開
           record.expense_records.forEach((item) => {
-            addExpenseRow({
-              id: item.id,
-              category: item.expense_type,
-              detail: item.memo,
-              amount: item.amount,
-            });
+            // 論理削除（is_active === false）されていない有効なデータのみ画面に表示
+            if (item.is_active !== false) {
+              addExpenseRow({
+                id: item.id,
+                category: item.expense_type,
+                detail: item.memo,
+                amount: item.amount,
+              });
+            }
           });
-        } else {
-          // データがない日（新規など）は、最初からデフォルトで1行表示する
+        }
+
+        // 経費データが1件もない場合は、最初から空の入力行を1行置いておく
+        if (!expenseList || expenseList.children.length === 0) {
           addExpenseRow({ id: null, category: "交通費", detail: "", amount: "" });
         }
 
+        // 時間計算とナビゲーションボタンの状態を最新にする
         calculateAttendance();
+        updateNavButtonStates();
 
-        // --- 保存ボタンの処理（経費明細の連動保存を追加） ---
+        // --- 保存ボタンの制御（重要：多重登録防止） ---
         const saveButton = document.getElementById("attendance_save_btn");
         if (saveButton) {
           const newSaveButton = saveButton.cloneNode(true);
           saveButton.parentNode.replaceChild(newSaveButton, saveButton);
 
+          newSaveButton.disabled = false;
+          newSaveButton.textContent = "保存";
+
+          // 新しくリセットされた保存ボタンに、非同期の保存処理を登録
           newSaveButton.addEventListener("click", async (ev) => {
             ev.preventDefault();
             ev.stopPropagation();
-            newSaveButton.disabled = true;
+            newSaveButton.disabled = true; // 連打防止のために即座にボタンを無効化
             newSaveButton.textContent = "保存中...";
 
             try {
+              // 画面上の最新の入力値を取得
               const clockInTime = document.getElementById("edit_clock_in").value;
               const clockOutTime = document.getElementById("edit_clock_out").value;
-              const breakTimeM = parseInt(document.getElementById("edit_break_time").value) || 0;
+              const breakTimeM = parseInt(document.getElementById("total_break_m").value) || 0;
               const memo = document.getElementById("edit_memo").value;
               const breakStart = document.getElementById("edit_break_start").value;
               const breakEnd = document.getElementById("edit_break_end").value;
               const workType = document.getElementById("edit_work_type").value;
 
+              // 退勤時間のみの入力を弾くバリデーション
+              // 通常勤務やシフトなどで、出勤が空なのに退勤だけが入力されている場合
+              if ((workType === "normal" || workType === "regular") && !clockInTime && clockOutTime) {
+                window.showToast("出勤時間が入力されていません。\n出勤時間を先に入力してください。", "error");
+
+                // ボタンを元の状態に戻して処理を中断
+                newSaveButton.disabled = false;
+                newSaveButton.textContent = "保存";
+
+                return; 
+              }
+
+              // 入力された「時:分」を、現在編集中の「年月日」と組み合わせて完全なISOタイムスタンプ（日時）を作る補助関数
               const createIsoString = (timeStr) => {
                 if (!timeStr) return null;
                 const [hours, minutes] = timeStr.split(":");
-                return new Date(y, m - 1, dayNum, parseInt(hours), parseInt(minutes)).toISOString();
+                return new Date(
+                  currentModalDate.getFullYear(),
+                  currentModalDate.getMonth(),
+                  currentModalDate.getDate(),
+                  parseInt(hours),
+                  parseInt(minutes),
+                ).toISOString();
               };
 
-              const targetDateStr = `${y}-${String(m).padStart(2, "0")}-${String(dayNum).padStart(2, "0")}`;
+              const targetDateStr = `${currentModalDate.getFullYear()}-${String(currentModalDate.getMonth() + 1).padStart(2, "0")}-${String(currentModalDate.getDate()).padStart(2, "0")}`;
               const currentNowIso = new Date().toISOString();
 
+              // 画面の入力状態から、DBに保存すべき正しいステータスを自動判定する
+              let calculatedStatus = "not_started"; // 初期値：未出勤
+              if (clockOutTime) {
+                calculatedStatus = "finished"; // 退勤時間があれば「退勤済」
+              } else if (clockInTime) {
+                calculatedStatus = "working"; // 出勤時間だけなら「出勤中」
+              }
+
+              const isoClockIn = createIsoString(clockInTime);
+              const isoClockOut = createIsoString(clockOutTime);
+
+              // 1. オリジナル出勤日時（最初に出勤データが登録された実時刻）の決定
+              let finalOriginalClockIn = currentModalRecord?.original_clock_in;
+
+              // DBにまだ過去の登録記録がなく、かつ「今回出勤時間が入力されている」なら、今この瞬間を登録時刻とする
+              if (!finalOriginalClockIn && clockInTime) {
+                finalOriginalClockIn = currentNowIso;
+              }
+
+              // 2. オリジナル退勤日時（最初に退勤データが登録された実時刻）の決定
+              let finalOriginalClockOut = currentModalRecord?.original_clock_out;
+
+              // DBにまだ過去の登録記録がなく、かつ「今回退勤時間が入力されている」なら、今この瞬間を登録時刻とする
+              if (!finalOriginalClockOut && clockOutTime) {
+                finalOriginalClockOut = currentNowIso;
+              }
+
+              // Supabaseのテーブル構造（カラム名）に合わせたオブジェクトを作成
               const upsertData = {
                 user_id: user.id,
                 work_date: targetDateStr,
                 work_type: workType,
-                clock_in: createIsoString(clockInTime),
-                clock_out: createIsoString(clockOutTime),
+                clock_in: isoClockIn,
+                clock_out: isoClockOut,
+                status: calculatedStatus,
                 total_break_m: breakTimeM,
-                break_start: createIsoString(breakStart),
-                break_end: createIsoString(breakEnd),
                 memo: memo,
-                original_clock_in: record?.original_clock_in || currentNowIso,
-                original_clock_out: record?.original_clock_out || currentNowIso,
+                original_clock_in: finalOriginalClockIn,
+                original_clock_out: finalOriginalClockOut,
+                registration_mode: "modal",
                 is_active: true,
                 updated_at: currentNowIso,
               };
-              if (record?.id) upsertData.id = record.id;
 
-              // ーーー 【ステップ1】まず勤怠親データを保存し、確定したレコードを返す ーーー
+              // すでにDBに存在するデータの修正なら、その一意のIDを指定して上書き(Upsert)させる
+              if (currentModalRecord?.id) {
+                upsertData.id = currentModalRecord.id;
+              }
+
+              // Step1: 勤怠親データの保存（なければ新規作成、あれば上書き）
               const { data: savedAttendance, error: attendanceError } = await supabase
                 .from("attendance_data")
-                .upsert(upsertData, { onConflict: "id" })
+                .upsert(upsertData, { onConflict: "user_id,work_date" })
                 .select()
                 .single();
 
               if (attendanceError) throw attendanceError;
 
-              // 確定した親のIDを取得
+              // Step2: 紐づく子データ（経費レコード）の保存準備
               const parentAttendanceId = savedAttendance.id;
-
-              // ーーー 【ステップ2】画面から手入力された経費入力行をすべて回収する ーーー
               const expenseRows = document.querySelectorAll("#expense_list .expense-notebook-row");
               const expenseRecordsToUpsert = [];
 
+              // 各経費の入力行をループしてデータを取り出す
               expenseRows.forEach((row) => {
-                // 画面上の行から、隠し持たせていたレコードIDを取得
                 const dbId = row.getAttribute("data-db-id");
-
                 const categoryEl = row.querySelector(".expense-notebook-select");
                 const amountEl = row.querySelector(".expense-notebook-amount-field");
                 const detailEl = row.querySelector(".expense-notebook-input");
@@ -514,16 +1079,16 @@ window.initAttendanceCalendar = async () => {
                 const categoryValue = categoryEl ? categoryEl.value.trim() : "";
                 const detailValue = detailEl ? detailEl.value.trim() : "";
 
-                // 💡 【修正の核心】金額が0より大きい（有効な入力がある）場合のみ、保存対象の配列にプッシュする
+                // 金額が0より大きい有効な入力がある場合のみ保存対象にする
                 if (amountValue > 0) {
-                  // 自前UUID生成ロジック（万が一IDが漏れていた場合の最終防衛線）
+                  // IDがない（新規追加の経費）場合は、フロント側でランダムなUUIDを生成して割り当てる
                   const fallbackUUID = "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => {
                     const r = (Math.random() * 16) | 0;
                     const v = c === "x" ? r : (r & 0x3) | 0x8;
                     return v.toString(16);
                   });
 
-                  const dataRow = {
+                  expenseRecordsToUpsert.push({
                     id: dbId && dbId.trim() !== "" ? dbId.trim() : fallbackUUID,
                     attendance_id: parentAttendanceId,
                     user_id: user.id,
@@ -533,36 +1098,47 @@ window.initAttendanceCalendar = async () => {
                     amount: amountValue,
                     is_active: true,
                     updated_at: currentNowIso,
-                  };
-
-                  expenseRecordsToUpsert.push(dataRow);
+                  });
                 }
               });
 
-              // 新しい経費データがあれば upsert で一括保存・更新
-              if (expenseRecordsToUpsert.length > 0) {
-                console.log("🚀 Supabaseに送信する直前の経費データの中身:", expenseRecordsToUpsert);
-
-                const { data: upsertedData, error: expenseError } = await supabase
+              // ========================================================
+              // 経費データのクリーンアップ＆保存処理
+              // ========================================================
+              // Step1: ゴミ箱（deletedExpenseIds）に溜まった経費を一括で論理削除（1回のみ実行）
+              // 【目的】画面上で削除された既存の経費データを、システム全体の統一ルール（is_active = false）に更新する
+              if (deletedExpenseIds && deletedExpenseIds.length > 0) {
+                console.log("🗑️ 削除された経費を無効化中...", deletedExpenseIds);
+                const { error: deleteError } = await supabase
                   .from("expense_records")
-                  .upsert(expenseRecordsToUpsert, { onConflict: "id" });
+                  .update({
+                    is_active: false,
+                    updated_at: currentNowIso,
+                  })
+                  .in("id", deletedExpenseIds);
 
-                if (expenseError) {
-                  console.error("❌ 経費のUpsertでエラーが発生しました:", expenseError);
-                  throw expenseError;
-                }
-                console.log("✅ 経費のUpsertが成功しました！");
-              } else {
-                // もし有効な経費データが1件もなければ、ログを出してそのまま次へ進む
-                console.log("ℹ️ 保存対象の有効な経費（金額 > 0）がないため、経費の保存をスキップしました。");
+                if (deleteError) throw deleteError;
+                console.log("✅ 経費の論理削除が成功しました！");
+                deletedExpenseIds = [];
               }
 
-              bootstrap.Modal.getInstance(modalEl)?.hide();
+              // Step2: 新しい経費データの保存
+              // 【目的】有効な金額が入力されている経費データを、Supabaseへ一括で追加・上書き（Upsert）する
+              if (expenseRecordsToUpsert.length > 0) {
+                console.log("🚀 Supabaseに送信する直前の経費データの中身:", expenseRecordsToUpsert);
+                const { error: expenseError } = await supabase.from("expense_records").upsert(expenseRecordsToUpsert, { onConflict: "id" });
+
+                if (expenseError) throw expenseError;
+                console.log("✅ 経費のUpsertが成功しました！");
+              }
+
+              // Step3: モーダルのクローズと画面の再読込
+              const bootstrapModal = bootstrap.Modal.getInstance(modalEl);
+              if (bootstrapModal) bootstrapModal.hide();
               await handlePeriodChange();
             } catch (err) {
-              console.error(err);
-              window.showToast("保存に失敗しました。", "error");
-            } finally {
+              console.error("❌ 保存処理でエラーが発生しました:", err);
+              alert("保存に失敗しました。");
               newSaveButton.disabled = false;
               newSaveButton.textContent = "保存";
             }
@@ -570,20 +1146,27 @@ window.initAttendanceCalendar = async () => {
         }
 
         // ==========================================
-        // 🔄 2段構えのリセット・消去モーダル制御
+        // 2段構えのリセット・消去モーダル制御
         // ==========================================
         const editModalEl = document.getElementById("attendanceEditModal");
         const discardModalEl = document.getElementById("discardConfirmModal");
 
-        // 1. メイン画面の「データをリセット」ボタンを押した時
+        // ◆ メイン画面の「データをリセット」ボタンを押した時の処理
+        // 【目的】誤操作防止のため、現在の編集モーダルを非表示にし、確認用モーダルを重ねて表示する
         const resetButton = document.getElementById("attendance_reset_btn");
         resetButton.onclick = () => {
-          // まだデータベースにデータがない（当日一度も保存も打刻もない）場合はスキップ
           if (!record || !record.id) {
             return window.showToast("リセットするデータがありません", "error");
           }
 
-          // 編集モーダルを一旦ハイドし、確認モーダルを重ねて表示する
+          let dateDisplay = record.view_date_str || "この日";
+
+          const modalDateSpan = document.getElementById("discard_modal_date");
+          if (modalDateSpan) {
+            modalDateSpan.textContent = dateDisplay;
+          }
+
+          //// 時間差（150ms）をつけてモーダルを綺麗に切り替える演出制御
           editModalEl.classList.remove("show");
           setTimeout(() => {
             editModalEl.style.display = "none";
@@ -594,7 +1177,8 @@ window.initAttendanceCalendar = async () => {
           }, 150);
         };
 
-        // 2. 確認画面：「キャンセル」で元の編集画面に戻る処理
+        // ◆ 確認画面：「キャンセル」で元の編集画面に戻る処理
+        // 【目的】確認モーダルを閉じ、直前まで開いていた編集モーダルを再表示する
         const cancelBtn = document.getElementById("btn_discard_cancel");
         cancelBtn.onclick = () => {
           discardModalEl.classList.remove("show");
@@ -607,74 +1191,105 @@ window.initAttendanceCalendar = async () => {
           }, 150);
         };
 
-        // 3. 確認画面：【理想の挙動】「手入力をクリアして再入力」ボタンを押した時
+        // ◆ 確認画面：「手入力をクリアして再入力」ボタンを押した時の処理
+        // 【目的】DBのデータは削除せず、モーダル内の各手入力フォームの値だけを完全に初期化する
         const clearInputsBtn = document.getElementById("btn_clear_inputs");
         clearInputsBtn.onclick = () => {
-          // フォーム内の手入力可能な箇所をすべてリセット（空っぽに）する
-          document.getElementById("edit_work_type").value = "normal"; // 通常出勤に戻す
-          document.getElementById("edit_clock_in").value = ""; // 空っぽ
-          document.getElementById("edit_clock_out").value = ""; // 空っぽ
-          document.getElementById("edit_break_time").value = ""; // 空っぽ
-          document.getElementById("edit_break_start").value = ""; // 空っぽ
-          document.getElementById("edit_break_end").value = ""; // 空っぽ
-          document.getElementById("edit_memo").value = ""; // 空っぽ
+          // Step1: 各種勤務時間・メモ入力欄のクリア
+          document.getElementById("edit_work_type").value = "normal";
+          document.getElementById("edit_clock_in").value = "";
+          document.getElementById("edit_clock_out").value = "";
+          document.getElementById("total_break_m").value = "";
+          document.getElementById("edit_break_start").value = "";
+          document.getElementById("edit_break_end").value = "";
+          document.getElementById("edit_memo").value = "";
 
-          // 有給・欠勤のグレーアウト制御を通常状態に戻す
+          // Step2: 現在画面にある全ての経費行のIDをゴミ箱に退避し、リストを初期化
+          const expenseList = document.getElementById("expense_list");
+          if (expenseList) {
+            const expenseRows = expenseList.querySelectorAll(".expense-notebook-row");
+            expenseRows.forEach((row) => {
+              const dbId = row.getAttribute("data-db-id");
+              if (dbId && dbId.trim() !== "" && !deletedExpenseIds.includes(dbId)) {
+                deletedExpenseIds.push(dbId);
+              }
+            });
+
+            expenseList.innerHTML = "";
+
+            // デフォルトの空行を1行再生成しておく
+            if (typeof addExpenseRow === "function") {
+              addExpenseRow({ id: null, category: "交通費", detail: "", amount: "" });
+            }
+          }
+
+          // Step3: 入力制限の解除と時間・金額の再計算
           toggleModalInputsByWorkType("normal");
-
-          // 勤務時間・時間外のリアルタイム計算表示を "--:--"（または0）に戻す
           calculateAttendance();
 
           window.showToast("手入力をクリアしました。グレーの打刻時間を参考に再入力してください。", "success");
-
-          // 確認モーダルを閉じ、編集モーダルを「開いたまま」元の状態に戻す
           cancelBtn.click();
         };
 
-        // 4. 確認画面：「この日の記録を完全消去」ボタンを押した時
+        // ◆ 確認画面：「この日の記録を完全消去」ボタンを押した時の処理
+        // 【目的】対象日の勤怠レコード、および関連する全ての経費レコードを一発で論理削除する
         const completelyDeleteBtn = document.getElementById("btn_completely_delete");
-        completelyDeleteBtn.onclick = async () => {
+        completelyDeleteBtn.onclick = async (e) => {
+          // イベントのバブリング（連鎖）を完全に阻止
+          if (e) {
+            e.preventDefault();
+            e.stopPropagation();
+          }
+
           try {
             if (!record || !record.id) {
               return window.showToast("消去するデータがありません", "error");
             }
 
-            // ーーー 【ステップ1】勤怠親データを論理削除 (is_active = false) ーーー
-            const { error: attendanceError } = await supabase.from("attendance_data").update({ is_active: false }).eq("id", record.id);
+            let dateDisplay = record.view_date_str || "この日";
 
+            // Step1: 勤怠親データを論理削除
+            const { error: attendanceError } = await supabase.from("attendance_data").update({ is_active: false }).eq("id", record.id);
             if (attendanceError) throw attendanceError;
 
-            // ーーー 【ステップ2】紐づく経費データもすべて論理削除 (is_active = false) ーーー
+            // Step2: 紐づく経費子データをすべて論理削除
             const { error: expenseError } = await supabase
               .from("expense_records")
-              .update({
-                is_active: false,
-                updated_at: new Date().toISOString(),
-              })
+              .update({ is_active: false, updated_at: new Date().toISOString() })
               .eq("attendance_id", record.id);
+            if (expenseError) throw expenseError;
 
-            if (expenseError) {
-              console.error("❌ 経費データの論理削除に失敗しました:", expenseError);
-              throw expenseError;
+            window.showToast(`${dateDisplay}の記録（経費含む）を完全に消去しました。`, "success");
+
+            // 確認モーダルを非表示にする
+            discardModalEl.classList.remove("show");
+            discardModalEl.style.display = "none";
+
+            // 編集モーダルも確実に非表示にする
+            if (editModalEl) {
+              editModalEl.classList.remove("show");
+              editModalEl.style.display = "none";
+              const editBootstrapModal = bootstrap.Modal.getInstance(editModalEl);
+              if (editBootstrapModal) editBootstrapModal.hide();
             }
 
-            window.showToast("この日の記録（経費含む）を完全に消去しました。", "success");
+            // Bootstrapの背景の黒幕（ backdrop ）を徹底的に除去して画面のフリーズを防ぐ
+            document.querySelectorAll(".modal-backdrop").forEach((el) => el.remove());
+            document.body.classList.remove("modal-open");
+            document.body.style.overflow = "";
+            document.body.style.paddingRight = "";
 
-            // 全てのモーダルを完全に閉じてカレンダーをリフレッシュする
-            discardModalEl.classList.remove("show");
-            setTimeout(() => {
-              discardModalEl.style.display = "none";
-              const backdrop = document.querySelector(".modal-backdrop");
-              if (backdrop) backdrop.remove();
+            // ゴミ箱をクリア
+            if (typeof deletedExpenseIds !== "undefined") {
+              deletedExpenseIds = [];
+            }
 
-              const modalInstance = bootstrap.Modal.getInstance(editModalEl);
-              if (modalInstance) modalInstance.hide();
-
-              // カレンダー再読み込み
-              handlePeriodChange();
-            }, 150);
+            // 少しだけ待ってから画面を同期的に再読込する
+            setTimeout(async () => {
+              await handlePeriodChange();
+            }, 50);
           } catch (e) {
-            console.error(e);
+            console.error("❌ 完全消去処理でエラーが発生しました:", e);
             window.showToast("削除に失敗しました。", "error");
           }
         };
@@ -690,20 +1305,24 @@ window.initAttendanceCalendar = async () => {
   // ==========================================
   // 計算・リスナー関連処理
   // ==========================================
+  // ◆ 各種入力項目に対するリアルタイム計算リスナーの登録
+  // 【目的】時間入力欄に変更があった際、自動で労働時間・残業時間の計算を走らせる
   function attachAttendanceCalculationListeners() {
-    ["edit_clock_in", "edit_clock_out", "edit_break_time", "edit_break_start", "edit_break_end"].forEach((id) =>
+    ["edit_clock_in", "edit_clock_out", "total_break_m", "edit_break_start", "edit_break_end"].forEach((id) =>
       document.getElementById(id)?.addEventListener("input", calculateAttendance),
     );
   }
 
+  // ◆ 労働時間および時間外（残業）時間の自動計算処理
+  // 【目的】出退勤時間や各種休憩時間（固定・外出）を基に、正確な合計勤務時間を割り出す
   function calculateAttendance() {
     const inVal = document.getElementById("edit_clock_in")?.value;
     const outVal = document.getElementById("edit_clock_out")?.value;
-    const breakVal = parseInt(document.getElementById("edit_break_time")?.value) || 0;
+    const breakVal = parseInt(document.getElementById("total_break_m")?.value) || 0;
     const breakStart = document.getElementById("edit_break_start")?.value;
     const breakEnd = document.getElementById("edit_break_end")?.value;
 
-    // 💡【追加】もし現在「有給」や「欠勤」が選ばれていて入力欄が未入力・無効化されていたら、計算結果を「0時間0分」にする
+    // 有給・欠勤時は計算を行わず結果を強制クリアするガード処理
     const workType = document.getElementById("edit_work_type")?.value;
     if (workType === "paid" || workType === "absent") {
       document.getElementById("calc_total_work").textContent = "0時間0分";
@@ -713,30 +1332,45 @@ window.initAttendanceCalendar = async () => {
 
     if (!inVal || !outVal) {
       document.getElementById("calc_total_work").textContent = "--:--";
-      document.getElementById("calc_overtime").textContent = "--:--";
+      document.getElementById("calc_overtime").textContent = "-";
       return;
     }
 
+    // 時間文字列（hh:mm）を計算用の通算「分」に変換するインライン関数
     const toM = (t) => {
       const [h, m] = t.split(":").map(Number);
       return h * 60 + m;
     };
+
+    // Step1: 外出（休憩）時間の差分計算
     const outingM = breakStart && breakEnd ? Math.max(0, toM(breakEnd) - toM(breakStart)) : 0;
+
+    // Step2: 総労働時間の算出（退勤 - 出勤 - 固定休憩 - 外出時間）
     const totalM = Math.max(0, toM(outVal) - toM(inVal) - breakVal - outingM);
 
-    const fmt = (m) => `${Math.floor(m / 60)}時間${m % 60}分`;
-    document.getElementById("calc_total_work").textContent = fmt(totalM);
-    document.getElementById("calc_overtime").textContent = fmt(Math.max(0, totalM - 8 * 60));
+    // Step3: 法定外残業時間の算出（総労働から8時間＝480分を引く）
+    const overtimeM = Math.max(0, totalM - 8 * 60);
+
+    // 計算された「分」を表示用の文字列にフォーマットするインライン関数
+    const fmt = (m) => (m > 0 ? `${Math.floor(m / 60)}時間${m % 60}分` : "-");
+
+    document.getElementById("calc_total_work").textContent = totalM > 0 ? `${Math.floor(totalM / 60)}時間${totalM % 60}分` : "0時間0分";
+    document.getElementById("calc_overtime").textContent = fmt(overtimeM);
+
+    // 外出時間表示エリア（存在する場合のみ）への連動反映
+    const calcOutingEl = document.getElementById("calc_outing_work");
+    if (calcOutingEl) {
+      calcOutingEl.textContent = fmt(outingM);
+    }
   }
 
-  /**
-   * 経費明細の入力行を1行追加する（レコードIDの自動生成を強化）
-   */
-  function addExpenseRow(data = { id: null, category: "交通費", detail: "", amount: "" }) {
+  // ◆ 経費入力行の動的HTML生成と追加処理
+  // 【目的】モーダル内に新しい経費入力枠（1行分）を動的に組み立てて追加する
+  function addExpenseRow(data = { id: null, category: "transportation", detail: "", amount: "" }) {
     const expenseList = document.getElementById("expense_list");
     if (!expenseList) return;
 
-    // 💡 環境不問のUUID生成関数
+    // 新規追加データ用にクライアント側で一意のUUIDを即時生成する関数
     const generateFallbackUUID = () => {
       return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => {
         const r = (Math.random() * 16) | 0;
@@ -745,22 +1379,26 @@ window.initAttendanceCalendar = async () => {
       });
     };
 
-    // 💡 既存IDが渡されなければ、即座にUUIDを確定させて埋め込む
     const expenseId = data.id || generateFallbackUUID();
-
     const rowId = "expense_row_" + Date.now() + Math.random().toString(36).substring(2, 7);
     const div = document.createElement("div");
 
     div.className = "d-flex flex-column p-2 rounded-2 shadow-sm expense-notebook-row position-relative";
     div.id = rowId;
-    div.setAttribute("data-db-id", expenseId); // 💡 これで確実に data-db-id にUUIDが入る
+    div.setAttribute("data-db-id", expenseId);
 
-    const currentCategory = data.category || "交通費";
+    // データベース仕様（英字値）に合わせた初期値の選択（selected）判定
+    const currentCategory = data.category || "transportation";
+    const isTransport = currentCategory === "transportation" || currentCategory === "交通費" ? "selected" : "";
+    const isOther = currentCategory === "other" || currentCategory === "その他" ? "selected" : "";
 
     div.innerHTML = `
     <div class="d-flex align-items-center justify-content-start gap-3 w-100 m-0 p-0">
-      <input type="text" class="form-control form-control-sm border-0 border-bottom bg-transparent fw-bold expense-notebook-select" 
-             style="width: 100px;" placeholder="カテゴリ" value="${currentCategory}">
+      <select class="form-select form-select-sm expense-notebook-select" 
+              style="width: 120px !important; height: 32px !important; background-color: #ffffff !important; color: #2b2c3a !important; font-size: 0.875rem !important; font-weight: 500 !important; border: 1px solid #ced4da !important; display: inline-block !important;">
+        <option value="transportation" ${isTransport}>交通費</option>
+        <option value="other" ${isOther}>その他</option>
+      </select>
 
       <div class="d-flex align-items-center bg-transparent border-bottom expense-notebook-amount-wrap">
         <input type="number" class="form-control form-control-sm border-0 p-0 text-end bg-transparent fw-bold expense-notebook-amount-field" 
@@ -779,27 +1417,34 @@ window.initAttendanceCalendar = async () => {
     </div>
   `;
 
-    // 金額リアルタイム再計算
+    // Bootstrapコンポーネントのインラインデザイン微調整
+    const selectEl = div.querySelector(".expense-notebook-select");
+    if (selectEl) {
+      selectEl.style.setProperty("line-height", "normal", "important");
+      selectEl.style.setProperty("padding", "0px 24px 0px 8px", "important");
+    }
+
+    // 金額入力時の合計金額自動計算イベントを登録
     div.querySelector(".expense-notebook-amount-field").addEventListener("input", calculateTotalExpense);
 
-    // ❌ 削除ボタン処理
-    div.querySelector(".btn-delete-expense").addEventListener("click", async () => {
+    // 行内の「×」ボタンクリック時の行削除、および論理削除リストへの退避処理
+    div.querySelector(".btn-delete-expense").addEventListener("click", () => {
       const dbId = div.getAttribute("data-db-id");
-      if (dbId) {
-        // すでにDBにあるデータが画面で消されたら物理削除
-        await supabase.from("expense_records").delete().eq("id", dbId);
+
+      if (dbId && typeof deletedExpenseIds !== "undefined") {
+        deletedExpenseIds.push(dbId);
       }
+
       div.remove();
-      calculateTotalExpense();
+      if (typeof calculateTotalExpense === "function") calculateTotalExpense();
     });
 
     expenseList.appendChild(div);
     calculateTotalExpense();
   }
 
-  /**
-   * 経費入力枠の金額を集計して合計値に反映する
-   */
+  // ◆ モーダル内経費金額の合計値集計処理
+  // 【目的】現在表示されているすべての経費入力欄の値を合計し、3桁カンマ区切りで画面に表示する
   function calculateTotalExpense() {
     const amounts = document.querySelectorAll("#expense_list .expense-notebook-amount-field");
     let total = 0;
@@ -817,9 +1462,8 @@ window.initAttendanceCalendar = async () => {
     }
   }
 
-  /**
-   * 経費明細エリアの初期イベント登録
-   */
+  // ◆ 「＋追加」ボタンに対する初期クリックリスナーの紐付け
+  // 【目的】二重登録によるバグを防止するため、既存リスナーを一度リセットした上で新規登録を行う
   function initExpenseCalculationListeners() {
     const addBtn = document.querySelector(".expense-add-btn");
 
@@ -829,12 +1473,200 @@ window.initAttendanceCalendar = async () => {
     }
   }
 
-  // ボタンがクリックされた時の処理
+  // ◆ 経費追加ボタンがクリックされた時の実イベント処理
   function handleExpenseAddClick(e) {
     e.preventDefault();
     e.stopPropagation();
 
-    // 💡 追加ボタンを押した時もIDは自動生成（nullを渡す）されるので安心です
-    addExpenseRow({ id: null, category: "交通費", detail: "", amount: "" });
+    addExpenseRow({ id: null, category: "transportation", detail: "", amount: "" });
+  }
+
+  // ◆ カレンダー表示モード専用の制御ロジック
+  // 画面切り替えのイベントをバインドする関数
+  function setupViewModeSwitchEvents() {
+    const btnList = document.getElementById("view_mode_list");
+    const btnCalendar = document.getElementById("view_mode_calendar");
+    const wrapperList = document.getElementById("list_view_wrapper");
+    const wrapperCalendar = document.getElementById("calendar_view_wrapper");
+    const cardList = document.getElementById("attendance_card_list");
+
+    if (!btnList || !btnCalendar) {
+      console.error("切り替えボタンが見つかりません。HTMLのIDを確認してください。");
+      return;
+    }
+
+    // 一覧ボタンクリック時
+    btnList.onclick = (e) => {
+      if (e) e.preventDefault();
+      btnList.classList.add("active");
+      btnCalendar.classList.remove("active");
+
+      if (wrapperList) wrapperList.classList.remove("d-none");
+      if (wrapperCalendar) wrapperCalendar.classList.add("d-none");
+      if (cardList) cardList.classList.add("d-none");
+    };
+
+    // カレンダーボタンクリック時
+    btnCalendar.onclick = (e) => {
+      if (e) e.preventDefault();
+      btnCalendar.classList.add("active");
+      btnList.classList.remove("active");
+
+      if (wrapperList) wrapperList.classList.add("d-none");
+      if (wrapperCalendar) wrapperCalendar.classList.remove("d-none");
+      if (cardList) cardList.classList.add("d-none");
+    };
+  }
+
+  // ◆ JavaScript側の生成クラス名も at- 付きに修正
+  function renderCalendarGrid(year, month, holidays, recordMap, targetUser, loginUser) {
+    const grid = document.getElementById("calendar_grid");
+    if (!grid) return;
+    grid.innerHTML = ""; // クリア
+
+    const isMyData = loginUser && targetUser && loginUser.id === targetUser.id;
+    const firstDay = new Date(year, month - 1, 1);
+    const lastDay = new Date(year, month, 0);
+    const blankDays = firstDay.getDay();
+
+    // STEP1. 前月の空マスを生成
+    const prevMonthLastDay = new Date(year, month - 1, 0).getDate();
+    for (let i = 0; i < blankDays; i++) {
+      const blankBox = document.createElement("div");
+      blankBox.className = "at-calendar-day-box out-of-month";
+      const dayNum = prevMonthLastDay - (blankDays - 1 - i);
+      blankBox.innerHTML = `
+      <div class="at-calendar-day-header">
+        <span class="at-calendar-day-num">${dayNum}</span>
+      </div>
+    `;
+      grid.appendChild(blankBox);
+    }
+
+    // STEP2. 1日から月末までループ生成
+    const totalDays = lastDay.getDate();
+    for (let day = 1; day <= totalDays; day++) {
+      const currentBox = document.createElement("div");
+      currentBox.className = "at-calendar-day-box";
+      currentBox.style.cursor = "pointer"; // クリック可能であることを明示
+
+      const dateObj = new Date(year, month - 1, day);
+      const dayOfWeekNum = dateObj.getDay();
+      const holidayName = holidays[day];
+      const record = recordMap ? recordMap.get(day) : null;
+
+      // 今日かつ勤務中かどうかの判定
+      const today = new Date();
+      const isToday = year === today.getFullYear() && month === today.getMonth() + 1 && day === today.getDate();
+
+      const isStillWorkingToday = isToday && record && record.clock_in && !record.clock_out;
+
+      if (isStillWorkingToday) {
+        currentBox.classList.add("is-working-now");
+      }
+
+      // 曜日・祝日ごとのクラス付与
+      if (dayOfWeekNum === 6) currentBox.classList.add("is-saturday");
+      if (dayOfWeekNum === 0) currentBox.classList.add("is-sunday");
+      if (holidayName) currentBox.classList.add("is-holiday");
+
+      const formatTime = (iso) => (iso ? new Date(iso).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "--:--");
+
+      let timeLogHtml = '<span class="text-muted" style="font-size:0.75rem;">-</span>';
+      let badgesHtml = "";
+
+      if (record) {
+        // ステータスに応じたクラスを付与
+        if (record.work_type === "paid") {
+          currentBox.classList.add("is-paid-leave");
+          timeLogHtml = "";
+        } else if (record.work_type === "absent") {
+          currentBox.classList.add("is-absent");
+          timeLogHtml = "";
+        } else if (record.clock_in) {
+          // clock_in さえあれば表示対象にする
+          currentBox.classList.add("is-normal-work");
+
+          if (record.clock_out) {
+            // 退勤まで揃っている場合
+            timeLogHtml = `<span class="at-calendar-time-log">${formatTime(record.clock_in)} ～ ${formatTime(record.clock_out)}</span>`;
+          } else {
+            // 出勤のみ（現在進行形など）の場合 ➔ 「9:00 ～」の形式にする
+            timeLogHtml = `<span class="at-calendar-time-log">${formatTime(record.clock_in)} ～</span>`;
+          }
+        }
+
+        // 経費・備考アイコンの判定（badgesHtmlへの追加）
+        if (record.expense_records && record.expense_records.filter((e) => e.is_active).length > 0) {
+          badgesHtml += `<span class="badge-mini" title="経費あり">💰</span>`;
+        }
+        if (record.memo) {
+          badgesHtml += `<span class="badge-mini" title="${record.memo}">📝</span>`;
+        }
+      }
+
+      // 祝日名の取得ロジック部分
+      const holidayDisplay = holidayName || "";
+
+      const holidayHtml = holidayName ? `<span class="at-holiday-name-mini" title="${holidayName}">${holidayDisplay}</span>` : "";
+
+      // HTMLの構成を更新
+      currentBox.innerHTML = `
+        <div class="at-calendar-day-header">
+          <span class="at-calendar-day-num ${isToday ? "is-today" : ""}">${day}</span>
+          ${holidayHtml}
+        </div>
+        <div class="at-calendar-day-body">
+          ${timeLogHtml}
+        </div>
+        <div class="at-calendar-day-footer">
+          ${badgesHtml}
+        </div>
+      `;
+
+      // マス全体にクリックイベントを付与
+      currentBox.addEventListener("click", () => {
+        // 通常打刻データ（button）があっても、退勤済（finished）ならブロックせずにスルーする
+        const isNotFinishedYet = record && record.status !== "finished";
+        const hasClockedButton = record && record.registration_mode === "button";
+
+        // 「現在進行形で出勤中」または「今日通常打刻をしていてまだ退勤していない」場合のみブロック
+        if (isStillWorkingToday || (hasClockedButton && isNotFinishedYet)) {
+          if (typeof window.showToast === "function") {
+            window.showToast("本日は現在打刻中のため、編集できません。\n退勤後に編集が可能になります。", "error");
+          } else {
+            alert("本日は現在打刻中のため、編集できません。\n退勤後に編集が可能になります。");
+          }
+          return;
+        }
+
+        const targetTableBtn = document.querySelector(`#attendance_tbody .btn-table-edit[data-day="${day}"]`);
+        if (targetTableBtn) {
+          targetTableBtn.click();
+        } else {
+          console.log("日付クリック:", day);
+        }
+      });
+
+      grid.appendChild(currentBox);
+    }
+
+    // STEP3. 翌月の空マスを生成
+    const totalCells = blankDays + totalDays;
+    const remainingCells = Math.ceil(totalCells / 7) * 7 - totalCells;
+
+    for (let i = 1; i <= remainingCells; i++) {
+      const nextBox = document.createElement("div");
+      nextBox.className = "at-calendar-day-box out-of-month";
+      nextBox.innerHTML = `
+      <div class="at-calendar-day-header">
+        <span class="at-calendar-day-num">${i}</span>
+      </div>
+    `;
+      grid.appendChild(nextBox);
+    }
+
+    // カレンダーを描画し終わったタイミングで、確実に切り替えボタンのイベントを呼び出す
+    setupViewModeSwitchEvents();
   }
 };
