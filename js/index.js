@@ -78,14 +78,15 @@ document.addEventListener("DOMContentLoaded", async () => {
   // ==========================================
   async function checkAndDisplayUser() {
     try {
-      // 👇 【ここを追加！】ログイン画面が保存したキャッシュがあれば、それを使って一瞬で画面を書き換える
+      // 💡 【先取りキャッシュの読み込み】
       const cachedName = localStorage.getItem("cached_user_name");
       const cachedRole = localStorage.getItem("cached_user_role");
+      const cachedCompanyId = localStorage.getItem("cached_user_company_id"); // ←【追加】会社IDもキャッシュから取る
 
+      // 💡 キャッシュが存在する場合の先行UI制御
       if (cachedName && cachedRole) {
-        console.log("ログイン画面からの先取りキャッシュを使用します:", { cachedName, cachedRole });
+        console.log("ログイン画面からの先取りキャッシュを使用します:", { cachedName, cachedRole, cachedCompanyId });
 
-        // ヘッダーとスマホメニューの名前を反映
         const userNameSpan = document.querySelector(".header-right .user-name");
         if (userNameSpan) userNameSpan.innerText = `${cachedName} さん`;
 
@@ -98,8 +99,11 @@ document.addEventListener("DOMContentLoaded", async () => {
           adminMenuItem.style.setProperty("display", cachedRole === "admin" ? "flex" : "none", "important");
         }
 
-        // 💡 キャッシュで画面が作れたので、重い通信をスルーして先に進む
-        // (裏でのAuthチェックや同期はinitializeApp側のloadPage等に任せる、またはそのまま非同期で裏実行)
+        // IDで直接指定して非表示にする
+        const reportMenuItem = document.getElementById("menu_report");
+        if (reportMenuItem && cachedCompanyId === "c981e701-94d1-47a6-a23a-7d2b3b84a894") {
+          reportMenuItem.style.setProperty("display", "none", "important");
+        }
       }
 
       const supabaseClient = window.supabase || supabase;
@@ -108,7 +112,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         return;
       }
 
-      // 1. まず認証情報を取得（ここでIDがわかります）
+      // 1. まず認証情報を取得
       const {
         data: { user },
         error: authError,
@@ -119,47 +123,57 @@ document.addEventListener("DOMContentLoaded", async () => {
       if (user) {
         console.log("ログイン中のAuthユーザーID:", user.id);
 
-        /* user_name と一緒に role（権限）も引っ張るようにします */
-        const { data: masterData, error: dbError } = await supabaseClient.from("user_master").select("user_name, role").eq("id", user.id).single();
+        /* user_name, role と一緒に company_id（会社ID）もマスタから直接引っ張る */
+        const { data: masterData, error: dbError } = await supabaseClient
+          .from("user_master")
+          .select("user_name, role, company_id") // ← company_id を追加
+          .eq("id", user.id)
+          .single();
 
         let userName = "ゲストユーザー";
-        let userRole = "staff"; // 失敗したときの初期値（一般スタッフ）を用意
+        let userRole = "staff";
+        let userCompanyId = null; // 初期値
 
         if (dbError) {
           console.warn("user_masterからの名前取得に失敗したため、代替値を使用します:", dbError.message);
           userName = user.email || "ゲストユーザー";
         } else if (masterData) {
           userName = masterData.user_name;
-          userRole = masterData.role; // データベースから取れた権限（adminかstaff）を代入！
+          userRole = masterData.role;
+          userCompanyId = masterData.company_id; // データベースから取得！
+
+          // 次回スムーズに動くように会社IDもキャッシュに保存する
+          localStorage.setItem("cached_user_company_id", userCompanyId);
         }
 
         // ヘッダーの表示を書き換える
         const userNameSpan = document.querySelector(".header-right .user-name");
-        if (userNameSpan) {
-          userNameSpan.innerText = `${userName} さん`;
+        if (userNameSpan) userNameSpan.innerText = `${userName} さん`;
+
+        // 管理者メニューの表示・非表示の切り替え
+        const adminMenuItem = document.getElementById("menu_admin");
+        if (adminMenuItem) {
+          adminMenuItem.style.setProperty("display", userRole === "admin" ? "flex" : "none", "important");
         }
 
         // ==========================================
-        // 管理者メニューの表示・非表示の切り替え
+        // アークフォレスト用のレポートメニュー完全非表示化
         // ==========================================
-        const adminMenuItem = document.getElementById("menu_admin");
-        if (adminMenuItem) {
-          if (userRole === "admin") {
-            // 管理者の場合は表示する
-            adminMenuItem.style.setProperty("display", "flex", "important");
+        const reportMenuItem = document.getElementById("menu_report");
+        if (reportMenuItem) {
+          if (userCompanyId === "c981e701-94d1-47a6-a23a-7d2b3b84a894") {
+            console.log("共通基盤: アークフォレスト所属のため、レポートメニューを非表示にします。");
+            reportMenuItem.style.setProperty("display", "none", "important");
           } else {
-            // 管理者以外（staffなど）の場合は完全に非表示にする
-            adminMenuItem.style.setProperty("display", "none", "important");
+            // 💡 既存のデザイン（liタグ）に合わせて、非表示を解除するときは「flex」を適用
+            reportMenuItem.style.setProperty("display", "flex", "important");
           }
         }
 
         // スマホメニュー内の表示も同時に書き換える
         const mobileUserNameSpan = document.querySelector(".sidebar-user-name");
-        if (mobileUserNameSpan) {
-          mobileUserNameSpan.innerText = `${userName} さん`;
-        }
+        if (mobileUserNameSpan) mobileUserNameSpan.innerText = `${userName} さん`;
       } else {
-        // ❌ ログインしていない場合はログイン画面へ強制リダイレクト
         console.warn("未ログイン状態です。ログイン画面へ遷移します。");
         window.location.href = "login.html";
       }
@@ -243,14 +257,14 @@ document.addEventListener("DOMContentLoaded", async () => {
    */
   async function loadPage(pageName, isInitial = false) {
     try {
-      // 💡 修正ポイント：ログイン直後の最初の起動時（isInitialがtrue）は、ロード画面を回さない！
+      // ログイン直後の最初の起動時（isInitialがtrue）は、ロード画面を回さない！
       if (!isInitial) {
         showGlobalLoading();
       }
 
       await new Promise((resolve) => setTimeout(resolve, 50));
 
-      // 💡 2. ボカシの裏に完全に隠れてから、安全に画面の切り替えを開始する
+      // ボカシの裏に完全に隠れてから、安全に画面の切り替えを開始する
       const response = await fetch(`./${pageName}.html`);
       if (!response.ok) {
         throw new Error(`ページの読み込みに失敗しました: ${response.status}`);
@@ -263,7 +277,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       }
 
       // ==================================================================
-      // ✨【追加】メイン画面読み込み時、経費専用モーダルをセットで自動フェッチして合成する
+      // メイン画面読み込み時、経費専用モーダルをセットで自動フェッチして合成する
       // ==================================================================
       if (pageName === "main") {
         try {
@@ -284,17 +298,22 @@ document.addEventListener("DOMContentLoaded", async () => {
       if (pageName === "main" && typeof initializeMainPage === "function") {
         await initializeMainPage();
       }
-      // ✨【ここを追加！】メイン画面の初期化に続けてカレンダーを描画する
+      // メイン画面の初期化に続けてカレンダーを描画する
       if (typeof renderCalendar === "function") {
         console.log("共通基盤: main画面の同期完了を検知。カレンダーを描画します。");
         renderCalendar();
       }
 
-      if (pageName === "admin" && typeof initializeAdminPage === "function") {
-        await initializeAdminPage();
+      if (pageName === "report" && typeof initializeReportPage === "function") {
+        await initializeReportPage();
       }
+
       if (pageName === "attendance" && typeof window.initAttendanceCalendar === "function") {
         await window.initAttendanceCalendar();
+      }
+
+      if (pageName === "admin" && typeof initializeAdminPage === "function") {
+        await initializeAdminPage();
       }
 
       // HTMLが完全に描画された後、共通のポップオーバー初期化を実行
@@ -306,10 +325,10 @@ document.addEventListener("DOMContentLoaded", async () => {
       console.error("画面の切り替え中にエラーが発生しました:", error);
       if (dynamicArea) {
         dynamicArea.innerHTML = `
-          <div class="alert alert-danger m-4" role="alert">
-            <i class="bi bi-exclamation-triangle-fill"></i> 画面の読み込み中にエラーが発生しました。
-          </div>
-        `;
+     <div class="alert alert-danger m-4" role="alert">
+      <i class="bi bi-exclamation-triangle-fill"></i> 画面の読み込み中にエラーが発生しました。
+     </div>
+    `;
       }
     } finally {
       // 💡 修正ポイント：最初の起動時（isInitialがtrue）は、ロード画面を消す処理もしない（最初から出ていないため）

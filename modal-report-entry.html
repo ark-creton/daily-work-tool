@@ -1,0 +1,323 @@
+<div
+  class="modal fade"
+  id="modal_report_entry"
+  data-bs-backdrop="static"
+  data-bs-keyboard="false"
+  tabindex="-1"
+  aria-labelledby="reportModalLabel"
+  aria-hidden="true"
+>
+  <div class="modal-dialog modal-lg modal-dialog-scrollable">
+    <div class="modal-content border-0 shadow">
+      <div class="modal-header bg-light border-bottom py-3">
+        <div class="container-fluid p-0">
+          <div class="row align-items-center g-2">
+            <div class="col-md-6 d-flex align-items-center">
+              <h5 class="modal-title fw-bold text-dark mb-0 d-flex align-items-center gap-2" id="reportModalLabel">
+                <i class="bi bi-file-earmark-medical me-1 text-primary"></i>
+
+                <span id="report_modal_title_text">レポート登録</span>
+
+                <span id="report_modal_status_badge"></span>
+              </h5>
+            </div>
+            <div class="col-md-6 d-flex align-items-center justify-content-md-end">
+              <button type="button" class="btn-close" id="cancel_button_top" aria-label="Close"></button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-body p-4">
+        <form id="form_report_entry" onsubmit="return false;">
+          <div class="row g-3 mb-3">
+            <div class="col-md-6">
+              <label class="form-label small fw-bold text-muted">報告者</label>
+              <div class="form-control input-readonly-box" id="reporter_name">ログインユーザー名</div>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label small fw-bold text-muted">レポートタイトル</label>
+              <div id="modal_report_dynamic_title" class="form-control text-start input-readonly-box" style="letter-spacing: 0.05em"></div>
+            </div>
+          </div>
+
+          <div class="row g-3 mb-3">
+            <div class="col-md-6">
+              <label for="report_type" class="form-label small fw-bold text-muted">報告種別 <span class="badge bg-danger ms-1">必須</span></label>
+              <select id="report_type" class="form-select" required>
+                <option value="日報" selected>日報</option>
+                <option value="週報">週報</option>
+                <option value="月報">月報</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="row g-3 mb-3">
+            <div class="col-12">
+              <label class="form-label small fw-bold text-muted mb-1">作業期間</label>
+              <div class="row g-3" id="period_range_wrapper">
+                <div class="col-md-6">
+                  <label for="work_period_start" class="form-label mb-1 text-muted opacity-75 lh-1" style="font-size: 0.7rem">開始</label>
+                  <input type="date" id="work_period_start" class="form-control rounded" />
+                </div>
+                <div class="col-md-6">
+                  <label for="work_period_end" class="form-label mb-1 text-muted opacity-75 lh-1" style="font-size: 0.7rem">終了</label>
+                  <input type="date" id="work_period_end" class="form-control rounded" />
+                </div>
+              </div>
+              <div id="period_single_wrapper" class="d-none mt-2">
+                <input type="date" id="work_period_single" class="form-control rounded" />
+              </div>
+            </div>
+          </div>
+
+          <div class="row g-3 mb-3">
+            <div class="col-md-8">
+              <label for="subject_title" class="form-label small fw-bold text-muted">件名</label>
+              <input type="text" id="subject_title" class="form-control" placeholder="例: ○○業務、〇〇案件、定期保守など" maxlength="100" />
+            </div>
+            <div class="col-md-4">
+              <label for="work_location" class="form-label small fw-bold text-muted">場所</label>
+              <input type="text" id="work_location" class="form-control" placeholder="例: 本社、自宅" maxlength="100" />
+            </div>
+          </div>
+
+          <div id="dynamic_form_fields" class="mb-3">
+            <div class="mb-3" id="field_customer_name">
+              <label for="customer_name" id="label_customer_name" class="form-label small fw-bold text-muted">お客様名</label>
+              <input type="text" id="customer_name" class="form-control" placeholder="例: ○○株式会社" maxlength="100" />
+            </div>
+            <div class="mb-3" id="field_companion_name">
+              <label for="companion_name" class="form-label small fw-bold text-muted">同行者</label>
+              <input type="text" id="companion_name" class="form-control" placeholder="例: 山田太郎、鈴木花子" maxlength="50" />
+            </div>
+            <div class="mb-3" id="field_instructor_name">
+              <label for="instructor_name" id="label_instructor_name" class="form-label small fw-bold text-muted">講師</label>
+              <input type="text" id="instructor_name" class="form-control" placeholder="例: 佐藤部長" maxlength="50" />
+            </div>
+          </div>
+
+          <div class="mb-4">
+            <label class="form-label small fw-bold text-muted mb-1">作業内容</label>
+
+            <div id="work_content_free_wrapper">
+              <textarea
+                id="work_content_free"
+                class="form-control rounded"
+                rows="4"
+                placeholder="具体的な作業内容を記入してください"
+                maxlength="500"
+              ></textarea>
+            </div>
+
+            <div id="work_content_weekly_wrapper" class="d-none">
+              <div class="card border-light bg-light p-3 rounded">
+                <div class="text-muted small fw-bold mb-2">■ 今週の作業内容(簡易的に記述)</div>
+                <div class="row g-2">
+                  <div class="col-12 d-flex align-items-center gap-2">
+                    <span class="badge bg-secondary opacity-75" style="width: 60px">月曜日</span>
+                    <input
+                      type="text"
+                      id="work_mon"
+                      class="form-control form-control-sm rounded"
+                      placeholder="例: ○○の対応、書類作成、現場作業など"
+                    />
+                  </div>
+                  <div class="col-12 d-flex align-items-center gap-2">
+                    <span class="badge bg-secondary opacity-75" style="width: 60px">火曜日</span>
+                    <input type="text" id="work_tue" class="form-control form-control-sm rounded" />
+                  </div>
+                  <div class="col-12 d-flex align-items-center gap-2">
+                    <span class="badge bg-secondary opacity-75" style="width: 60px">水曜日</span>
+                    <input type="text" id="work_wed" class="form-control form-control-sm rounded" />
+                  </div>
+                  <div class="col-12 d-flex align-items-center gap-2">
+                    <span class="badge bg-secondary opacity-75" style="width: 60px">木曜日</span>
+                    <input type="text" id="work_thu" class="form-control form-control-sm rounded" />
+                  </div>
+                  <div class="col-12 d-flex align-items-center gap-2">
+                    <span class="badge bg-secondary opacity-75" style="width: 60px">金曜日</span>
+                    <input type="text" id="work_fri" class="form-control form-control-sm rounded" />
+                  </div>
+                  <div class="col-12 d-flex align-items-center gap-2">
+                    <span class="badge bg-secondary opacity-75" style="width: 60px">土曜日</span>
+                    <input type="text" id="work_sat" class="form-control form-control-sm rounded" />
+                  </div>
+                  <div class="col-12 d-flex align-items-center gap-2">
+                    <span class="badge bg-secondary opacity-75" style="width: 60px">日曜日</span>
+                    <input type="text" id="work_sun" class="form-control form-control-sm rounded" />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <hr class="my-4 text-muted opacity-25" />
+
+          <div class="mb-4">
+            <div class="text-muted small fw-bold mb-3"><i class="bi bi-pencil-square me-1 text-primary"></i>共通記入事項</div>
+
+            <div class="mb-3">
+              <label for="content_impression" class="form-label small fw-bold text-secondary mb-1"
+                >■ 所感 <span class="fw-normal text-muted">（今週の作業を行い、心に感じた事・感想）</span></label
+              >
+              <textarea id="content_impression" class="form-control rounded" rows="3" maxlength="500"></textarea>
+            </div>
+
+            <div class="mb-3">
+              <label for="content_remaining_work" class="form-label small fw-bold text-secondary mb-1">
+                ■ 残作業 <span class="fw-normal text-muted">（作業・見積等）</span>
+              </label>
+              <textarea id="content_remaining_work" class="form-control rounded" rows="2" maxlength="300"></textarea>
+            </div>
+
+            <div class="mb-3">
+              <label for="content_near_goal" class="form-label small fw-bold text-secondary mb-1"
+                >■ 近々の目標 <span class="fw-normal text-muted">（1〜3か月以内の目標）</span></label
+              >
+              <textarea id="content_near_goal" class="form-control rounded" rows="2" maxlength="300"></textarea>
+            </div>
+
+            <div class="mb-3">
+              <label for="content_issue" class="form-label small fw-bold text-secondary mb-1"
+                >■ 課題等 <span class="fw-normal text-muted">（自分が成長する為の課題）</span></label
+              >
+              <textarea id="content_issue" class="form-control rounded" rows="2" maxlength="300"></textarea>
+            </div>
+
+            <div class="mb-3">
+              <label for="content_action_plan" class="form-label small fw-bold text-secondary mb-1">■ 目標・課題を達成するための行動 </label>
+              <textarea
+                id="content_action_plan"
+                class="form-control rounded"
+                rows="2"
+                placeholder="例:※期限なども自分で決めて記載する 例: MM/DDまでに〜をする"
+                maxlength="400"
+              ></textarea>
+            </div>
+
+            <div class="mb-3">
+              <label for="next_schedule" class="form-label small fw-bold text-secondary mb-1">■ 次回作業予定</label>
+              <textarea id="next_schedule" class="form-control rounded" rows="2" maxlength="300"></textarea>
+            </div>
+
+            <div class="mb-3">
+              <label for="content_notice" class="form-label small fw-bold text-secondary mb-1">■ 連絡事項</label>
+              <textarea id="content_notice" class="form-control rounded" rows="2" maxlength="300"></textarea>
+            </div>
+          </div>
+
+          <hr class="my-4 text-muted opacity-25" />
+
+          <div class="mb-3">
+            <label class="form-label small fw-bold text-muted mb-2">共有先（提出先）</label>
+            <div id="shared_with_container" class="border rounded p-3 bg-white" style="max-height: 120px; overflow-y: auto"></div>
+          </div>
+        </form>
+      </div>
+
+      <div class="modal-footer bg-light border-top d-flex justify-content-between align-items-center py-3 px-4">
+        <button type="button" id="modal_delete_button" class="btn btn-sm btn-pastel-red-rounded d-none">
+          <i class="bi bi-trash3 me-1"></i>このレポートを削除
+        </button>
+
+        <div class="d-flex gap-2 align-items-center ms-auto">
+          <button type="button" id="cancel_button" class="btn btn-sm btn-outline-secondary px-3 rounded-pill fw-bold">閉じる</button>
+          <button type="button" id="draft_button" class="btn btn-sm btn-temporary"><i class="bi bi-bookmark-star"></i> 一時保存</button>
+          <button type="button" id="submit_button" class="btn btn-sm btn-primary px-4 fw-bold rounded-pill">
+            <i class="bi bi-send me-1"></i>送信
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 確認トースト -->
+<div class="modal fade" id="reportDeleteConfirmModal" data-bs-backdrop="static" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-sm" style="max-width: 360px; width: 95%">
+    <div class="modal-content shadow border-0" style="border-radius: 12px">
+      <div class="modal-body p-4 text-center">
+        <div class="mb-3">
+          <i class="bi bi-exclamation-triangle text-danger fs-1 opacity-75"></i>
+        </div>
+
+        <h6 class="fw-bold mb-2">レポートの完全削除</h6>
+        <p class="small text-muted mb-4">
+          <span id="delete_modal_date_type" class="fw-bold text-dark">このレポート</span>を完全に削除してもよろしいですか？<br />
+          <span class="text-danger">※この操作は取り消せません。</span>
+        </p>
+
+        <div class="d-flex flex-column gap-2">
+          <button type="button" class="btn btn-sm btn-danger w-100 py-2 fw-semibold rounded-pill" id="btn_report_confirm_execute">
+            本当に削除する
+          </button>
+          <button type="button" class="btn btn-sm btn-link text-decoration-none text-muted w-100 mt-1 py-1 small" id="btn_report_confirm_cancel">
+            キャンセル
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="reportDiscardConfirmModal" data-bs-backdrop="static" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-sm" style="max-width: 380px; width: 95%">
+    <div class="modal-content shadow border-0" style="border-radius: 12px">
+      <div class="modal-body p-4 text-center">
+        <div class="mb-3">
+          <i class="bi bi-exclamation-circle text-warning fs-1 opacity-75"></i>
+        </div>
+
+        <h6 class="fw-bold mb-2">編集内容の破棄</h6>
+        <p class="small text-muted mb-4">
+          編集中の内容があります。<br />
+          保存せずに閉じてもよろしいですか？<br />
+          <span class="text-danger small">※入力した内容はすべて破棄されます。</span>
+        </p>
+
+        <div class="d-flex flex-column gap-2">
+          <button type="button" class="btn btn-sm btn-warning text-white w-100 py-2 fw-semibold rounded-pill" id="btn_report_discard_execute">
+            保存せずに閉じる
+          </button>
+          <button type="button" class="btn btn-sm btn-link text-decoration-none text-muted w-100 mt-1 py-1 small" id="btn_report_discard_cancel">
+            編集を続ける
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- レポート更新確認モーダル -->
+<div class="modal fade" id="reportUpdateConfirmModal" data-bs-backdrop="static" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-sm" style="max-width: 380px; width: 95%">
+    <div class="modal-content shadow border-0" style="border-radius: 12px">
+      <div class="modal-body p-4 text-center">
+        <div class="mb-3">
+          <i class="bi bi-pencil-square text-primary fs-1 opacity-75"></i>
+        </div>
+
+        <h6 class="fw-bold mb-2">レポートの更新確認</h6>
+        <p class="small text-muted mb-4">変更内容に合わせて、 更新方法を選択してください。</p>
+
+        <div class="d-flex flex-column gap-2">
+          <!-- パターン1：既読をリセットして通知し直す -->
+          <button type="button" class="btn btn-sm btn-primary w-100 py-2 fw-semibold rounded-pill" id="btn_report_update_with_reset">
+            <i class="bi bi-arrow-counterclockwise me-1"></i>既読をリセットして更新
+          </button>
+
+          <!-- パターン2：既読はそのままにする -->
+          <button type="button" class="btn btn-sm btn-outline-secondary w-100 py-2 fw-semibold rounded-pill mt-1" id="btn_report_update_keep_read">
+            既読を維持したまま更新
+          </button>
+
+          <!-- キャンセル -->
+          <button type="button" class="btn btn-sm btn-link text-decoration-none text-muted w-100 mt-2 py-1 small" id="btn_report_update_cancel">
+            キャンセル
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

@@ -341,6 +341,63 @@ body {
   box-shadow: 0 15px 50px rgba(0, 0, 0, 0.15) !important;
 }
 
+/* ==========================================================================
+   共通パーツ：ぷっくり丸みパステルミント（完全リセット・絶対統一版）
+   ========================================================================== */
+.btn-pastel-mint-rounded,
+.dashboard-container .grid-card .btn-create-report {
+  /* 💡階層を極限まで細かく指定 */
+  background-color: #e4fbf2 !important;
+  color: #169b68 !important;
+  font-weight: 700 !important;
+  border: 1px solid #bcefdc !important;
+  padding: 0.25rem 0.85rem !important;
+  border-radius: 50px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 0.35rem !important;
+  box-shadow: 0 2px 4px rgba(31, 177, 121, 0.06) !important;
+  transition: all 0.2s ease-in-out !important;
+  text-decoration: none !important;
+
+  /* 他の打刻ボタンなどのエフェクトが混ざるのを徹底防御 */
+  filter: none !important;
+  background-image: none !important;
+  box-shadow: none !important;
+}
+
+/* マウスが乗ったとき */
+.btn-pastel-mint-rounded:hover,
+.dashboard-container .grid-card .btn-create-report:hover {
+  background-color: #d1f7e8 !important;
+  color: #169b68 !important;
+  opacity: 1 !important;
+  filter: none !important;
+  background-image: none !important;
+}
+
+/* ➔ 【これで完全決着】押した瞬間（:active）に暗くなるのを力技で完全に封殺 */
+.btn-pastel-mint-rounded:active,
+.btn-pastel-mint-rounded:focus,
+.dashboard-container .grid-card .btn-create-report:active,
+.dashboard-container .grid-card .btn-create-report:focus,
+.dashboard-container .grid-card .btn-create-report:focus:active,
+.dashboard-container .grid-card .btn-create-report.active {
+  /* 1枚目と完全に同じ爽やかなパステルミント色を『最優先』で強制指定 */
+  background-color: #d1f7e8 !important;
+  color: #169b68 !important;
+  border-color: #bcefdc !important;
+
+  /* 動きだけを適用 */
+  transform: translateY(1px) scale(0.97) !important;
+
+  /* 他のCSSが混ぜてくる「暗くする黒い影・グラデーション・フィルター」を強制消去 */
+  background-image: none !important;
+  filter: none !important;
+  box-shadow: none !important;
+  outline: none !important;
+}
+
 /* ==================================================
    2. レイアウト（配置）
    ================================================== */

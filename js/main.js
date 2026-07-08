@@ -926,10 +926,14 @@ async function renderCalendarInternal() {
    */
   function createDayCell(dayNum, isOtherMonth = false, otherMonthOffset = 0) {
     const div = document.createElement("div");
-    // 修正後：全部 header の中に入れる
+    
+    // レポート画面用の基本クラス「report-cal-day」をメイン画面側にも付与
+    div.className = "report-cal-day";
+    
+    // 内部の文字要素クラスも「day-num」に統一
     div.innerHTML = `
-      <div class="calendar-day-header">
-        <span class="day-number">${dayNum}</span>
+      <div class="calendar-day-header w-100 h-100">
+        <span class="day-num">${dayNum}</span>
         <div class="calendar-day-badge-area"></div>
         <div class="calendar-icons-area"></div>
       </div>
@@ -939,7 +943,8 @@ async function renderCalendarInternal() {
     const dayOfWeek = checkDate.getDay();
 
     if (isOtherMonth) {
-      div.classList.add("is-other-month");
+      // レポート画面の先月・来月クラス「other-month」に統一
+      div.classList.add("other-month");
     } else {
       const holidayName = holidays[dayNum];
       if (holidayName) {
@@ -952,7 +957,7 @@ async function renderCalendarInternal() {
       }
 
       if (dayNum === today.getDate() && month === today.getMonth() && year === today.getFullYear()) {
-        div.classList.add("is-today");
+        div.classList.add("today"); // 💡 「is-today」から「today」に統一
       }
     }
     return div;

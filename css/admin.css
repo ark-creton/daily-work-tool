@@ -306,13 +306,19 @@
 /* --------------------------------------------------
    ▼ パスワード欄（#password_group）の完全制御
    -------------------------------------------------- */
+/* 💡 通常時の外枠の見た目を、他の一般の入力欄と寸分違わず完全に統一します */
+#userModal #password_group {
+  border: 1.5px solid #e9ecef !important;
+  background-color: #fcfcfc !important;
+}
+
 /* ⑥ Bootstrapがパスワードのinput単体に付けようとするエラー/成功の線やフォーカス時の「ピンクの影」を強制リセット */
 #userModal .was-validated #password.form-control:valid,
 #userModal .was-validated #password.form-control:invalid,
 #userModal .was-validated #password.form-control:valid:focus,
 #userModal .was-validated #password.form-control:invalid:focus {
   border: none !important;
-  box-shadow: none !important; /* 💡 これで中身のピンクのモヤが完全に消えます！ */
+  box-shadow: none !important;
   background-color: transparent !important;
 }
 
@@ -324,17 +330,21 @@
   border-color: #e63946 !important;
 }
 
-/* ⑧ 【ここが超重要】パスワード入力時に「グループ全体」をじわーっと一本の綺麗な影で光らせる */
-#userModal .was-validated #password_group:has(#password:focus) {
+/* ⑧ パスワード入力（フォーカス）時にグループ全体を他の入力欄と同じように綺麗に青く光らせる */
+#userModal #password_group:has(#password:focus) {
   background-color: #fff !important;
+  border-color: #0d6efd !important;
+  box-shadow: 0 0 0 4px rgba(13, 110, 253, 0.1) !important;
 }
+
+/* バリデーション検証後のフォーカス時（緑 or 赤）の制御 */
 #userModal .was-validated #password_group:has(#password:valid:focus) {
   border-color: #10b981 !important;
   box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.15) !important;
 }
 #userModal .was-validated #password_group:has(#password:invalid:focus) {
   border-color: #e63946 !important;
-  box-shadow: 0 0 0 4px rgba(230, 57, 70, 0.15) !important; /* 💡 外枠だけがきれいに赤く発光します */
+  box-shadow: 0 0 0 4px rgba(230, 57, 70, 0.15) !important;
 }
 
 /* ==================================================
