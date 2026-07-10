@@ -1,74 +1,82 @@
 <div class="dashboard-container">
-  <div class="status-clock-section">
-    <div class="clock-card">
-      <div class="card-header-title">
-        <span id="current_date_display" class="date-display">2026年5月18日(月)</span>
-        <span id="current_status_label" class="status-badge status-default">未出勤</span>
+  <div class="main-top-split-layout">
+    <div class="left-content-group">
+      <div class="clock-card">
+        <div class="card-header-title">
+          <span id="current_date_display" class="date-display">2026年5月18日(月)</span>
+          <span id="current_status_label" class="status-badge status-default">未出勤</span>
+        </div>
+        <div id="current_time_display" class="time-display">00:00:00</div>
       </div>
-      <div id="current_time_display" class="time-display">00:00:00</div>
+
+      <div class="news-section">
+        <div class="section-title"><span>お知らせ</span></div>
+        <div class="news-body mt-2">
+          <div class="news-item">
+            <span class="news-date">2026/07/10</span>
+            <span class="news-text">勤怠レポートシステムのレイアウトをリニューアルしました。</span>
+          </div>
+        </div>
+      </div>
     </div>
+    <div class="right-content-group">
+      <div class="button-group-card">
+        <div class="action-buttons-top">
+          <button id="clock_in_button" class="btn btn-clock-in">出勤</button>
+          <button id="clock_out_button" class="btn btn-clock-out" disabled>退勤</button>
+        </div>
+        <div class="action-buttons-bottom">
+          <button id="break_toggle_button" class="btn btn-break" disabled>外出開始</button>
+        </div>
 
-    <div class="button-group-card">
-      <div class="action-buttons-top">
-        <button id="clock_in_button" class="btn btn-clock-in">出勤</button>
-        <button id="clock_out_button" class="btn btn-clock-out" disabled>退勤</button>
+        <div class="today-remarks-area">
+          <div class="remarks-input-group d-flex gap-2 align-items-center">
+            <input
+              type="text"
+              id="today_remarks_input"
+              class="form-control remarks-input"
+              placeholder="本日の備考を入力"
+              maxlength="100"
+              autocomplete="off"
+            />
+            <button id="btn_save_remarks" class="btn btn-save-remarks">保存</button>
+            <button
+              id="btn_open_expense_modal"
+              class="btn btn-outline-primary btn-expense-trigger d-flex align-items-center gap-1"
+              data-bs-target="#expenseEntryModal"
+            >
+              <i class="bi bi-currency-yen"></i>経費登録
+            </button>
+          </div>
+        </div>
       </div>
-      <div class="action-buttons-bottom">
-        <button id="break_toggle_button" class="btn btn-break" disabled>外出開始</button>
-      </div>
 
-      <div class="today-remarks-area">
-        <div class="remarks-input-group d-flex gap-2 align-items-center">
-          <input
-            type="text"
-            id="today_remarks_input"
-            class="form-control remarks-input"
-            placeholder="本日の備考を入力"
-            maxlength="100"
-            autocomplete="off"
-          />
-          <button id="btn_save_remarks" class="btn btn-save-remarks">保存</button>
-
-          <button
-            id="btn_open_expense_modal"
-            class="btn btn-outline-primary btn-expense-trigger d-flex align-items-center gap-1"
-            data-bs-target="#expenseEntryModal"
-          >
-            <i class="bi bi-currency-yen"></i>経費登録
-          </button>
+      <div class="logs-section">
+        <div class="section-title"><span>直近の打刻内容（勤怠ログ）</span></div>
+        <div id="collapseLogs">
+          <textarea
+            id="recent_logs_area"
+            class="form-control logs-textarea mt-2"
+            readonly
+            rows="4"
+            placeholder="打刻履歴や備考の保存ログがここに表示されます"
+          ></textarea>
         </div>
       </div>
     </div>
   </div>
-
-  <div class="logs-section">
-    <div class="section-title">
-      <span>直近の打刻内容（勤怠ログ）</span>
-    </div>
-    <div id="collapseLogs">
-      <textarea
-        id="recent_logs_area"
-        class="form-control logs-textarea mt-2"
-        readonly
-        rows="4"
-        placeholder="打刻履歴や備考の保存ログがここに表示されます"
-      ></textarea>
-    </div>
-  </div>
-
-  <div class="content-grid-section">
-    <div class="grid-card">
-      <div class="card-header-toggle d-flex justify-content-between align-items-center">
+  <div class="content-grid-section" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; box-sizing: border-box">
+    <div class="grid-card d-flex flex-column" style="padding: 1rem">
+      <div class="card-header-toggle d-flex justify-content-between align-items-center flex-shrink-0" style="padding-bottom: 0.5rem">
         <span class="fw-bold" style="font-size: 1rem; color: #55555c">カレンダー</span>
-
         <div class="calendar-selector-wrapper d-flex align-items-center gap-2">
           <select id="calendar-month-selector" class="form-select form-select-sm" style="width: auto"></select>
         </div>
       </div>
 
-      <div id="collapseCalendar" class="w-100 h-100 d-flex flex-column">
-        <div class="card-body-content pt-2">
-          <div class="custom-calendar">
+      <div id="collapseCalendar" class="w-100 flex-grow-1 d-flex flex-column" style="min-height: 0; overflow: hidden">
+        <div class="card-body-content px-2 pb-2 flex-grow-1 d-flex flex-column" style="min-height: 0; overflow: hidden">
+          <div class="custom-calendar flex-grow-1 d-flex flex-column" style="width: 100%; height: 100%">
             <div class="calendar-weekdays">
               <div>日</div>
               <div>月</div>
@@ -84,21 +92,33 @@
       </div>
     </div>
 
-    <div class="grid-card">
-      <div class="card-header-toggle d-flex justify-content-between align-items-center">
-        <span class="fw-bold" style="font-size: 1rem; color: #55555c">過去のレポート</span>
-
-        <div class="d-flex gap-2 align-items-center">
-          <button class="btn btn-sm btn-create-report">＋ 新規作成</button>
-          <select class="form-select form-select-sm" style="width: auto">
-            <option>5件</option>
-          </select>
+    <div class="grid-card d-flex flex-column" style="padding: 1rem">
+      <div class="d-flex justify-content-between align-items-center mb-3 flex-shrink-0 flex-nowrap" style="padding: 0.5rem 0 0 0">
+        <h4 class="fs-6 fw-bold m-0 text-value flex-shrink-0" style="color: #55555c">過去のレポート</h4>
+        <div class="d-flex align-items-center gap-2 ms-auto">
+          <button id="open-report-modal-btn" class="btn btn-sm btn-create-report">＋ 新規作成</button>
+          <select
+            id="target_user_id"
+            class="form-select fw-normal text-secondary border-light-subtle"
+            style="
+              width: 145px;
+              max-width: 145px;
+              font-size: 0.75rem;
+              padding: 0.15rem 1.6rem 0.15rem 0.5rem;
+              height: 1.8rem;
+              background-size: 8px 10px;
+            "
+          ></select>
         </div>
       </div>
 
-      <div id="collapseReports" class="w-100">
-        <div class="card-body-content pt-2"></div>
+      <div
+        class="main-report-scroll-box flex-grow-1"
+        style="display: block !important; overflow-y: auto !important; padding-right: 4px; min-height: 0"
+      >
+        <div id="past_report_list" class="card-body-content pt-1"></div>
       </div>
     </div>
   </div>
 </div>
+

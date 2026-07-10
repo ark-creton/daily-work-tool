@@ -1,14 +1,35 @@
-/* ==================================================
-   管理者専用画面専用スタイル
-   ================================================== */
+/* ==========================================================================
+   👥 1. 管理者専用画面：基本レイアウト・検索窓・新規ボタン
+   ========================================================================== */
 
-/* 大見出し「管理者専用」の文字色を #2b2c3a に固定 */
+/* ◆ 大見出し「管理者専用」の文字色を固定 */
 .container-fluid h2,
 .h4.text-dark {
   color: #2b2c3a !important;
 }
 
-/* --- 検索窓のスタイル微調整 --- */
+/* ◆ 検索窓全体の初期スタイルとアニメーション */
+.input-group {
+  transition:
+    border-color 0.15s ease-in-out,
+    box-shadow 0.15s ease-in-out;
+  border: 1px solid #dee2e6;
+}
+.input-group .input-group-text,
+.input-group .form-control {
+  border: none !important;
+  color: #2b2c3a !important; /* 入力した文字色 */
+}
+.input-group .input-group-text {
+  border-right: none !important;
+}
+
+/* 💡 検索窓のプレースホルダーのカラー */
+.input-group .form-control::placeholder {
+  color: rgba(43, 44, 58, 0.5) !important;
+}
+
+/* ◆ 検索窓のフォーカス時（外枠グループ全体の制御） */
 .input-group:has(#user_search_input:focus) {
   border-color: #86b7fe;
   box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.15);
@@ -21,36 +42,13 @@
   border-color: #86b7fe !important;
 }
 
-/* Bootstrap標準の個別のフォーカス影をリセットして、グループ全体の影とダブらないようにする */
+/* Bootstrap標準の個別フォーカス影をリセットし、グループ全体の影とダブらせない */
 #user_search_input:focus {
   border-color: #86b7fe;
   box-shadow: none !important;
 }
 
-/* 検索窓全体の初期の枠線を少し優しくコントロール */
-.input-group {
-  transition:
-    border-color 0.15s ease-in-out,
-    box-shadow 0.15s ease-in-out;
-  border: 1px solid #dee2e6;
-}
-.input-group .input-group-text,
-.input-group .form-control {
-  border: none !important;
-  color: #2b2c3a !important; /* 💡 入力した文字を #2b2c3a に */
-}
-
-/* 💡 追加：検索窓のプレースホルダー（うっすら見える初期文字）もこの色をベースにする */
-.input-group .form-control::placeholder {
-  color: rgba(43, 44, 58, 0.5) !important;
-}
-
-.input-group .input-group-text {
-  border-right: none !important;
-}
-
-/* 新規ユーザー登録ボタン */
-/* 1. 管理画面の「新規ユーザー登録ボタン」 */
+/* ◆ 新規ユーザー登録ボタン（備考保存ボタンと共通のHover仕様） */
 #user_new_button {
   background-color: #8ea3c2 !important;
   color: #ffffff !important;
@@ -58,23 +56,23 @@
   font-weight: 600 !important;
   padding: 10px 20px !important;
   border-radius: 8px !important;
-
   box-shadow: 0 4px 10px -2px rgba(142, 163, 194, 0.25) !important;
   transition: all 0.2s ease !important;
 }
-
-/* 💡 新規登録ボタンのHover：備考保存ボタンと完全に統一 */
 #user_new_button:hover:not(:disabled) {
   background-color: #7a99c5 !important;
   box-shadow: 0 6px 12px -2px rgba(122, 153, 197, 0.35) !important;
 }
-
 #user_new_button i,
 #user_new_button svg {
   color: #ffffff !important;
 }
 
-/* テーブルの見出しと中身の文字色を #2b2c3a に統一 */
+/* ==========================================================================
+   📊 2. ユーザー管理テーブル ＆ 各種権限・状態バッジ
+   ========================================================================== */
+
+/* ◆ テーブルの見出しと中身の基本色 */
 #list_user_name th,
 #list_user_name td {
   color: #2b2c3a !important;
@@ -84,69 +82,60 @@
   color: #2b2c3a !important;
 }
 
-/* --- 権限バッジのカスタム --- */
+/* --- 権限・状態バッジのカスタムカラー --- */
 
-/* 「管理者」バッジ */
+/* 🟥「管理者」バッジ */
 .badge.bg-danger-subtle {
   background-color: #f8d7da !important;
   color: #842029 !important;
   border: 1px solid #f5c6cb;
 }
 
-/* 「一般ユーザー」バッジ */
+/* 🟦「一般ユーザー」バッジ */
 .badge.bg-primary-subtle {
   background-color: #e3f2fd !important;
   color: #0d6efd !important;
   border: 1px solid #badceb;
 }
 
-/* 「有効」バッジ */
+/* 🟩「有効」バッジ */
 .badge.bg-success-subtle {
   background-color: #e3fde7;
   color: #198754 !important;
   border: 1px solid #baebd4;
 }
 
-/* 「無効」バッジ */
+/* ⬛「無効」バッジ */
 .badge.bg-secondary-subtle {
   background-color: #f8f9fa !important;
   color: #6c757d !important;
   border: 1px solid #dee2e6;
 }
 
-/* --- テーブル行のホバー時の色味調整 ＆ 無効ユーザーの消込 --- */
+/* --- 無効ユーザー行全体の消込・打ち消し線設定 --- */
 
-/* ① PC画面（横並び・画面幅 768px 以上）のときだけホバー色をつける */
-@media (min-width: 768px) {
-  #list_user_name tbody tr:hover td {
-    background-color: #f1f5f9 !important;
-    transition: background-color 0.15s ease;
-  }
-}
-
-/* ② 無効（is-disabled）がついた行全体の消込（PC・スマホ共通のベース設定） */
+/* 無効（is-disabled）がついた行全体の半透明化（PC・スマホ共通） */
 .is-disabled {
-  opacity: 0.55; /* 行・カード全体を半透明にする */
+  opacity: 0.55;
 }
-
 /* 無効ユーザーの氏名に打ち消し線を入れる */
 .is-disabled .fw-bold {
   text-decoration: line-through;
   color: #94a3b8 !important;
 }
 
-/* ==================================================
-   モーダル（登録・編集画面）のスタイル
-   ================================================== */
+/* ==========================================================================
+   📋 3. モーダルウィンドウ（登録・編集共通）
+   ========================================================================== */
 
-/* モーダル全体の角の丸みと影 */
+/* ◆ モーダル全体の角の丸みと高品位な影 */
 .modal-content {
   border-radius: 20px !important;
   border: none !important;
   box-shadow: 0 15px 50px rgba(0, 0, 0, 0.15) !important;
 }
 
-/* ヘッダーの調整 */
+/* ◆ ヘッダーのレイアウト微調整 */
 .modal-header {
   border-bottom: 1px solid #f0f0f0 !important;
   padding: 1.5rem 2rem !important;
@@ -156,7 +145,7 @@
   letter-spacing: -0.02em;
 }
 
-/* 入力フィールド（input, select）の洗練 */
+/* ◆ 入力フィールド（input, select）の初期デザイン */
 .modal-body .form-control,
 .modal-body .form-select {
   border: 1.5px solid #e9ecef !important;
@@ -167,7 +156,7 @@
   background-color: #fcfcfc;
 }
 
-/* フィールドにフォーカスした時のアニメーション（通常時） */
+/* 通常時のフィールドフォーカス時のアニメーション */
 .modal-body .form-control:focus,
 .modal-body .form-select:focus {
   background-color: #fff;
@@ -176,7 +165,7 @@
   outline: none;
 }
 
-/* ラベルのスタイル */
+/* ◆ フォームラベルのスタイル */
 .modal-body .form-label {
   font-weight: 600 !important;
   color: #495057 !important;
@@ -186,21 +175,20 @@
   text-transform: uppercase;
 }
 
-/* 必須マーク（*）の色 */
+/* 必須マーク（*）の専用赤色 */
 .text-danger {
   color: #e63946 !important;
 }
 
-/* --- フッターのボタン配置 --- */
+/* ◆ フッターのボタン配置（絶対に縦折り返しをさせない横並び） */
 .modal-footer {
   border-top: 1px solid #f0f0f0 !important;
   padding: 1.25rem 2rem 1.75rem !important;
-
   display: flex !important;
-  flex-direction: row !important; /* 確実に横並び */
-  flex-wrap: nowrap !important; /* 絶対に縦に折り返させない */
-  justify-content: flex-end !important; /* 右寄せ */
-  gap: 12px !important; /* ボタン同士の隙間 */
+  flex-direction: row !important;
+  flex-wrap: nowrap !important;
+  justify-content: flex-end !important;
+  gap: 12px !important;
   align-items: center !important;
 }
 
@@ -219,7 +207,7 @@
   background-color: #e9ecef !important;
 }
 
-/* 保存ボタン */
+/* 保存・更新ボタン */
 #submit_button {
   background: #8ea3c2 !important;
   color: #ffffff !important;
@@ -242,11 +230,11 @@
   margin-right: 4px;
 }
 
-/* ==================================================
-   バリデーションカスタム
-   ================================================== */
+/* ==========================================================================
+   ✅ 4. バリデーションカスタム（一般の入力欄 ＆ セレクトボックス）
+   ========================================================================== */
 
-/* ① 【成功・失敗共通】Bootstrap標準のすべてのアイコン（緑の✔、赤の❗など）を完全に非表示にする */
+/* ① 【成功・失敗共通】Bootstrap標準の入力インジケータアイコンを完全非表示化 */
 #userModal .form-control.is-valid,
 #userModal .was-validated .form-control:valid,
 #userModal .form-select.is-valid,
@@ -259,9 +247,7 @@
   padding-right: 1rem !important; /* 右側の余白を通常時と完全に統一 */
 }
 
-/* --------------------------------------------------
-   ▼ 入力OK（成功時）のスタイル
-   -------------------------------------------------- */
+/* --- ▼ 入力OK（成功時）のスタイル --- */
 /* ② 枠線カラーを優しいミントグリーンにする */
 #userModal .form-control.is-valid,
 #userModal .was-validated .form-control:valid,
@@ -271,7 +257,7 @@
   background-color: #fcfcfc;
 }
 
-/* ③ 成功時にクリック（フォーカス）したとき、緑色にふんわり光らせる */
+/* ③ 成功時のフォーカス（緑色にふんわり光らせる） */
 #userModal .form-control.is-valid:focus,
 #userModal .was-validated .form-control:valid:focus,
 #userModal .form-select.is-valid:focus,
@@ -281,10 +267,8 @@
   box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.15) !important;
 }
 
-/* --------------------------------------------------
-   ▼ 入力NG（エラー時）のスタイル
-   -------------------------------------------------- */
-/* ④ エラー時の枠線カラーを赤（#e63946）にする */
+/* --- ▼ 入力NG（エラー時）のスタイル --- */
+/* ④ エラー時の枠線カラーを専用の鮮やかな赤にする */
 #userModal .form-control.is-invalid,
 #userModal .was-validated .form-control:invalid,
 #userModal .form-select.is-invalid,
@@ -293,7 +277,7 @@
   background-color: #fcfcfc;
 }
 
-/* ⑤ エラー時にクリック（フォーカス）したとき、赤色（#e63946）のフレームで綺麗に光らせる */
+/* ⑤ エラー時のフォーカス（赤色のフレームで綺麗に光らせる） */
 #userModal .form-control.is-invalid:focus,
 #userModal .was-validated .form-control:invalid:focus,
 #userModal .form-select.is-invalid:focus,
@@ -303,16 +287,17 @@
   box-shadow: 0 0 0 4px rgba(230, 57, 70, 0.15) !important;
 }
 
-/* --------------------------------------------------
-   ▼ パスワード欄（#password_group）の完全制御
-   -------------------------------------------------- */
-/* 💡 通常時の外枠の見た目を、他の一般の入力欄と寸分違わず完全に統一します */
+/* ==========================================================================
+   🔒 5. パスワード専用入力グループ（#password_group） ＆ エラーメッセージ救出
+   ========================================================================== */
+
+/* 💡 通常時の外枠の見た目を、他の一般の入力欄と寸分違わず完全に統一 */
 #userModal #password_group {
   border: 1.5px solid #e9ecef !important;
   background-color: #fcfcfc !important;
 }
 
-/* ⑥ Bootstrapがパスワードのinput単体に付けようとするエラー/成功の線やフォーカス時の「ピンクの影」を強制リセット */
+/* ⑥ Bootstrapがパスワードの単一inputに付与しようとする線やフォーカス影を強制リセット */
 #userModal .was-validated #password.form-control:valid,
 #userModal .was-validated #password.form-control:invalid,
 #userModal .was-validated #password.form-control:valid:focus,
@@ -322,7 +307,7 @@
   background-color: transparent !important;
 }
 
-/* ⑦ 保存ボタンが押された後（was-validated）、パスワードの成否を外枠（#password_group）に適用 */
+/* ⑦ 保存ボタン押下後（was-validated）、パスワードの検証結果を外枠グループに適用 */
 #userModal .was-validated #password_group:has(#password:valid) {
   border-color: #10b981 !important;
 }
@@ -330,14 +315,14 @@
   border-color: #e63946 !important;
 }
 
-/* ⑧ パスワード入力（フォーカス）時にグループ全体を他の入力欄と同じように綺麗に青く光らせる */
+/* ⑧ 通常入力（フォーカス）時にグループ全体を綺麗に青く光らせる */
 #userModal #password_group:has(#password:focus) {
   background-color: #fff !important;
   border-color: #0d6efd !important;
   box-shadow: 0 0 0 4px rgba(13, 110, 253, 0.1) !important;
 }
 
-/* バリデーション検証後のフォーカス時（緑 or 赤）の制御 */
+/* 検証後のフォーカス時（緑 or 赤）の外枠制御 */
 #userModal .was-validated #password_group:has(#password:valid:focus) {
   border-color: #10b981 !important;
   box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.15) !important;
@@ -347,23 +332,62 @@
   box-shadow: 0 0 0 4px rgba(230, 57, 70, 0.15) !important;
 }
 
-/* ==================================================
-   スマホ表示用カードリスト専用スタイル
-   ================================================== */
+/* ◆ パスワードエラーメッセージの強制配置・表示不具合解消 */
+#userModal .was-validated #password_group ~ .invalid-feedback {
+  display: block !important;
+  color: #e63946 !important; /* エラー赤色に統一 */
+}
+
+/* ==========================================================================
+   💻 6. PC表示専用：テーブルエリア内スクロール・見出し（thead）位置固定
+   ========================================================================== */
+
+@media (min-width: 768px) {
+  /* ① デスクトップ表示でのみテーブル行のホバー色を適用 */
+  #list_user_name tbody tr:hover td {
+    background-color: var(--row-hover-color) !important;
+    transition: background-color 0.15s ease;
+  }
+
+  /* ② テーブルの親要素高さをウィンドウ基準で完全固定し、内側スクロールを有効化 */
+  .admin-table-container {
+    height: calc(100vh - 300px) !important;
+    overflow-y: auto !important;
+    position: relative;
+  }
+
+  /* ③ スクロールしても見出し（thead）が最上部に張り付くように固定 */
+  .admin-table-container #list_user_name thead {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+
+  /* ④ スクロール時に下の行のデータ文字が見出しの裏側に透けないよう、背景色を不透過に固定 */
+  .admin-table-container #list_user_name thead th {
+    background-color: #f8f9fa !important;
+    border-bottom: 2px solid #dee2e6 !important;
+  }
+}
+
+/* ==========================================================================
+   📱 7. スマホ表示専用：カード形式リスト ＆ 特殊インタラクション
+   ========================================================================== */
+
 @media (max-width: 767.98px) {
-  /* 要素を完全に中央に寄せるための汎用クラス */
+  /* ◆ 要素を完全中央寄せにするための汎用クラス */
   .flex-center {
     display: flex !important;
     align-items: center !important;
     justify-content: center !important;
   }
 
-  /* 無効ユーザーのカード背景をほんのりグレーにして分かりやすく */
+  /* ◆ 無効ユーザーのスマホカード背景 */
   .card.is-disabled {
     background-color: #f8f9fa !important;
   }
 
-  /* ★ここに追記しました：スマホ用カードに「押せる感」をプラス */
+  /* ◆ スマホ用ユーザーカードへの「押せる感（フィードバック）」の付与 */
   #user_list_mobile .card {
     cursor: pointer;
     transition:
@@ -371,44 +395,9 @@
       transform 0.1s ease;
   }
 
-  /* タップしている最中（アクティブ状態）に少しだけ背景をグレーにし、キュッと縮む */
+  /* タップ中（アクティブ状態）に背景を少し暗くし、キュッと1回り縮小させる */
   #user_list_mobile .card:active {
     background-color: #f1f5f9 !important;
     transform: scale(0.98);
-  }
-}
-
-/* ==================================================
-   パスワードエラーメッセージの強制救出
-   ================================================== */
-#userModal .was-validated #password_group ~ .invalid-feedback {
-  display: block !important;
-  color: #e63946 !important; /* あなたが指定したエラー赤色に統一 */
-}
-
-/* ==================================================
-   PC表示：テーブルエリア内のみのスクロール・見出し固定
-   ================================================== */
-@media (min-width: 768px) {
-  /* 1. テーブルの親要素に高さを制限して、はみ出たらスクロールさせる */
-  .admin-table-container {
-    /* 💡 修正：max-height から height に変更して、枠の大きさを最初から完全に固定します */
-    height: calc(100vh - 300px) !important;
-
-    overflow-y: auto !important;
-    position: relative;
-  }
-
-  /* 2. スクロールしてもテーブルの見出し（thead）が上に張り付いて残るようにする */
-  .admin-table-container #list_user_name thead {
-    position: sticky;
-    top: 0;
-    z-index: 10;
-  }
-
-  /* 3. スクロールした時に下の行の文字が見出しの背景に透けないように、背景色を固定 */
-  .admin-table-container #list_user_name thead th {
-    background-color: #f8f9fa !important;
-    border-bottom: 2px solid #dee2e6 !important;
   }
 }

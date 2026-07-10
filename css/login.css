@@ -1,8 +1,8 @@
-/* ==================================================
-   ログイン画面専用スタイル
-   ================================================== */
+/* ==========================================================================
+   🔑 ログイン画面専用スタイル
+   ========================================================================== */
 
-/* 1. 画面全体のレイアウト：コンテンツを上下左右の中央に配置 */
+/* --- 1. 画面全体（上下左右の中央配置） --- */
 body {
   display: flex;
   align-items: center;
@@ -10,18 +10,18 @@ body {
   min-height: 100vh;
 }
 
-/* 2. テキストデザイン */
+/* --- 2. テキスト --- */
 .system-name {
   margin-bottom: 0;
   opacity: 0.8;
 }
 
 .login-title {
-  font-weight: bold;
   font-size: 2.2rem;
+  font-weight: bold;
 }
 
-/* 3. ログインカードのデザイン（枠線なし、角丸、二重の影） */
+/* --- 3. ログインカード（角丸・二重の影） --- */
 .card {
   background-color: #ffffff;
   border: none;
@@ -31,10 +31,10 @@ body {
     0 10px 20px rgba(0, 0, 0, 0.05);
 }
 
-/* 4. ログインボタンの装飾とアニメーション */
+/* --- 4. ログインボタン --- */
 #loginBtn {
-  background-color: #c9cbe7;
   color: #ffffff;
+  background-color: #c9cbe7;
   border: none;
   font-weight: bold;
   transition: background-color 0.3s;
@@ -44,54 +44,54 @@ body {
   background-color: #9297cf;
 }
 
-/* --------------------------------------------------
-   メールアドレス入力欄の制御
--------------------------------------------------- */
+/* ==========================================================================
+   ✉️ メールアドレス入力欄（JS制御）
+   ========================================================================== */
 
-/* 通常フォーカス時の青い光（JSで付与） */
+/* 通常フォーカス時（青枠） */
 #email.is-focused {
   border-color: #86b7fe !important;
   box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25) !important;
 }
 
-/* エラー発生時の赤い光（!importantで強制的に適用） */
+/* エラー発生時（赤枠を強制適用） */
 #email.is-invalid-focus {
   border: 1px solid #dc3545 !important;
   box-shadow: 0 0 0 0.25rem rgba(220, 53, 69, 0.25) !important;
 }
 
-/* --------------------------------------------------
-   パスワード入力欄（アイコン一体型グループ）の特殊制御
--------------------------------------------------- */
+/* ==========================================================================
+   🔒 パスワード入力欄（アイコン一体型グループ）
+   ========================================================================== */
 
-/* グループ全体の通常フォーカス（青い光） */
+/* グループ全体の通常フォーカス（青枠） */
 #password-group.is-focused {
+  border: 1px solid #86b7fe !important;
   border-radius: 0.375rem;
   box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25) !important;
-  border: 1px solid #86b7fe !important;
 }
 
-/* グループ全体のエラー表示（赤い光） */
+/* グループ全体のエラー表示（赤枠） */
 #password-group.is-invalid-focus {
-  border-radius: 0.375rem;
   border: 1px solid #dc3545 !important;
+  border-radius: 0.375rem;
   box-shadow: 0 0 0 0.25rem rgba(220, 53, 69, 0.25) !important;
 }
 
-/* エラー中にクリックしても赤色を優先する設定 */
+/* 競合対策：エラー中のクリック時も赤色を優先 */
 #password-group.is-invalid-focus.is-focused {
-  box-shadow: 0 0 0 0.25rem rgba(220, 53, 69, 0.25) !important;
   border: 1px solid #dc3545 !important;
+  box-shadow: 0 0 0 0.25rem rgba(220, 53, 69, 0.25) !important;
 }
 
 /* --- 入力欄単体の境界線制御 --- */
 
-/* エラーの時だけ内側の線を消して、グループの赤枠と一体化させる */
+/* エラー時：内側の線を消してグループの赤枠と一体化 */
 #password.is-invalid-focus {
   border-color: transparent !important;
 }
 
-/* 通常のフォーカス（青枠）時は、グループの枠線色と合わせて表示を維持する */
+/* 通常フォーカス時：グループの枠線色と同期 */
 #password.is-focused {
   border-color: #86b7fe !important;
 }

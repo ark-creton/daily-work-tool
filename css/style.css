@@ -1,69 +1,82 @@
-/* ==================================================
-   1. システム共通スタイル
-   ================================================== */
-
+/* ==========================================================================
+   🌐 1. システム共通スタイル
+   ========================================================================== */
 * {
+  box-sizing: border-box;
   margin: 0;
   padding: 0;
-  box-sizing: border-box;
 }
 
 body {
-  background-color: #f4f4f9;
   color: #2b2c3a;
+  background-color: #f4f4f9;
   font-family: "Noto Sans JP", sans-serif;
   font-size: 16px;
   line-height: 1.6;
 }
 
-/* フォームコントロール・フォーカス制御 */
+:root {
+  /* サイト共通のホバー用グレー色 */
+  --row-hover-color: #f1f5f9;
+}
+
+/* --- フォームコントロール・フォーカス制御 --- */
 .form-control:focus {
+  border-color: #dee2e6;
   outline: none !important;
   box-shadow: none !important;
-  border-color: #dee2e6;
 }
 
 .is-focused {
-  border-radius: 0.375rem;
   border-color: #86b7fe !important;
+  border-radius: 0.375rem;
   box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25) !important;
 }
 
 .is-invalid-focus {
-  border-radius: 0.375rem;
   border: 1px solid #dc3545 !important;
+  border-radius: 0.375rem;
   box-shadow: 0 0 0 0.25rem rgba(220, 53, 69, 0.25) !important;
 }
 
-/* --------------------------------------------------
-   ローディング
-   -------------------------------------------------- */
+/* --- 全ページ共通スクロールバー --- */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: #dee2e6;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-track {
+  background-color: transparent;
+}
+
+/* ==========================================================================
+   ⏳ ローディング（グローバル）
+   ========================================================================== */
+
 #global-loading {
-  /* 💡 最初のチカチカ・白すぎるのを防ぐため、優しめの半透明グレーに */
-  background-color: rgba(244, 244, 249, 0.2);
-
-  /* 💡 押した瞬間からしっかりボカシ（すりガラス効果）を効かせる */
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-
   position: fixed;
   top: 0;
   left: 0;
-  width: 100vw;
-  height: 100vh;
-  z-index: 9999;
-
   display: flex;
   align-items: center;
   justify-content: center;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(244, 244, 249, 0.2); /* 最初のチカチカを防ぐ半透明グレー */
+  backdrop-filter: blur(12px); /* すりガラス効果 */
+  -webkit-backdrop-filter: blur(12px);
+  z-index: 9999;
 
-  /* 状態の初期値 */
+  /* 初期状態（非表示） */
   opacity: 0;
   visibility: hidden;
 
-  /* 💡 ここが最大のポイント！
-     【現れる時】：0.05秒で爆速でボカシをかけ、一瞬の隙間を消し去る
-     【消える時】：0.25秒かけて、フワッと優しくボカシを解いていく */
+  /* 消える時：0.25秒かけてフワッとボカシを解く */
   transition:
     opacity 0.25s ease-in-out,
     visibility 0.25s,
@@ -71,13 +84,12 @@ body {
     -webkit-backdrop-filter 0.25s ease-in-out;
 }
 
-/* 💡 ローディング表示中（ボタンを押した瞬間） */
+/* ローディング表示中 (.show 付与時) */
 #global-loading.show {
   opacity: 1;
   visibility: visible;
 
-  /* 💡 現れる時だけ transition を「爆速の0.05秒」で上書きして、
-     準備前の画面が一瞬丸見えになるバグを強制的にシャットアウトします */
+  /* 現れる時：0.05秒の爆速で表示し、準備前画面の一瞬の見え隠れを防止 */
   transition:
     opacity 0.05s ease-out,
     visibility 0.05s,
@@ -85,12 +97,13 @@ body {
     -webkit-backdrop-filter 0.05s ease-out;
 }
 
+/* --- ドットアニメーション --- */
 .dots-container {
   display: flex;
-  justify-content: center;
-  gap: 12px; /* ドットの間隔 */
-  height: 25px;
   align-items: center;
+  justify-content: center;
+  gap: 12px;
+  height: 25px;
 }
 
 .hyokkori-dot {
@@ -98,11 +111,10 @@ body {
   height: 10px;
   background-color: #b39ddb; /* 淡い紫 */
   border-radius: 50%;
-  /* 0.8秒周期で、ひょっこり上下する */
-  animation: hyokkori 0.8s infinite ease-in-out alternate;
+  animation: hyokkori 0.8s infinite ease-in-out alternate; /* 0.8秒周期で上下反転ループ */
 }
 
-/* 💡 3つの丸のタイミングを絶妙にずらして、波打つような「おじぎ感」を作ります */
+/* 3つの丸のタイミングをずらしておじぎ感を演出 */
 .dot-1 {
   animation-delay: 0s;
 }
@@ -119,7 +131,7 @@ body {
   }
   100% {
     transform: translateY(-10px);
-  } /* 💡 上下にひょっこりピョコピョコ跳ねる動き */
+  } /* 上下に跳ねる動き */
 }
 
 .loading-text {
@@ -129,109 +141,104 @@ body {
   letter-spacing: 0.06em;
 }
 
-/* --------------------------------------------------
-   PC・スマホ位置切り替え型トースト通知
-   -------------------------------------------------- */
+/* ==========================================================================
+   📱/💻 位置切り替え型トースト通知
+   ========================================================================== */
+
 .custom-toast {
   position: fixed;
   left: 50%;
-
-  /* スマホ対応：画面からはみ出さないように最大幅を設定 */
-  width: 90%;
-  max-width: 450px;
-
-  /* システムの淡いブルーグレーと一体化させる背景色（不透明度を0.98に上げて視認性UP） */
-  background-color: rgba(241, 245, 249, 0.98);
-  backdrop-filter: blur(8px);
-  border: 1px solid rgba(203, 213, 225, 0.9);
-  color: #334155;
-
-  /* レイアウト */
   display: flex;
   align-items: flex-start;
   gap: 10px;
+  width: 90%;
+  max-width: 450px;
   padding: 14px 20px;
+  color: #334155;
+  background-color: rgba(241, 245, 249, 0.98);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(203, 213, 225, 0.9);
   border-radius: 12px;
-
-  /* 💡 影を引き締め、内側に白い光（inset）を仕込んでパーツをクッキリ際立たせる */
   box-shadow:
     0 12px 30px -4px rgba(148, 163, 184, 0.25),
     0 4px 12px -2px rgba(148, 163, 184, 0.15),
-    inset 0 1px 0 rgba(255, 255, 255, 1);
-
-  /* アニメーション共通設定 */
+    inset 0 1px 0 rgba(255, 255, 255, 1); /* 内側の白い光でパーツを際立たせる */
   z-index: 9999;
-  font-weight: 600;
   font-size: 0.92rem;
+  font-weight: 600;
+  white-space: normal;
+  word-break: break-all;
+  pointer-events: none;
+
+  /* アニメーション初期設定 */
   opacity: 0;
   transition:
     transform 0.4s cubic-bezier(0.16, 1, 0.3, 1),
     opacity 0.3s ease;
-  pointer-events: none;
-  white-space: normal;
-  word-break: break-all;
 }
 
-/* 📱 スマートフォン（画面幅が 767px 以下）のとき：画面の下に配置 */
-@media (max-width: 767px) {
+/* スマートフォン環境 (991px以下)：画面下部に配置 */
+@media (max-width: 991px) {
   .custom-toast {
-    bottom: 24px; /* 下から24pxの位置 */
-    transform: translateX(-50%) translateY(20px); /* 最初は少し下に隠す */
+    bottom: 24px;
+    transform: translateX(-50%) translateY(20px); /* 初期値：下へ隠す */
   }
   .custom-toast.show {
-    transform: translateX(-50%) translateY(0); /* 下からスッと上がってくる */
     opacity: 1;
+    transform: translateX(-50%) translateY(0); /* 下からスッと浮き上がる */
   }
 }
 
-/* 💻 PC・タブレット（画面幅が 768px 以上）のとき：画面の上に配置 */
+/* PC・タブレット環境 (768px以上)：画面上部に配置 */
 @media (min-width: 768px) {
   .custom-toast {
-    top: 24px; /* 上から24pxの位置 */
-    transform: translateX(-50%) translateY(-20px); /* 最初は少し上に隠す */
+    top: 24px;
+    transform: translateX(-50%) translateY(-20px); /* 初期値：上へ隠す */
   }
   .custom-toast.show {
-    transform: translateX(-50%) translateY(0); /* 上からスッと降りてくる */
     opacity: 1;
+    transform: translateX(-50%) translateY(0); /* 上からスッと降りてくる */
   }
 }
 
-/* 💡 アイコンが潰れないように保護 */
+/* アイコン潰れ防止 */
 .custom-toast i.bi {
   flex-shrink: 0;
   font-size: 1.15rem;
   line-height: 1;
 }
 
-/* 🟢 通常・成功時 */
+/* 通常・成功時アイコン */
 .custom-toast .bi-check-circle {
   color: #059669;
 }
 
-/* 🔴 エラー用：優しさを保ちつつ見やすいパステルピンク */
+/* エラー用配色（パステルピンクベース） */
 .custom-toast.error {
+  color: #991b1b;
   background-color: rgba(254, 242, 242, 0.98);
   border-color: rgba(252, 165, 165, 0.9);
-  color: #991b1b;
   box-shadow:
     0 12px 30px -4px rgba(239, 68, 68, 0.15),
     0 4px 12px -2px rgba(239, 68, 68, 0.1),
     inset 0 1px 0 rgba(255, 255, 255, 1);
 }
+
 .custom-toast.error .bi-exclamation-circle {
   color: #dc2626;
 }
 
-/* --------------------------------------------------
-   確認トースト（上記とデザイン統一）
-   -------------------------------------------------- */
+/* ==========================================================================
+   ⚠️ 変更破棄の確認トースト・モーダル共通制御
+   ========================================================================== */
+
 .confirm-discard-content {
+  color: #334155;
   background-color: rgba(241, 245, 249, 0.98) !important;
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
   border: 1px solid rgba(203, 213, 225, 0.9) !important;
   border-radius: 12px !important;
-  color: #334155;
   box-shadow:
     0 12px 30px -4px rgba(148, 163, 184, 0.25),
     0 4px 12px -2px rgba(148, 163, 184, 0.15),
@@ -239,10 +246,10 @@ body {
   overflow: hidden;
 }
 
-/* モーダル内のテキスト微調整 */
+/* モーダル内テキスト */
 .confirm-discard-content .modal-body i.bi-exclamation-circle {
-  font-size: 2rem;
   color: #dc2626;
+  font-size: 2rem;
 }
 
 .confirm-discard-content .modal-body h6 {
@@ -252,224 +259,223 @@ body {
 
 .confirm-discard-content .modal-body p {
   color: #64748b;
-  line-height: 1.5;
   font-weight: 500;
+  line-height: 1.5;
 }
 
-/* 下部のボタンエリア（ほんのりグレーの背景） */
+/* 下部ボタンエリア */
 .confirm-discard-footer {
-  border-top: none !important;
-  background-color: rgba(226, 232, 240, 0.4);
   padding: 1rem !important;
+  background-color: rgba(226, 232, 240, 0.4);
+  border-top: none !important;
 }
 
 /* 「いいえ」ボタン */
 .btn-discard-cancel {
+  color: #475569 !important;
   background-color: #fff !important;
   border: 1px solid rgba(203, 213, 225, 0.8) !important;
-  color: #475569 !important;
   border-radius: 8px !important;
   font-size: 0.85rem !important;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
 }
+
 .btn-discard-cancel:hover {
-  background-color: #f8fafc !important;
   color: #334155 !important;
+  background-color: #f8fafc !important;
 }
 
-/* 「はい、閉じます」ボタン（トーストのエラー配色を移植） */
+/* 「はい、閉じます」ボタン */
 .btn-discard-yes {
+  color: #991b1b !important;
   background-color: #fee2e2 !important;
   border: 1px solid rgba(252, 165, 165, 0.9) !important;
-  color: #991b1b !important;
   border-radius: 8px !important;
   font-size: 0.85rem !important;
   box-shadow: 0 1px 2px rgba(239, 68, 68, 0.05);
 }
+
 .btn-discard-yes:hover {
-  background-color: #fecaca !important;
   color: #7f1d1d !important;
+  background-color: #fecaca !important;
 }
 
-/* 確認モーダルが開いている間、背景の暗さを維持する */
+/* --- モーダル・バックドロップのレイヤーとアニメーション --- */
 .modal-backdrop.show {
-  opacity: 0.5 !important; /* 必要に応じて調整してください */
+  opacity: 0.5 !important;
 }
 
-/* 背景（バックドロップ）を常時表示させ、モーダルの切り替えで消えないようにする */
 .modal-backdrop {
   z-index: 1040 !important;
+  transition: opacity 0.3s ease-in-out !important;
 }
+
 .modal {
   z-index: 1050 !important;
 }
 
-/* モーダルにフェード効果を与える設定 */
+/* フェードイン（少し上からスッと現れる） */
 .modal.fade .modal-dialog {
+  opacity: 0;
+  transform: translateY(-20px);
   transition:
     transform 0.3s ease-out,
     opacity 0.3s ease-in-out;
-  opacity: 0;
-  transform: translateY(-20px); /* 少し上からスッと現れる動き */
 }
 
-/* 表示状態 */
 .modal.show .modal-dialog {
   opacity: 1;
   transform: translateY(0);
 }
 
-/* 既に設定済みのバックドロップ（背景）の制御 */
-.modal-backdrop {
-  transition: opacity 0.3s ease-in-out !important;
-}
-
-/* トーストの幅を統一 */
+/* モーダル標準幅設定 */
 .modal-dialog.modal-md {
-  max-width: 500px !important; /* 管理者画面と揃える標準幅 */
+  max-width: 500px !important;
 }
 
-/* スマホ時など、より小さいトーストの場合 */
+/* モーダル小幅設定（スマホ用トースト等） */
 .modal-dialog.modal-sm {
-  max-width: 420px !important; /* 先ほど決めた統一サイズ */
+  max-width: 420px !important;
 }
 
-/* トースト全体の角の丸みと影 */
 .modal-content {
-  border-radius: 20px !important;
   border: none !important;
+  border-radius: 20px !important;
   box-shadow: 0 15px 50px rgba(0, 0, 0, 0.15) !important;
 }
 
 /* ==========================================================================
-   共通パーツ：ぷっくり丸みパステルミント（完全リセット・絶対統一版）
+   🟢 共通パーツ：ぷっくり丸みパステルミント
    ========================================================================== */
 .btn-pastel-mint-rounded,
 .dashboard-container .grid-card .btn-create-report {
-  /* 💡階層を極限まで細かく指定 */
-  background-color: #e4fbf2 !important;
-  color: #169b68 !important;
-  font-weight: 700 !important;
-  border: 1px solid #bcefdc !important;
-  padding: 0.25rem 0.85rem !important;
-  border-radius: 50px !important;
   display: inline-flex !important;
   align-items: center !important;
   gap: 0.35rem !important;
+  padding: 0.25rem 0.85rem !important;
+  color: #169b68 !important;
+  background-color: #e4fbf2 !important;
+  border: 1px solid #bcefdc !important;
+  border-radius: 50px !important;
+  font-weight: 700 !important;
+  text-decoration: none !important;
   box-shadow: 0 2px 4px rgba(31, 177, 121, 0.06) !important;
   transition: all 0.2s ease-in-out !important;
-  text-decoration: none !important;
 
-  /* 他の打刻ボタンなどのエフェクトが混ざるのを徹底防御 */
+  /* 他コンポーネントからのエフェクト干渉を防御 */
   filter: none !important;
   background-image: none !important;
   box-shadow: none !important;
 }
 
-/* マウスが乗ったとき */
 .btn-pastel-mint-rounded:hover,
 .dashboard-container .grid-card .btn-create-report:hover {
-  background-color: #d1f7e8 !important;
   color: #169b68 !important;
+  background-color: #d1f7e8 !important;
   opacity: 1 !important;
   filter: none !important;
   background-image: none !important;
 }
 
-/* ➔ 【これで完全決着】押した瞬間（:active）に暗くなるのを力技で完全に封殺 */
+/* 押した瞬間（:active）やフォーカス時の暗化・影を完全リセット */
 .btn-pastel-mint-rounded:active,
 .btn-pastel-mint-rounded:focus,
 .dashboard-container .grid-card .btn-create-report:active,
 .dashboard-container .grid-card .btn-create-report:focus,
 .dashboard-container .grid-card .btn-create-report:focus:active,
 .dashboard-container .grid-card .btn-create-report.active {
-  /* 1枚目と完全に同じ爽やかなパステルミント色を『最優先』で強制指定 */
-  background-color: #d1f7e8 !important;
   color: #169b68 !important;
+  background-color: #d1f7e8 !important;
   border-color: #bcefdc !important;
-
-  /* 動きだけを適用 */
-  transform: translateY(1px) scale(0.97) !important;
-
-  /* 他のCSSが混ぜてくる「暗くする黒い影・グラデーション・フィルター」を強制消去 */
+  outline: none !important;
   background-image: none !important;
   filter: none !important;
   box-shadow: none !important;
-  outline: none !important;
+  transform: translateY(1px) scale(0.97) !important;
 }
 
-/* ==================================================
-   2. レイアウト（配置）
-   ================================================== */
+/* ==========================================================================
+   📐 2. レイアウト（基本配置）
+   ========================================================================== */
+
+/* 画面全体のスクロールを物理的に禁止してガチガチに固定する */
+html,
+body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+}
 
 .app-container {
   display: flex;
+  width: 100%;
   height: 100vh;
-  width: 100vw;
-  position: relative; /* メニューの位置基準にするため追加 */
+  overflow: hidden;
 }
 
-/* 左：サイドバー */
+/* 左：サイドバー領域（メニューも含めて縦に並べる親にする） */
 .sidebar-area {
-  width: 240px;
-  background-color: #e0e1ec;
   display: flex;
   flex-direction: column;
-  flex-shrink: 0; /* 圧縮防止 */
-  transition: width 0.3s ease; /* アニメーション位置をこちらに統合 */
+  flex-shrink: 0;
+  width: 240px;
+  background-color: #e0e1ec;
+  transition: width 0.3s ease;
+  height: 100vh;
 }
 
-/* 右：メインレイアウト */
+/* 右：メインレイアウト（ヘッダーとコンテンツを縦に並べる） */
 .main-layout {
   display: flex;
   flex-direction: column;
   flex: 1;
+  height: 100vh;
+  overflow: hidden;
 }
 
-/* メインコンテンツ表示エリア */
+/* メインコンテンツ表示エリア（ここだけが独立してスクロールする） */
 .content-area {
   flex: 1;
-  background-color: #f4f4f9;
   padding: 20px;
+  background-color: #f4f4f9;
+  overflow-y: auto;
 }
 
-/* ==================================================
-   3. サイドバー・エリア
-   ================================================== */
+/* ==========================================================================
+   🗂️ 3. サイドバー・エリア（PC通常時）
+   ========================================================================== */
 
-/* サイドバー上部（ハンバーガーボタン） */
 .sidebar-header {
-  height: 60px;
   display: flex;
   align-items: center;
+  height: 60px;
   padding-left: 16px;
 }
 
 .icon-btn {
+  display: flex;
+  align-items: center;
+  padding: 0;
+  color: #555;
   background: none;
   border: none;
   font-size: 1.5rem;
   cursor: pointer;
-  color: #555;
-  display: flex;
-  align-items: center;
-  padding: 0;
 }
 
-/* 【★注目】PC表示の時、メニューをサイドバーの正しい位置に固定する */
+/* 浮かせず、サイドバーの枠内に綺麗に収める */
 .sidebar-nav {
+  flex: 1;
+  width: 100%;
   padding: 0;
-  position: absolute;
-  width: 240px;
-  top: 60px; /* ハンバーガーボタンの下から配置 */
-  left: 0;
-  transition: width 0.3s ease;
-  z-index: 10;
+  overflow-y: auto;
 }
 
-/* 【★注目】PC時はメニュー内のログアウト項目を絶対に隠す */
-.sidebar-nav .mobile-logout-item {
-  display: none !important;
+/* PC表示時はスマホ用の項目を完全に非表示化 */
+.sidebar-nav .mobile-logout-item,
+.sidebar-user-info {
+  display: none;
 }
 
 .sidebar-nav ul {
@@ -482,79 +488,102 @@ body {
   display: flex;
   align-items: center;
   height: 40px;
-  padding-left: 10px;
   margin-right: 8px;
   margin-left: 8px;
-  border-radius: 20px;
-  cursor: pointer;
+  padding-left: 10px;
   color: #555;
-  transition: background 0.2s;
+  border-radius: 20px;
   white-space: nowrap;
+  cursor: pointer;
+  transition: background 0.2s;
 }
 
 .nav-item i {
-  font-size: 1.2rem;
+  display: flex;
+  justify-content: center;
   width: 24px;
   min-width: 24px;
   margin-right: 12px;
-  display: flex;
-  justify-content: center;
+  font-size: 1.2rem;
 }
 
-/* メニュー状態 */
+/* メニュー状態変更 */
 .nav-item:hover {
   background-color: #d5d6e0;
 }
 
 .nav-item.active {
-  background-color: #eef0ff;
   color: #888dc5;
+  background-color: #eef0ff;
   font-weight: bold;
 }
 
-/*--- サイドバーが閉じている時の状態 ---*/
-/* サイドバー本体の幅を狭める */
+/* --- サイドバーが閉じている状態 (.collapsed) --- */
 .sidebar-area.collapsed {
   width: 60px;
 }
 
-/* サイドバーが閉じたら、メニューの幅も一緒に狭める */
-.sidebar-area.collapsed + .sidebar-nav {
+/* 👇「+」を削除して、親が閉じているときの「中のnav」の幅を60pxにします */
+.sidebar-area.collapsed .sidebar-nav {
   width: 60px;
 }
 
-/* 閉じている時はメニューの文字を隠す */
-.sidebar-area.collapsed + .sidebar-nav .nav-text {
-  display: none;
+/* 👇「+」を削除して、文字を非表示にします */
+.sidebar-area.collapsed .sidebar-nav .nav-text {
+  display: none !important; /* 強制的に非表示 */
 }
 
-/* 閉じている時はアイコンを中央に寄せる */
-.sidebar-area.collapsed + .sidebar-nav .nav-item i {
+/* 👇「+」を削除して、アイコンの位置を真ん中に調整します */
+.sidebar-area.collapsed .sidebar-nav .nav-item i {
   margin-right: 0;
 }
 
-/* ==================================================
-   4. ヘッダー・エリア
-   ================================================== */
+/* サイドバー折りたたみ時のツールチップ表示調整 */
+.sidebar-tooltip .tooltip-inner {
+  background-color: rgba(255, 255, 255, 0.82) !important;
+  backdrop-filter: blur(10px) !important;
+  -webkit-backdrop-filter: blur(10px) !important;
+
+  color: #4a4f7d !important;
+  border: 1px solid rgba(210, 214, 235, 0.5) !important;
+
+  /* 左側のアクセントライン */
+  border-left: 4px solid #888dc5 !important;
+
+  border-radius: 4px 8px 8px 4px !important;
+  box-shadow: 0 8px 24px rgba(136, 141, 197, 0.12) !important;
+  font-size: 0.85rem !important;
+  font-weight: bold !important;
+  padding: 8px 14px 8px 12px !important;
+  white-space: nowrap !important;
+  letter-spacing: 0.03em !important;
+}
+
+/* 吹き出しの左側にある矢印の色合わせ */
+.sidebar-tooltip .tooltip-arrow::before {
+  border-right-color: rgba(210, 214, 235, 0.5) !important;
+}
+
+/* ==========================================================================
+   🧁 4. ヘッダー・エリア
+   ========================================================================== */
 
 .header-area {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   height: 60px;
+  padding: 0 20px;
   background-color: #cfd1e9;
   border-bottom: 1px solid #dee2e6;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 0 20px;
 }
 
-/* ヘッダー左：システム名 */
 .system-name {
+  color: #2b2c3a;
   font-size: 1.2rem;
   font-weight: 600;
-  color: #2b2c3a;
 }
 
-/* ヘッダー右：ユーザー情報 */
 .header-right {
   display: flex;
   align-items: center;
@@ -562,15 +591,15 @@ body {
 }
 
 .user-name {
-  font-size: 0.9rem;
   color: #666;
+  font-size: 0.9rem;
 }
 
 /* ログアウトボタン */
 .logout-btn {
   padding: 6px 16px;
-  background-color: #e57373;
   color: white;
+  background-color: #e57373;
   border: none;
   border-radius: 10px;
   font-size: 13px;
@@ -589,162 +618,145 @@ body {
   transform: scale(0.95);
 }
 
-/* ==================================================
-   スマホ用レイアウト (767px以下)
-   ================================================== */
+/* ==========================================================================
+   📱 5. スマホ用レイアウト (max-width: 991px)
+   ========================================================================== */
 
-/* --- PC時はスマホ用ボタンを隠す --- */
 .mobile-toggle-btn {
-  display: none;
+  display: none; /* PC時は初期非表示 */
 }
 
-/* 画面幅が767px以下の時の設定 */
-@media (max-width: 767px) {
-  /* 1. PC用の左サイドバーを完全に消す */
+@media (max-width: 991px) {
+  /* 1. PC用の左固定サイドバーを非表示化 */
   .sidebar-area {
     display: none !important;
   }
 
-  /* 2. PC用のメニュー(ナビ)を初期状態では隠す */
+  /* 2. PC用メニュー配置を画面最上部固定の全幅ドロップダウン形式へ変更 */
   .sidebar-nav {
-    display: none;
-    position: fixed;
+    position: fixed !important; /* 👈 ここに !important を追記してください */
     top: 60px;
     left: 0;
+    display: none;
     width: 100%;
   }
 
-  /* 3. メインレイアウトの余白をなくして全幅にする */
+  /* 3. メイン全幅化 */
   .main-layout {
-    margin-left: 0 !important;
     width: 100%;
+    margin-left: 0 !important;
   }
 
-  /* 4. ヘッダー右上にハンバーガーボタンを表示 */
+  /* 4. ヘッダー右上ハンバーガーボタン有効化（ユーザー名の右側に配置） */
   .mobile-toggle-btn {
     display: block;
+    margin-left: 10px;
+    color: #444;
     background: none;
     border: none;
     font-size: 1.8rem;
-    color: #444;
     cursor: pointer;
-    margin-left: 10px;
-    order: 2; /* ユーザー名の右側に配置 */
+    order: 2;
   }
 
-  /* 5. PC用の単体ログアウトボタンを隠す */
+  /* 5. PC用の単体ログアウトボタンを非表示化 */
   .header-right .logout-btn {
     display: none !important;
   }
 
-  /* 6. スマホ用メニューのスタイル */
+  /* 6. スマホ用アクティブメニュー展開状態 */
   .sidebar-nav.mobile-active {
     display: block !important;
-    height: auto;
-    background-color: #ffffff; /* コンテンツ背景は白 */
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
     z-index: 9999;
+    height: auto;
+    background-color: #ffffff;
     border-top: 1px solid #eee;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
   }
 
-  /* 7. メニュー内のリストを縦一列に整える*/
+  /* 7. リストの縦一列配置・余白リセット */
   .sidebar-nav.mobile-active ul {
     flex-direction: column;
-    padding: 0;
     margin: 0;
+    padding: 0;
     list-style: none;
   }
 
   .sidebar-nav.mobile-active li {
     width: 100%;
+    height: auto;
+    margin: 0;
     border-bottom: 1px solid #eee;
-    margin: 0; /* PC用の余白をリセット */
-    border-radius: 0; /* PC用の丸みをリセット */
-    height: auto; /* 高さを自動に */
+    border-radius: 0;
   }
 
   .sidebar-nav.mobile-active .nav-item {
     display: flex;
     align-items: center;
-    padding: 18px 25px; /* 項目間隔を広めにする*/
-    color: #444;
-    text-decoration: none;
-    cursor: pointer;
+    width: 100%;
     height: auto;
     margin: 0;
+    padding: 18px 25px; /* 項目間隔を広めにする */
+    color: #444;
     border-radius: 0;
+    text-decoration: none;
+    cursor: pointer;
   }
 
-  /* スマホメニュー時、テキストを強制表示 */
   .sidebar-nav.mobile-active .nav-text {
-    display: inline !important;
+    display: inline !important; /* テキストの強制表示 */
   }
 
-  /* アイコンと文字の間隔 */
   .sidebar-nav.mobile-active i {
-    font-size: 1.2rem;
     margin-right: 15px;
-    color: #9297cf; /* アクセントカラーの薄い紫*/
+    color: #9297cf; /* アクセントカラーの薄い紫 */
+    font-size: 1.2rem;
   }
 
-  /* メニュー項目をタップした時の反応 */
   .sidebar-nav.mobile-active .nav-item:hover,
   .sidebar-nav.mobile-active .nav-item:active {
-    background-color: #f4f4f9; /* 全体背景と同じ薄いグレー*/
+    background-color: #f4f4f9;
   }
 
-  /* 8. スマホメニュー内のログアウト項目を強調*/
-  .sidebar-nav.mobile-active .mobile-logout-item {
-    background-color: #fff0f0; /* 少し色を変えて区別 */
-  }
-
-  /* スマホメニュー（mobile-active）が開いている時は表示する */
+  /* 8. スマホメニュー内専用：ログアウト項目の強調表示 */
   .sidebar-nav.mobile-active .mobile-logout-item {
     display: flex !important;
+    background-color: #fff0f0; /* 専用の薄い赤背景 */
   }
 
-  /* スマホメニュー（mobile-active）が開いている時は表示する */
-  .sidebar-nav.mobile-active .mobile-logout-item {
-    display: flex !important;
-  }
-
-  /* 9. スマホのときはヘッダーのユーザー名を消す */
+  /* 9. ヘッダーのユーザー名を非表示化 */
   .header-right .user-name {
     display: none !important;
   }
 
-  /* 10. スマホメニュー内のユーザー名表示エリアの装飾 */
+  /* 10. スマホメニュー内専用：ユーザー名表示エリア */
   .sidebar-user-info {
-    display: flex !important; /* スマホ時のみ表示 */
+    display: flex !important;
     align-items: center;
     padding: 20px 25px;
+    color: #2b2c3a;
+    background-color: #f8fafc;
     border-bottom: 1px solid #eee;
     font-weight: 700;
-    color: #2b2c3a; /* 引き締まったグレー */
-    background-color: #f8fafc; /* ほんのり優しい背景色 */
   }
 
   .sidebar-user-info i {
-    font-size: 1.3rem;
     margin-right: 12px;
-    color: #8ea3c2; /* メイン画面の優しい青と同期 */
+    color: #8ea3c2;
+    font-size: 1.3rem;
   }
 }
 
-/* PCのときはメニュー内のユーザー名は不要なので隠しておく */
-.sidebar-user-info {
-  display: none;
-}
+/* ==========================================================================
+   ❓ 6. 共通コンポーネント：ヘルプ & ポップオーバー
+   ========================================================================== */
 
-/* ==================================================
-   5. 共通コンポーネント：ヘルプ
-   ================================================== */
 .help-icon {
-  cursor: help;
-  color: #6c757d;
-  font-size: 1rem;
   display: inline-flex;
   align-items: center;
+  color: #6c757d;
+  font-size: 1rem;
+  cursor: help;
   transition: color 0.2s;
 }
 
@@ -752,16 +764,16 @@ body {
   color: #495057;
 }
 
-/* ポップオーバー（吹き出し）のデザインを管理者画面と統一 */
+/* ポップオーバー（吹き出し本体） */
 .popover {
-  border-radius: 12px !important; /* 管理者画面のような角丸 */
-  border: 1px solid #dee2e6 !important;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1) !important;
   padding: 5px !important;
+  border: 1px solid #dee2e6 !important;
+  border-radius: 12px !important;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1) !important;
 }
 
 .popover-body {
-  color: #334155 !important; /* 文字色を統一 */
-  font-size: 0.85rem !important;
   padding: 10px 15px !important;
+  color: #334155 !important;
+  font-size: 0.85rem !important;
 }

@@ -1,4 +1,4 @@
-// 🌟 レポート画面全体で現在表示中のデータを保持するグローバル変数を定義
+// レポート画面全体で現在表示中のデータを保持するグローバル変数を定義
 let currentDisplayReportData = null;
 
 /**
@@ -7,7 +7,7 @@ let currentDisplayReportData = null;
 async function initializeReportPage() {
   console.log("【report.js】レポート画面の初期化を開始します...");
 
-  // 🌟 loginUser が未定義の場合の安全策
+  // loginUser が未定義の場合の安全策
   if (typeof loginUser === "undefined") {
     window.loginUser = window.loginUser || {};
   }
@@ -94,7 +94,7 @@ async function initializeReportPage() {
     if (userSelect) userSelect.addEventListener("change", updateAllCalculations);
 
     // ==========================================================================
-    // 🌟 処理順序の最終最適化
+    // 処理順序の最終最適化
     // ==========================================================================
     // 1. 【最優先】まず、自分の最新レポート1件を引っ張ってきて画面中央のベースを作る！
     await fetchAndDisplayLatestReport();
@@ -438,7 +438,7 @@ async function fetchAndDisplayPastReportList() {
           }
         }
 
-        // 🌟【ここを追加！】詳細を開いて既読になった瞬間、カレンダーも即座に再描画して同期
+        // 詳細を開いて既読になった瞬間、カレンダーも即座に再描画して同期
 
         if (typeof renderReportCalendar === "function") {
           const monthInput = document.getElementById("display_period");
@@ -449,9 +449,8 @@ async function fetchAndDisplayPastReportList() {
         }
       });
     });
-    // ＝ ＝ ＝ ＝ ＝ ＝ ＝ ＝ ＝ ＝ ＝ ＝ ＝ ＝ ＝ ＝ ＝ ＝ ＝ ＝ ＝ ＝ ＝ ＝ ＝
-    // 🌟【修正】初期読み込み時のアクティブ表示制御（厳格版）
-    // ＝ ＝ ＝ ＝ ＝ ＝ ＝ ＝ ＝ ＝ ＝ ＝ ＝ ＝ ＝ ＝ ＝ ＝ ＝ ＝ ＝ ＝ ＝ ＝ ＝
+
+    // 初期読み込み時のアクティブ表示制御
     // グローバルに保持されている現在のレポートIDを確認
     const activeId =
       typeof currentReportId !== "undefined" && currentReportId
@@ -468,7 +467,7 @@ async function fetchAndDisplayPastReportList() {
         console.log("【初期ハイライト】現在のレポートをアクティブにしました。ID:", activeId);
       }
     }
-    // ＝ ＝ ＝ ＝ ＝ ＝ ＝ ＝ ＝ ＝ ＝ ＝ ＝ ＝ ＝ ＝ ＝ ＝ ＝ ＝ ＝ ＝ ＝ ＝ ＝
+
   } catch (err) {
     console.error(err);
     listContainer.innerHTML = `<div class="text-danger text-center small py-4">一覧の取得に失敗しました。</div>`;
@@ -505,7 +504,7 @@ async function fetchAndDisplaySingleReport(reportId) {
       return;
     }
 
-    // 🌟【確実版：Supabaseの既読更新ロジック】
+    // Supabaseの既読更新ロジック
     // 他人のレポート、かつ自分が共有先に含まれていて、まだ「未読」の場合のみ自動更新
     const isMyReport = report.user_id === loginUser.id;
 
@@ -554,9 +553,7 @@ async function fetchAndDisplaySingleReport(reportId) {
 function mapReportToDisplay(report) {
   currentDisplayReportData = report;
 
-  // ==========================================================================
-  // 🌟 編集ボタンの表示・非表示、および見た目（色の薄さ）の完全リセット制御
-  // ==========================================================================
+  // 編集ボタンの表示・非表示、および見た目の完全リセット制御
   const editBtn = document.getElementById("report_edit_button");
 
   if (editBtn) {
@@ -570,12 +567,8 @@ function mapReportToDisplay(report) {
       // 自分のレポートの場合：表示して色をくっきりさせる
       editBtn.classList.remove("d-none");
       editBtn.classList.remove("disabled");
-
-      // 🌟 元のお気に入りデザイン（btn-outline-secondary）のままにする
       editBtn.classList.add("btn-outline-secondary");
-      editBtn.classList.remove("btn-secondary"); // 塗り潰しを解除
-
-      // 🌟 インラインスタイルで、ブラウザの「薄引きずりバグ」を力技でねじ伏せる（!important付き）
+      editBtn.classList.remove("btn-secondary");
       editBtn.style.setProperty("opacity", "1", "important");
       editBtn.style.pointerEvents = "auto";
     } else {
@@ -905,8 +898,6 @@ function mapReportToDisplay(report) {
     const targetNameEl = document.getElementById("view_reporter_name");
     const alternativeHeaderEl = document.getElementById("view_report_title_header");
 
-    console.log(`【強制書き換え実行】種別: ${rType}, 作成者フルネーム: ${currentReporterName}`);
-
     if (targetTypeEl) targetTypeEl.innerText = rType;
     if (targetNameEl) targetNameEl.innerText = currentReporterName;
     if (alternativeHeaderEl) {
@@ -933,7 +924,6 @@ async function refreshReportList() {
       const now = new Date();
       await renderReportCalendar(now.getFullYear(), now.getMonth() + 1);
     }
-    console.log("【report.js】ミニカレンダーの 📝 マークを即座に更新しました。");
   }
 }
 

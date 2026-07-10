@@ -451,6 +451,15 @@ async function initializeMainPage() {
     // 最後にDBの状態を読み込んで画面に適用
     await restoreStateFromDB();
 
+    // 💡 プルダウンが切り替わった時にカレンダーをリアルタイムで再描画する処理
+    const targetUserSelect = document.getElementById("target_user_id");
+    if (targetUserSelect) {
+      targetUserSelect.addEventListener("change", async () => {
+        console.log("プルダウンが変更されました。カレンダーを再描画します:", targetUserSelect.value);
+        await renderCalendarInternal();
+      });
+    }
+
     // 📱 【新規追加】スマホ・タブレット表示時はデフォルトでアコーディオンを格納する
     adjustAccordionForMobile();
 
@@ -784,7 +793,10 @@ function adjustAccordionForMobile() {
   }
 }
 
-// グローバル変数で現在表示中の年月を管理（初期値は今日）
+// =========================================================================
+// グローバル変数・多重実行ガード
+// =========================================================================
+let isCalendarRendering = false;
 let currentCalendarDate = new Date();
 
 /**
@@ -849,36 +861,80 @@ async function syncHolidaysFromExternalAPI(year) {
 }
 
 /**
- * 指定された年月のカレンダーを生成して画面に表示する
+ * 指定された年月のカレンダーを生成して画面に表示する（400エラー完全ガード版）
  */
 async function renderCalendarInternal() {
   const calendarDays = document.getElementById("calendar-days");
   if (!calendarDays) return;
 
-  calendarDays.innerHTML = ""; // 最初に完全クリア
+  if (isCalendarRendering) return;
+  isCalendarRendering = true;
+
+  calendarDays.innerHTML = "";
 
   const today = new Date();
   const year = currentCalendarDate.getFullYear();
   const month = currentCalendarDate.getMonth();
 
-  const firstDay = new Date(year, month, 1).getDay();
+  const firstDayOfWeek = new Date(year, month, 1).getDay();
   const lastDate = new Date(year, month + 1, 0).getDate();
+  const prevLastDate = new Date(year, month, 0).getDate();
 
   const startStr = `${year}-${String(month + 1).padStart(2, "0")}-01`;
   const endStr = `${year}-${String(month + 1).padStart(2, "0")}-${String(lastDate).padStart(2, "0")}`;
 
   let holidays = {};
   const attendanceMap = new Map();
+  const myReportMap = new Map();
+  const otherUserReportMap = new Map();
+  const unreadDotsMap = new Map();
+
+  // 💡 フィルター値の安全取得
+  let filterUserVal = document.getElementById("target_user_id")?.value || "all";
+  filterUserVal = filterUserVal.trim();
+
+  if (filterUserVal === "" || filterUserVal === "全てのレポート" || filterUserVal === "すべて") {
+    filterUserVal = "all";
+  } else if (filterUserVal === "自分のレポート" || filterUserVal === "自分") {
+    filterUserVal = "mine";
+  }
+
+  const isLookingAtMe = filterUserVal === "all" || filterUserVal === "mine";
 
   try {
     const supabaseClient = window.supabase || supabase;
     if (supabaseClient) {
+      // 💡 確実にログインユーザーのセッションを担保（eq.null 防止ガード）
       const {
         data: { user: currentUser },
       } = await supabaseClient.auth.getUser();
-      if (!currentUser) throw new Error("ログインユーザーが取得できません");
+      if (!currentUser) {
+        isCalendarRendering = false;
+        return;
+      }
 
-      let [holidaysResult, attendanceResult] = await Promise.all([
+      // 1. レポートクエリの構築
+      let reportQuery = supabaseClient
+        .from("report_logs")
+        .select(
+          `
+          id, report_date, user_id, is_active, report_type, status,
+          user_master ( id, last_name, first_name ),
+          report_shares ( report_id, user_id, is_read )
+        `,
+        )
+        .gte("report_date", startStr)
+        .lte("report_date", endStr);
+
+      if (filterUserVal === "mine") {
+        reportQuery = reportQuery.eq("user_id", currentUser.id);
+      } else if (filterUserVal !== "all") {
+        reportQuery = reportQuery.eq("user_id", filterUserVal);
+      }
+
+      // 2. 並行データ取得
+      let [reportsResult, holidaysResult, attendanceResult] = await Promise.all([
+        reportQuery,
         supabaseClient.from("holiday_master").select("holiday_date, name").gte("holiday_date", startStr).lte("holiday_date", endStr),
         supabaseClient
           .from("attendance_data")
@@ -889,17 +945,6 @@ async function renderCalendarInternal() {
           .lte("work_date", endStr),
       ]);
 
-      const currentYear = new Date().getFullYear();
-      if (year >= currentYear || !holidaysResult.data || holidaysResult.data.length === 0) {
-        await syncHolidaysFromExternalAPI(year);
-        const { data: reFetchResult } = await supabaseClient
-          .from("holiday_master")
-          .select("holiday_date, name")
-          .gte("holiday_date", startStr)
-          .lte("holiday_date", endStr);
-        if (reFetchResult) holidaysResult.data = reFetchResult;
-      }
-
       if (holidaysResult.data) {
         holidaysResult.data.forEach((h) => {
           const dayNum = new Date(h.holiday_date).getDate();
@@ -907,35 +952,73 @@ async function renderCalendarInternal() {
         });
       }
 
-      if (attendanceResult.data) {
+      if (attendanceResult.data && isLookingAtMe) {
         attendanceResult.data.forEach((record) => {
           const dayNum = new Date(record.work_date).getDate();
           attendanceMap.set(dayNum, record);
         });
       }
+
+      // 3. データの仕分け
+      if (reportsResult.data) {
+        reportsResult.data.forEach((r) => {
+          if (r.is_active === false) return;
+
+          const isMyReport = String(r.user_id) === String(currentUser.id);
+          const dayNum = parseInt(r.report_date.split("-")[2], 10);
+
+          // 既読・未読判定 (定義書の user_id カラムに準拠)
+          let isRead = false;
+          const shares = Array.isArray(r.report_shares) ? r.report_shares : r.report_shares ? [r.report_shares] : [];
+          if (isMyReport) {
+            isRead = true;
+          } else {
+            const myShare = shares.find((s) => s && String(s.user_id) === String(currentUser.id));
+            isRead = myShare ? myShare.is_read : false;
+          }
+
+          if (filterUserVal === "all" && !isMyReport) {
+            const isSharedToMe = shares.some((s) => s && String(s.user_id) === String(currentUser.id));
+            if (!isSharedToMe) return;
+            if (isRead) return;
+          }
+
+          if (isMyReport) {
+            myReportMap.set(dayNum, r.status);
+          } else {
+            otherUserReportMap.set(dayNum, true);
+          }
+
+          if (!isRead) {
+            unreadDotsMap.set(dayNum, true);
+          }
+        });
+      }
+
+      // 祝日データの補正同期
+      const currentYear = new Date().getFullYear();
+      if (year >= currentYear || !holidaysResult.data || holidaysResult.data.length === 0) {
+        if (typeof syncHolidaysFromExternalAPI === "function") {
+          await syncHolidaysFromExternalAPI(year);
+        }
+      }
     }
   } catch (err) {
-    console.error("メインカレンダー: データのロードに失敗しました:", err);
+    console.error("メインカレンダーデータのロードに失敗しました:", err);
   }
 
-  // 📐 前月の日付を計算する下準備
-  const prevLastDate = new Date(year, month, 0).getDate();
-
-  /**
-   * マスを生成して共通の曜日・祝日クラスを付与する共通関数
-   */
+  // セル生成関数
   function createDayCell(dayNum, isOtherMonth = false, otherMonthOffset = 0) {
     const div = document.createElement("div");
-    
-    // レポート画面用の基本クラス「report-cal-day」をメイン画面側にも付与
-    div.className = "report-cal-day";
-    
-    // 内部の文字要素クラスも「day-num」に統一
+    div.className = "calendar-day-cell";
     div.innerHTML = `
-      <div class="calendar-day-header w-100 h-100">
-        <span class="day-num">${dayNum}</span>
+      <div class="calendar-day-header">
+        <span class="day-number">${dayNum}</span>
         <div class="calendar-day-badge-area"></div>
-        <div class="calendar-icons-area"></div>
+      </div>
+      <div class="calendar-day-bottom-flex" style="display: flex; justify-content: space-between; align-items: center; width: 100%; margin-top: auto;">
+        <div class="calendar-attendance-group"></div>
+        <div class="calendar-report-group" style="display: flex; align-items: center;"></div>
       </div>
     `;
 
@@ -943,8 +1026,7 @@ async function renderCalendarInternal() {
     const dayOfWeek = checkDate.getDay();
 
     if (isOtherMonth) {
-      // レポート画面の先月・来月クラス「other-month」に統一
-      div.classList.add("other-month");
+      div.classList.add("is-other-month");
     } else {
       const holidayName = holidays[dayNum];
       if (holidayName) {
@@ -957,68 +1039,332 @@ async function renderCalendarInternal() {
       }
 
       if (dayNum === today.getDate() && month === today.getMonth() && year === today.getFullYear()) {
-        div.classList.add("today"); // 💡 「is-today」から「today」に統一
+        div.classList.add("is-today");
       }
     }
     return div;
   }
 
-  // ①【前月の余白を埋める】
-  for (let i = firstDay - 1; i >= 0; i--) {
-    const prevDayNum = prevLastDate - i;
-    const div = createDayCell(prevDayNum, true, -1);
-    calendarDays.appendChild(div);
+  // 1. 前月分
+  for (let i = firstDayOfWeek - 1; i >= 0; i--) {
+    calendarDays.appendChild(createDayCell(prevLastDate - i, true, -1));
   }
 
-  // ②【当月の日付を描画】
+  // 2. 当月分の描画
   for (let d = 1; d <= lastDate; d++) {
     const div = createDayCell(d, false, 0);
     calendarDays.appendChild(div);
 
-    const attendanceRecord = attendanceMap.get(d);
-    if (attendanceRecord) {
-      if (attendanceRecord.work_type === "paid") {
-        const badgeArea = div.querySelector(".calendar-day-badge-area");
-        const label = document.createElement("span");
-        label.className = "cal-status-text label-paid";
-        label.textContent = "有給";
-        badgeArea.appendChild(label);
-      } else if (attendanceRecord.work_type === "absent") {
-        const badgeArea = div.querySelector(".calendar-day-badge-area");
-        const label = document.createElement("span");
-        label.className = "cal-status-text label-absent";
-        label.textContent = "欠勤";
-        badgeArea.appendChild(label);
-      } else {
-        const iconsArea = div.querySelector(".calendar-icons-area");
-        const iconEl = document.createElement("i");
-        if (!attendanceRecord.clock_out) {
-          iconEl.className = "bi bi-box-arrow-in-right cal-icon-working"; // 出勤中アイコン
-          iconEl.title = "出勤中";
-        } else {
-          iconEl.className = "bi bi-check-circle-fill cal-icon-done"; // 退勤済アイコン
-          iconEl.title = "退勤済";
+    const badgeArea = div.querySelector(".calendar-day-badge-area");
+    const attendanceGroup = div.querySelector(".calendar-attendance-group");
+    const reportGroup = div.querySelector(".calendar-report-group");
+
+    if (isLookingAtMe) {
+      const attendanceRecord = attendanceMap.get(d);
+      if (attendanceRecord) {
+        if (attendanceRecord.work_type === "paid") {
+          const label = document.createElement("span");
+          label.className = "cal-status-text label-paid";
+          label.textContent = "有給";
+          badgeArea.appendChild(label);
+        } else if (attendanceRecord.work_type === "absent") {
+          const label = document.createElement("span");
+          label.className = "cal-status-text label-absent";
+          label.textContent = "欠勤";
+          badgeArea.appendChild(label);
+        } else if (!attendanceRecord.clock_out) {
+          const workingIndicator = document.createElement("span");
+          workingIndicator.className = "cal-working-indicator";
+          attendanceGroup.appendChild(workingIndicator);
         }
-        iconsArea.appendChild(iconEl);
+      }
+    }
+
+    if (isLookingAtMe && myReportMap.has(d)) {
+      const status = myReportMap.get(d);
+      if (status === "draft") {
+        const reportIconDraft = document.createElement("i");
+        reportIconDraft.className = "bi bi-file-earmark cal-report-draft-flat";
+        reportGroup.appendChild(reportIconDraft);
+      } else {
+        const reportIconSpan = document.createElement("span");
+        reportIconSpan.className = "report-icon";
+        reportIconSpan.textContent = "📝";
+        reportGroup.appendChild(reportIconSpan);
+      }
+    }
+
+    if (!isLookingAtMe && otherUserReportMap.has(d)) {
+      const reportIconSpan = document.createElement("span");
+      reportIconSpan.className = "report-icon";
+      reportIconSpan.textContent = unreadDotsMap.has(d) ? "📝" : "📄";
+      if (!unreadDotsMap.has(d)) {
+        reportIconSpan.style.opacity = "0.6";
+      }
+      reportGroup.appendChild(reportIconSpan);
+    }
+
+    if (unreadDotsMap.has(d)) {
+      if (isLookingAtMe && !myReportMap.has(d)) {
+        const reportIconUnread = document.createElement("span");
+        reportIconUnread.className = "cal-unread-dot-fixed";
+        badgeArea.appendChild(reportIconUnread);
+      } else if (!isLookingAtMe && otherUserReportMap.has(d)) {
+        const reportIconUnread = document.createElement("span");
+        reportIconUnread.className = "cal-unread-dot-fixed";
+        badgeArea.appendChild(reportIconUnread);
       }
     }
   }
 
-  // ③【翌月の余白を埋める】（土曜日で終わるよう動的計算）
-  const currentSlots = calendarDays.children.length;
-  const remainder = currentSlots % 7;
+  // 3. 翌月分
+  const totalRenderedSlots = firstDayOfWeek + lastDate;
+  const remainder = totalRenderedSlots % 7;
   const nextMonthNeedSlots = remainder === 0 ? 0 : 7 - remainder;
 
   for (let n = 1; n <= nextMonthNeedSlots; n++) {
-    const div = createDayCell(n, true, 1);
-    calendarDays.appendChild(div);
+    calendarDays.appendChild(createDayCell(n, true, 1));
+  }
+
+  isCalendarRendering = false;
+}
+
+// =========================================================================
+// メイン画面専用：過去のレポート一覧取得＆描画処理（モック撤廃・動的マスタ版）
+// =========================================================================
+async function updateMainPageReportList() {
+  const pastReportListEl = document.getElementById("past_report_list");
+  if (!pastReportListEl) return; // 💡 DOMがない時は即終了（警告ログ対策）
+
+  try {
+    const supabaseClient = window.supabase || supabase;
+    if (!supabaseClient) return;
+
+    // 1. ログインユーザー情報の動的取得
+    const {
+      data: { user: authUser },
+    } = await supabaseClient.auth.getUser();
+    if (!authUser) return;
+
+    // 💡 テーブルマスタから本当の名前を動的に引っ張ってくる
+    const { data: userMasterRow } = await supabaseClient.from("user_master").select("last_name, first_name").eq("id", authUser.id).single();
+
+    const loginUser = {
+      id: authUser.id,
+      last_name: userMasterRow ? userMasterRow.last_name : "ユーザー",
+      first_name: userMasterRow ? userMasterRow.first_name : "",
+    };
+
+    // 2. プルダウンの安全な選択肢組み立て
+    const userSelect = document.getElementById("target_user_id");
+    if (userSelect) {
+      if (userSelect.options.length === 0) {
+        const allOption = document.createElement("option");
+        allOption.value = "all";
+        allOption.textContent = "全てのレポート";
+        allOption.selected = true;
+        userSelect.appendChild(allOption);
+
+        const mineOption = document.createElement("option");
+        mineOption.value = "mine";
+        mineOption.textContent = "自分のレポート";
+        userSelect.appendChild(mineOption);
+      }
+
+      const savedSelectedValue = userSelect.value;
+
+      const { data: allReports } = await supabaseClient.from("report_logs").select(`
+          id, report_type, report_date, is_active, status, user_id,
+          user_master ( id, last_name, first_name ),
+          report_shares ( user_id )
+        `);
+
+      if (allReports) {
+        const seenUserIds = new Set();
+        allReports.forEach((r) => {
+          if (r.user_id != loginUser.id && !seenUserIds.has(r.user_id) && r.is_active !== false) {
+            seenUserIds.add(r.user_id);
+            let fullName = "他ユーザー";
+            if (r.user_master) {
+              const masterArray = Array.isArray(r.user_master) ? r.user_master : [r.user_master];
+              const targetMaster = masterArray.find((m) => m && m.id == r.user_id);
+              if (targetMaster) {
+                fullName = `${targetMaster.last_name || ""} ${targetMaster.first_name || ""}`.trim();
+              }
+            }
+
+            const exists = Array.from(userSelect.options).some((opt) => opt.value == r.user_id);
+            if (!exists) {
+              const opt = document.createElement("option");
+              opt.value = r.id;
+              opt.textContent = fullName;
+              userSelect.appendChild(opt);
+            }
+          }
+        });
+
+        if (savedSelectedValue && Array.from(userSelect.options).some((opt) => opt.value === savedSelectedValue)) {
+          userSelect.value = savedSelectedValue;
+        }
+      }
+    }
+
+    const filterValue = userSelect ? userSelect.value : "all";
+
+    // 3. メイン表示用の直近10件を取得
+    let query = supabaseClient
+      .from("report_logs")
+      .select(
+        `
+        id, report_date, report_type, status, user_id, is_active,
+        user_master(id, last_name, first_name),
+        report_shares(report_id, user_id, is_read)
+      `,
+      )
+      .or("is_active.eq.true,status.eq.draft")
+      .order("report_date", { ascending: false })
+      .limit(10);
+
+    if (filterValue !== "all" && filterValue !== "mine") {
+      query = query.eq("user_id", filterValue);
+    } else if (filterValue === "mine") {
+      query = query.eq("user_id", loginUser.id);
+    }
+
+    const { data: displayReports, error } = await query;
+    if (error) throw error;
+
+    if (!displayReports || displayReports.length === 0) {
+      pastReportListEl.innerHTML = `<div class="text-muted p-3 text-center" style="font-size: 0.85rem;">表示するレポートはありません。</div>`;
+      return;
+    }
+
+    let htmlContent = "";
+    displayReports.forEach((report) => {
+      const isMyReport = report.user_id == loginUser.id;
+      let isRead = false;
+      const sharesArray = Array.isArray(report.report_shares) ? report.report_shares : report.report_shares ? [report.report_shares] : [];
+
+      if (isMyReport) {
+        isRead = true;
+      } else {
+        const myShare = sharesArray.find((s) => s && s.user_id == loginUser.id);
+        isRead = myShare ? myShare.is_read : false;
+      }
+
+      let reporterName = "";
+      if (isMyReport) {
+        reporterName = `${loginUser.last_name || ""} ${loginUser.first_name || ""}`.trim() || "自分";
+      } else if (report.user_master) {
+        const masterArray = Array.isArray(report.user_master) ? report.user_master : [report.user_master];
+        const targetMaster = masterArray.find((m) => m && m.id == report.user_id);
+        if (targetMaster) {
+          reporterName = `${targetMaster.last_name || ""} ${targetMaster.first_name || ""}`.trim();
+        }
+      }
+      if (!reporterName) reporterName = "ユーザー";
+
+      const formattedDate = report.report_date ? report.report_date.replace(/-/g, "/") : "ー/ー/ー";
+
+      let leftBorderHtml = "";
+      let iconHtml = "";
+      let textClass = "";
+      let badgeHtml = "";
+
+      if (isMyReport) {
+        if (report.status === "draft" || report.is_active === false) {
+          leftBorderHtml = `<div style="width: 3px; height: 16px; background-color: #eab308; border-radius: 2px; margin-right: 8px;"></div>`;
+          iconHtml = `<i class="bi bi-pencil" style="color: #ca8a04; font-size: 0.85rem;"></i>`;
+          textClass = "fw-medium";
+          badgeHtml = `<span class="ms-2" style="font-size: 0.65rem; background-color: #fef9c3; color: #713f12; padding: 0.1rem 0.4rem; border-radius: 4px;">下書き</span>`;
+        } else {
+          leftBorderHtml = `<div style="width: 3px; height: 16px; background-color: #475569; border-radius: 2px; margin-right: 8px;"></div>`;
+          iconHtml = `<i class="bi bi-clipboard-check" style="color: #475569; font-size: 0.85rem;"></i>`;
+          textClass = "text-dark fw-medium";
+        }
+      } else {
+        if (!isRead) {
+          leftBorderHtml = `<div style="width: 3px; height: 16px; background-color: #6366f1; border-radius: 2px; margin-right: 8px;"></div>`;
+          iconHtml = `<i class="bi bi-circle-fill" style="color: #6366f1; font-size: 0.5rem; margin-left: 2px; margin-right: 6px;"></i>`;
+          textClass = "text-dark fw-bold";
+          badgeHtml = `<span class="ms-2" style="font-size: 0.65rem; background-color: #e0e7ff; color: #4338ca; padding: 0.1rem 0.4rem; border-radius: 4px; font-weight: 600;">NEW</span>`;
+        } else {
+          leftBorderHtml = `<div style="width: 3px; height: 16px; background-color: #c7d2fe; border-radius: 2px; margin-right: 8px;"></div>`;
+          iconHtml = `<i class="bi bi-file-earmark" style="color: #c7d2fe; font-size: 0.85rem;"></i>`;
+          textClass = "text-body fw-normal";
+        }
+      }
+
+      htmlContent += `
+        <a href="javascript:void(0);" class="list-group-item list-group-item-action d-flex align-items-center justify-content-between past-report-item" 
+           data-id="${report.id}"
+           style="padding: 0.65rem 0.5rem; border: none; border-bottom: 1px solid #f1f5f9; background: transparent; transition: all 0.2s;">
+          <div class="d-flex align-items-center min-w-0 flex-grow-1">
+            ${leftBorderHtml}
+            <div class="d-flex align-items-center gap-1.5 min-w-0" style="font-size: 0.82rem;">
+              ${iconHtml}
+              <span class="${textClass} text-truncate ms-1">
+                ${report.report_type === "weekly" ? "週報" : "日報"}：${reporterName}
+              </span>
+              ${badgeHtml}
+            </div>
+          </div>
+          <span class="text-muted flex-shrink-0 ms-2" style="font-size: 0.72rem; opacity: 0.8;">${formattedDate}</span>
+        </a>
+      `;
+    });
+
+    pastReportListEl.innerHTML = htmlContent;
+
+    // イベントバインド
+    document.querySelectorAll("#past_report_list .past-report-item").forEach((item) => {
+      item.addEventListener("click", async (e) => {
+        e.preventDefault();
+        const currentItem = e.currentTarget;
+        const reportId = currentItem.getAttribute("data-id");
+
+        document.querySelectorAll("#past_report_list .past-report-item").forEach((el) => {
+          el.classList.remove("bg-secondary-subtle", "fw-bold");
+        });
+        currentItem.classList.add("bg-secondary-subtle", "fw-bold");
+
+        if (typeof fetchAndDisplaySingleReport === "function") {
+          await fetchAndDisplaySingleReport(reportId);
+        }
+
+        const modalElement = document.getElementById("report_detail_modal");
+        if (modalElement) {
+          const modal = bootstrap.Modal.getOrCreateInstance(modalElement);
+          modal.show();
+        }
+      });
+    });
+  } catch (err) {
+    console.error("❌ レポート一覧取得失敗:", err);
   }
 }
 
 // ==========================================
-// 共通基盤（SPA）用に公開
+// 共通基盤（SPA）用にのみ公開（フライング実行を完全廃止）
 // ==========================================
 window.renderCalendar = async () => {
   initCalendarSelector();
   await renderCalendarInternal();
+  await updateMainPageReportList();
+
+  const userSelect = document.getElementById("target_user_id");
+  if (userSelect) {
+    userSelect.removeEventListener("change", onFilterChange);
+    userSelect.addEventListener("change", onFilterChange);
+  }
 };
+
+async function onFilterChange() {
+  if (isCalendarRendering) return;
+  await updateMainPageReportList();
+  await renderCalendarInternal();
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+  console.log("main.js: 初期化は共通基盤からの呼び出しを待ちます。");
+});

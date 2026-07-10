@@ -2,7 +2,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   console.log("インデックス（共通基盤）のJSが正常に読み込まれました");
 
   // ==========================================
-  // ✨ 【追加】共通の便利関数エリア
+  // 共通の便利関数エリア
   // ==========================================
 
   // DB更新用：現在時刻をISO形式で取得
@@ -57,12 +57,11 @@ document.addEventListener("DOMContentLoaded", async () => {
   // ポップオーバーの共通初期化関数（PC・スマホ自動判別）
   // ==========================================
   function initGlobalPopovers() {
-    const popoverTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="popover"]'));
+    // サイドバーのメニュー（.nav-item）以外にある、通常のdata-bs-toggle要素だけを初期化する
+    const popoverTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="popover"]:not(.nav-item)'));
     popoverTriggerList.map(function (popoverTriggerEl) {
-      // 既に初期化済みの場合はスキップして二重適用を防ぐ
       if (bootstrap.Popover.getInstance(popoverTriggerEl)) return;
 
-      // 画面幅が768px未満（スマホ）なら 'focus'、それ以上（PC）なら 'hover focus'
       const isMobile = window.innerWidth < 768;
       const triggerMode = isMobile ? "focus" : "hover focus";
 
@@ -78,12 +77,12 @@ document.addEventListener("DOMContentLoaded", async () => {
   // ==========================================
   async function checkAndDisplayUser() {
     try {
-      // 💡 【先取りキャッシュの読み込み】
+      // 先取りキャッシュの読み込み
       const cachedName = localStorage.getItem("cached_user_name");
       const cachedRole = localStorage.getItem("cached_user_role");
       const cachedCompanyId = localStorage.getItem("cached_user_company_id"); // ←【追加】会社IDもキャッシュから取る
 
-      // 💡 キャッシュが存在する場合の先行UI制御
+      // キャッシュが存在する場合の先行UI制御
       if (cachedName && cachedRole) {
         console.log("ログイン画面からの先取りキャッシュを使用します:", { cachedName, cachedRole, cachedCompanyId });
 
@@ -126,7 +125,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         /* user_name, role と一緒に company_id（会社ID）もマスタから直接引っ張る */
         const { data: masterData, error: dbError } = await supabaseClient
           .from("user_master")
-          .select("user_name, role, company_id") // ← company_id を追加
+          .select("user_name, role, company_id")
           .eq("id", user.id)
           .single();
 
@@ -140,7 +139,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         } else if (masterData) {
           userName = masterData.user_name;
           userRole = masterData.role;
-          userCompanyId = masterData.company_id; // データベースから取得！
+          userCompanyId = masterData.company_id;
 
           // 次回スムーズに動くように会社IDもキャッシュに保存する
           localStorage.setItem("cached_user_company_id", userCompanyId);
@@ -165,7 +164,6 @@ document.addEventListener("DOMContentLoaded", async () => {
             console.log("共通基盤: アークフォレスト所属のため、レポートメニューを非表示にします。");
             reportMenuItem.style.setProperty("display", "none", "important");
           } else {
-            // 💡 既存のデザイン（liタグ）に合わせて、非表示を解除するときは「flex」を適用
             reportMenuItem.style.setProperty("display", "flex", "important");
           }
         }
@@ -223,9 +221,61 @@ document.addEventListener("DOMContentLoaded", async () => {
   const menuToggle = document.getElementById("menu-toggle");
   const sidebar = document.querySelector(".sidebar-area");
 
+  // ✨【大転換】Popoverをやめて、より確実なTooltipで制御するロジック
+  document.querySelectorAll(".sidebar-nav .nav-item").forEach((item) => {
+    if (item.classList.contains("mobile-logout-item")) return;
+
+    item.addEventListener("mouseenter", () => {
+      const isCollapsed = sidebar && sidebar.classList.contains("collapsed");
+
+      if (isCollapsed) {
+        // 既存のツールチップがあれば一度破棄
+        const oldInstance = bootstrap.Tooltip.getInstance(item);
+        if (oldInstance) {
+          oldInstance.hide();
+          oldInstance.dispose();
+        }
+
+        // HTMLの data-title から直接「メイン」などの文字を取得
+        const menuText = item.getAttribute("data-title") || "";
+
+        // 新しくツールチップを作成して強制表示
+        const newInstance = new bootstrap.Tooltip(item, {
+          trigger: "manual",
+          placement: "right",
+          title: menuText, // ツールチップでは content ではなく「title」に文字を入れます
+          customClass: "sidebar-tooltip",
+          animation: true,
+          delay: { show: 0, hide: 0 },
+        });
+
+        newInstance.show();
+      }
+    });
+
+    item.addEventListener("mouseleave", () => {
+      const instance = bootstrap.Tooltip.getInstance(item);
+      if (instance) {
+        instance.hide();
+        setTimeout(() => {
+          instance.dispose();
+        }, 50);
+      }
+    });
+  });
+
   if (menuToggle && sidebar) {
     menuToggle.addEventListener("click", () => {
       sidebar.classList.toggle("collapsed");
+
+      // サイドバーが切り替わった瞬間は、すべてのツールチップを完全消去
+      document.querySelectorAll(".sidebar-nav .nav-item").forEach((el) => {
+        const instance = bootstrap.Tooltip.getInstance(el);
+        if (instance) {
+          instance.hide();
+          instance.dispose();
+        }
+      });
     });
   }
 
@@ -331,7 +381,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     `;
       }
     } finally {
-      // 💡 修正ポイント：最初の起動時（isInitialがtrue）は、ロード画面を消す処理もしない（最初から出ていないため）
       if (!isInitial) {
         hideGlobalLoading();
       }
@@ -339,7 +388,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 
   // ==========================================
-  // 🚀 初期起動・画面初期化プロセス（完全同期・一撃出現版）
+  // 🚀 初期起動・画面初期化プロセス
   // ==========================================
   async function initializeApp() {
     try {
@@ -357,8 +406,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
       await loadPage("main", true);
 
-      // 🔥 5. 【すべての準備が100%完了！！！】
-      // ガワも中身もデータもすべてが組み上がったので、ここで満を持して「体全体」をスパッと出現させる！
+      // すべての準備が100%完了
       document.body.style.opacity = "1";
     } catch (initError) {
       console.error("アプリ初期化エラー:", initError);

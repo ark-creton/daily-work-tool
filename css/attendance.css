@@ -1,5 +1,5 @@
 /* ==========================================================================
-   画面全体の基本設定・共通パーツ
+   🎨 1. 画面全体の基本設定・共通パーツ
    ========================================================================== */
 
 /* ◆ 基本文字色 */
@@ -43,7 +43,7 @@
 }
 
 /* ==========================================================================
-   勤怠メインテーブル（カレンダー表）
+   📊 2. 勤怠メインテーブル（カレンダー表）
    ========================================================================== */
 
 /* ◆ テーブルのスクロールエリア ＆ ヘッダー固定 */
@@ -91,7 +91,7 @@
   margin-left: 4px;
 }
 
-/* ◆ 各列の横幅設定（1〜9番目） */
+/* --- 各列の横幅設定（1〜9番目） --- */
 #attendance_table th:nth-child(1),
 #attendance_table td:nth-child(1) {
   width: 65px;
@@ -154,23 +154,19 @@
   max-height: 2.6em;
 }
 
-/* ◆ 祝日・日曜の背景色*/
-#attendance_table tbody tr.row-holiday td {
-  background-color: transparent !important; /* 背景色を消す */
-}
-
-/* ◆ 土曜日の背景色 */
+/* ◆ 祝日・日曜・土曜の背景色（上書きクリア） */
+#attendance_table tbody tr.row-holiday td,
 #attendance_table tbody tr.row-saturday td {
-  background-color: transparent !important; /* 背景色を消す */
+  background-color: transparent !important;
 }
 
-/* ⚪ 有給：雰囲気を壊さない、ほんのり淡い緑背景 */
+/* ⚪ 有給：パステル系の非常に淡い上品な緑背景 */
 .table tr.at-row-paid td {
-  background-color: #f2fbf5 !important; /* ミント・パステル系の非常に淡い上品な緑 */
+  background-color: #f2fbf5 !important;
   transition: background-color 0.15s ease;
 }
 .table tr.at-row-paid:hover td {
-  background-color: #e1f7e9 !important; /* ホバー時に優しく少しだけ濃くなる緑 */
+  background-color: #e1f7e9 !important;
 }
 
 /* 🔘 欠勤：暗めの非活性グレー背景 */
@@ -179,10 +175,31 @@
   transition: background-color 0.15s ease;
 }
 .table tr.at-row-absent:hover td {
-  background-color: #cbd5e1 !important; /* ホバーでさらに暗いグレーに */
+  background-color: #cbd5e1 !important;
 }
 
-/* バッジの共通ベーススタイル（Bootstrapのbadgeに依存せず統一） */
+/* 🧡 打刻中（リスト形式表示時）の行スタイル */
+.table tr.at-row-working-now td {
+  background-color: #fffbeb !important;
+  color: #2b2c3a !important;
+  transition: background-color 0.15s ease;
+}
+.table tr.at-row-working-now:hover td {
+  background-color: #fef3c7 !important;
+}
+
+/* 通常日（白背景の行）にマウスを乗せたときだけ、共通ホバー色を適用 　*/
+#attendance_table tbody tr:not(.at-row-paid):not(.at-row-absent):not(.at-row-working-now):hover td {
+  background-color: var(--row-hover-color) !important;
+  cursor: pointer;
+}
+
+/* 通常日の行のtdにも、色変化が滑らかになるようトランジションを設定 */
+#attendance_table tbody tr td {
+  transition: background-color 0.15s ease;
+}
+
+/* --- テーブル内状態バッジ共通スタイル --- */
 .at-status-badge {
   display: inline-block !important;
   font-size: 0.6rem !important;
@@ -193,39 +210,22 @@
   text-align: center !important;
 }
 
-/* 💚 有給：白背景に濃い緑の文字・枠線 */
+/* 💚 有給バッジ */
 .at-status-badge.is-paid {
   background-color: #ffffff !important;
   color: #15803d !important;
   border: 1px solid #bbf7d0 !important;
 }
 
-/* 🖤 欠勤：薄いグレー背景に濃いグレーの文字 */
+/* 🖤 欠勤バッジ */
 .at-status-badge.is-absent {
   background-color: #cbd5e1 !important;
   color: #475569 !important;
   border: 1px solid #94a3b8 !important;
 }
 
-/* ========================================================
-   ◆ リスト形式：打刻中（is-working-now）の行スタイル
-   ======================================================== */
-
-/* 1. 通常時の背景色（セルのパディングや本来の線は崩さない） */
-.table tr.at-row-working-now td {
-  background-color: #fffbeb !important; /* カレンダーの打刻中と同じ淡い黄色 */
-  color: #2b2c3a !important;
-  /* 💡 独自の太い枠線（border）は一切指定せず、背景色の変化だけを登録します */
-  transition: background-color 0.15s ease;
-}
-
-/* 2. ホバー時の背景色（カレンダーの打刻中ホバーと完全同期） */
-.table tr.at-row-working-now:hover td {
-  background-color: #fef3c7 !important; /* コクのある濃いめのオレンジイエロー */
-}
-
 /* ==========================================================================
-   各種アクションボタン（メイン画面 ＆ モーダル）
+   🔘 3. 各種アクションボタン（メイン画面 ＆ モーダル）
    ========================================================================== */
 
 /* ◆ テーブル内の「編集」ボタン */
@@ -293,7 +293,7 @@
 }
 
 /* ==========================================================================
-   編集モーダル・基本入力フォーム調整
+   📝 4. 編集モーダル・基本入力フォーム調整
    ========================================================================== */
 
 /* ◆ モーダル内基本フォームの共通フォントサイズ */
@@ -312,7 +312,7 @@
 }
 
 /* ==========================================================================
-   経費エリア専用（付箋・手帳リフィル風デザイン）
+   💰 5. 経費エリア専用（付箋・手帳リフィル風デザイン）
    ========================================================================== */
 
 /* ◆ 経費エリア全体の土台背景カード */
@@ -463,7 +463,7 @@
 }
 
 /* ==========================================================================
-   📅 【勤怠管理画面専用】カレンダーグリッド・レイアウト設定
+   📅 6. 【勤怠管理画面専用】カレンダーグリッド・レイアウト設定
    ========================================================================== */
 
 /* カレンダー専用の外側コンテナ */
@@ -521,406 +521,179 @@
   justify-content: flex-start !important; /* 上寄せに固定 */
   box-sizing: border-box !important;
   position: relative !important;
-  transition: background-color 0.15s ease; /* ✨ ホバー時のアニメーションを滑らかに */
+  transition: background-color 0.15s ease;
 }
 
 /* 今月以外の空マス */
 .at-calendar-day-box.out-of-month {
   background-color: #f8fafc !important;
   opacity: 0.4 !important;
-  cursor: default !important; /* ✨ カーソルを通常矢印に固定 */
+  cursor: default !important;
 }
 
-/* ヘッダー：日付を左上に */
-.at-calendar-day-header {
-  width: 100% !important;
-  padding: 0 2px !important;
-  text-align: left !important;
-}
-
-/* 日付（左） */
-.at-calendar-day-num {
-  font-size: 0.85rem !important;
-  font-weight: bold !important;
-  color: #475569 !important;
-}
-
-/* フッター：アイコン（中央寄せ） */
-.at-calendar-day-footer {
-  width: 100% !important;
-  display: flex !important;
-  justify-content: center !important;
-  gap: 4px !important;
-}
-
-/* ボディ：勤務時間（中央寄せ） */
-.at-calendar-day-body {
-  width: 100% !important;
-  display: flex !important;
-  justify-content: center !important;
-  padding: 2px 0 !important;
-}
-
-.at-calendar-time-log {
-  font-size: 0.8rem !important;
-  font-weight: bold !important;
-  color: #334155 !important;
-  text-align: center !important;
-}
-
-/* --- 背景色＆ホバールール --- */
-
-/* 基本ホバー（通常日、出勤日など）：淡いグレーにする */
-.at-calendar-day-box:not(.out-of-month):hover {
-  background-color: #f1f5f9 !important;
-}
-
-/* 通常出勤：淡い水色 */
-.at-calendar-day-box.is-normal-work {
-  background-color: #e9f6ff !important;
-}
-/* 通常出勤日のホバー：水色ベースを維持しつつ、少しだけ識別しやすいグレー寄りにブレンド */
-.at-calendar-day-box.is-normal-work:hover {
-  background-color: #ddeffd !important;
-}
-
-/* 有給：淡い緑の背景 */
-.at-calendar-day-box.is-paid-leave {
-  background-color: #f2fbf5 !important;
-  position: relative !important;
-}
-/* ✨ 有給マスのホバー：リスト形式（at-row-paid:hover）と同じ少し濃い上品な緑 */
-.at-calendar-day-box.is-paid-leave:hover {
-  background-color: #e1f7e9 !important;
-}
-
-/* 欠勤：非活性感のある暗めのグレー背景 */
-.at-calendar-day-box.is-absent {
-  background-color: #e2e8f0 !important; /* スッキリした非活性グレー */
-  position: relative !important;
-}
-/* ✨ 欠勤マスのホバー：リスト形式（at-row-absent:hover）と同じさらに暗いグレー */
-.at-calendar-day-box.is-absent:hover {
-  background-color: #cbd5e1 !important;
-}
-
-/* ✨ 今月以外の空マスはホバー時に色を変えない */
-.at-calendar-day-box.out-of-month:hover {
-  background-color: #f8fafc !important;
-}
-
-/* 共通：ラベルをど真ん中に配置するベース設定 */
-.at-calendar-day-box.is-working-now::after,
-.at-calendar-day-box.is-paid-leave::after,
-.at-calendar-day-box.is-absent::after {
-  position: absolute !important;
-  top: 50% !important;
-  left: 50% !important;
-  transform: translate(-50%, -50%) !important;
-  font-size: 0.6rem;
-  padding: 2px 6px; /* 打刻中と揃えて少しぷっくりさせています */
-  border-radius: 4px;
-  font-weight: bold;
-  white-space: nowrap;
-}
-
-/* 🧡 勤怠中（オレンジ系） */
-.at-calendar-day-box.is-working-now {
-  background-color: #fffbeb !important;
-  border: 2px solid #fbbf24 !important;
-}
-.at-calendar-day-box.is-working-now::after {
-  content: "打刻中";
-  background-color: #fbbf24;
-  color: white;
-}
-
-/* 💚 有給：白背景に濃い緑の文字・枠線 */
-.at-calendar-day-box.is-paid-leave::after {
-  content: "有給";
-  background-color: #ffffff; /* 白い四角いラベル */
-  color: #15803d; /* 濃い緑の文字 */
-  border: 1px solid #bbf7d0; /* 淡い緑の枠線（マスの枠目を目立たせない工夫） */
-}
-
-/* 🖤 欠勤：薄いグレー背景に濃いグレーの文字 */
-.at-calendar-day-box.is-absent::after {
-  content: "欠勤";
-  background-color: #cbd5e1; /* やや暗めのグレーの四角いラベル */
-  color: #475569; /* 濃いグレーの文字 */
-  border: 1px solid #94a3b8; /* 枠線 */
-}
-
-/* アイコン用 */
-.badge-mini {
-  font-size: 0.8rem !important;
-  cursor: help;
-}
-
-/* 曜日・祝日色 */
-.at-calendar-day-box.is-saturday .at-calendar-day-num {
-  color: #0d6efd !important;
-}
-.at-calendar-day-box.is-sunday .at-calendar-day-num,
-.at-calendar-day-box.is-holiday .at-calendar-day-num {
-  color: #dc3545 !important;
-}
-.at-calendar-day-box.out-of-month .at-calendar-day-num {
-  color: #94a3b8 !important;
-}
-
-/* 当日の日付数字の下にボーダーラインを表示 */
-.at-calendar-day-num.is-today {
-  display: inline-block !important;
-  /* 💡 文字色（青・赤など）と同じ色のしっかりとした下線を引く */
-  border-bottom: 2px solid currentColor !important;
-  padding-bottom: 2px !important; /* 数字と線の間のスキマ（ここで微調整できます） */
-  line-height: 1 !important; /* 線の位置がズレないように高さを固定 */
-} /* ==========================================================================
-   📅 【勤怠管理画面専用】カレンダーグリッド・レイアウト設定
-   ========================================================================== */
-
-/* カレンダー専用の外側コンテナ */
-.at-calendar-scroll-container {
-  height: 480px;
-  overflow: hidden !important;
-  border: 1px solid #dee2e6;
-  border-radius: 8px;
-  background-color: #ffffff;
-  display: flex;
-  flex-direction: column;
-}
-
-/* 7列固定の基本グリッド */
-.at-calendar-grid {
-  display: grid !important;
-  grid-template-columns: repeat(7, 1fr) !important;
-  width: 100% !important;
-  box-sizing: border-box !important;
-}
-
-/* 動的カレンダーグリッド */
-#calendar_grid {
-  display: grid !important;
-  grid-template-columns: repeat(7, 1fr) !important;
-  grid-auto-rows: 1fr !important;
-  flex-grow: 1;
-  width: 100% !important;
-  box-sizing: border-box !important;
-}
-
-/* 曜日ヘッダー */
-.at-calendar-week-header {
-  background-color: #f8f9fa;
-  border-bottom: 1px solid #dee2e6;
-  height: 40px;
-  flex-shrink: 0;
-}
-.at-calendar-week-header > div {
-  font-size: 0.85rem !important;
-  font-weight: bold;
-  text-align: center;
-  line-height: 40px;
-}
-
-/* 1マスのスタイル */
-.at-calendar-day-box {
-  background-color: #ffffff !important;
-  border-bottom: 1px solid #e2e8f0 !important;
-  border-right: 1px solid #e2e8f0 !important;
-  padding: 4px !important;
-  margin: 0 !important;
-  display: flex !important;
-  flex-direction: column !important;
-  justify-content: flex-start !important; /* 上寄せに固定 */
-  box-sizing: border-box !important;
-  position: relative !important;
-  transition: background-color 0.15s ease; /* ✨ ホバー時のアニメーションを滑らかに */
-}
-
-/* 今月以外の空マス */
-.at-calendar-day-box.out-of-month {
-  background-color: #f8fafc !important;
-  opacity: 0.4 !important;
-  cursor: default !important; /* ✨ カーソルを通常矢印に固定 */
-}
-
-/* ヘッダー：日付を左上に */
-.at-calendar-day-header {
-  width: 100% !important;
-  padding: 0 2px !important;
-  text-align: left !important;
-}
-
-/* 日付（左） */
-.at-calendar-day-num {
-  font-size: 0.85rem !important;
-  font-weight: bold !important;
-  color: #475569 !important;
-}
-
-/* フッター：アイコン（中央寄せ） */
-.at-calendar-day-footer {
-  width: 100% !important;
-  display: flex !important;
-  justify-content: center !important;
-  gap: 4px !important;
-}
-
-/* ボディ：勤務時間（中央寄せ） */
-.at-calendar-day-body {
-  width: 100% !important;
-  display: flex !important;
-  justify-content: center !important;
-  padding: 2px 0 !important;
-}
-
-.at-calendar-time-log {
-  font-size: 0.8rem !important;
-  font-weight: bold !important;
-  color: #334155 !important;
-  text-align: center !important;
-}
-
-/* --- 背景色＆ホバールール --- */
-
-/* 基本ホバー（通常日、出勤日など）：淡いグレーにする */
-.at-calendar-day-box:not(.out-of-month):hover {
-  background-color: #f1f5f9 !important;
-}
-
-/* 通常出勤：淡い水色 */
-.at-calendar-day-box.is-normal-work {
-  background-color: #e9f6ff !important;
-}
-/* 通常出勤日のホバー：水色ベースを維持しつつ、少しだけ識別しやすいグレー寄りにブレンド */
-.at-calendar-day-box.is-normal-work:hover {
-  background-color: #ddeffd !important;
-}
-
-/* 有給：淡い緑の背景 */
-.at-calendar-day-box.is-paid-leave {
-  background-color: #f2fbf5 !important;
-  position: relative !important;
-}
-/* 有給マスのホバー：リスト形式（at-row-paid:hover）と同じ少し濃い上品な緑 */
-.at-calendar-day-box.is-paid-leave:hover {
-  background-color: #e1f7e9 !important;
-}
-
-/* 欠勤：非活性感のある暗めのグレー背景 */
-.at-calendar-day-box.is-absent {
-  background-color: #e2e8f0 !important; /* スッキリした非活性グレー */
-  position: relative !important;
-}
-/* 欠勤マスのホバー：リスト形式（at-row-absent:hover）と同じさらに暗いグレー */
-.at-calendar-day-box.is-absent:hover {
-  background-color: #cbd5e1 !important;
-}
-
-/* 今月以外の空マスはホバー時に色を変えない */
-.at-calendar-day-box.out-of-month:hover {
-  background-color: #f8fafc !important;
-}
-
-/* 共通：ラベルをど真ん中に配置するベース設定 */
-.at-calendar-day-box.is-working-now::after,
-.at-calendar-day-box.is-paid-leave::after,
-.at-calendar-day-box.is-absent::after {
-  position: absolute !important;
-  top: 50% !important;
-  left: 50% !important;
-  transform: translate(-50%, -50%) !important;
-  font-size: 0.6rem;
-  padding: 2px 6px; /* 打刻中と揃えて少しぷっくりさせています */
-  border-radius: 4px;
-  font-weight: bold;
-  white-space: nowrap;
-}
-
-/* 🧡 勤怠中（オレンジ系） */
-.at-calendar-day-box.is-working-now {
-  background-color: #fffbeb !important;
-  border: 2px solid #fbbf24 !important;
-}
-.at-calendar-day-box.is-working-now::after {
-  content: "打刻中";
-  background-color: #fbbf24;
-  color: white;
-}
-
-/* 打刻中マスのホバー：ベースの薄い黄色から、少しだけコクのある濃いめのオレンジイエローへ */
-.at-calendar-day-box.is-working-now:hover {
-  background-color: #fef3c7 !important; /* パッと見てカーソルが当たっていると分かる上品な暖色 */
-  border-color: #f59e0b !important; /* 枠線も合わせて少しだけ引き締めます */
-}
-
-/* 💚 有給：白背景に濃い緑の文字・枠線 */
-.at-calendar-day-box.is-paid-leave::after {
-  content: "有給";
-  background-color: #ffffff; /* 白い四角いラベル */
-  color: #15803d; /* 濃い緑の文字 */
-  border: 1px solid #bbf7d0; /* 淡い緑の枠線（マスの枠目を目立たせない工夫） */
-}
-
-/* 🖤 欠勤：薄いグレー背景に濃いグレーの文字 */
-.at-calendar-day-box.is-absent::after {
-  content: "欠勤";
-  background-color: #cbd5e1; /* やや暗めのグレーの四角いラベル */
-  color: #475569; /* 濃いグレーの文字 */
-  border: 1px solid #94a3b8; /* 枠線 */
-}
-
-/* アイコン用 */
-.badge-mini {
-  font-size: 0.8rem !important;
-  cursor: help;
-}
-
-/* 曜日・祝日色 */
-.at-calendar-day-box.is-saturday .at-calendar-day-num {
-  color: #0d6efd !important;
-}
-.at-calendar-day-box.is-sunday .at-calendar-day-num,
-.at-calendar-day-box.is-holiday .at-calendar-day-num {
-  color: #dc3545 !important;
-}
-.at-calendar-day-box.out-of-month .at-calendar-day-num {
-  color: #94a3b8 !important;
-}
-
-/* 当日の日付数字の下にボーダーラインを表示 */
-.at-calendar-day-num.is-today {
-  display: inline-block !important;
-  /* 💡 文字色（青・赤など）と同じ色のしっかりとした下線を引く */
-  border-bottom: 2px solid currentColor !important;
-  padding-bottom: 2px !important; /* 数字と線の間のスキマ（ここで微調整できます） */
-  line-height: 1 !important; /* 線の位置がズレないように高さを固定 */
-}
-
-/* 日付ヘッダー内を横並びにする */
+/* ヘッダー：日付エリアの配置設定 */
 .at-calendar-day-header {
   display: flex !important;
-  align-items: center !important; /* 縦方向の中央寄せ */
+  align-items: center !important;
   justify-content: flex-start !important;
+  width: 100% !important;
+  padding: 0 2px !important;
+  text-align: left !important;
+  flex-wrap: wrap !important; /* 日付と祝日が横に入りきらなければ折り返す */
 }
 
+/* 日付（左） */
+.at-calendar-day-num {
+  font-size: 0.85rem !important;
+  font-weight: bold !important;
+  color: #475569 !important;
+}
+
+/* 祝日名ミニラベル（折り返し・全表示許可設定） */
 .at-holiday-name-mini {
   font-size: 0.65rem !important;
   color: #dc3545 !important;
   margin-left: 4px !important;
   font-weight: normal !important;
-
-  /* 💡 省略設定をすべて解除し、折り返しを許可 */
-  white-space: normal !important; /* 改行を許可 */
-  word-break: break-all !important; /* 単語の途中で改行してでも全部出す */
-  line-height: 1.2 !important; /* 行間を少し詰めてスッキリさせる */
-
-  /* 枠をはみ出さないための制限 */
+  white-space: normal !important;
+  word-break: break-all !important;
+  line-height: 1.2 !important;
   max-width: 100% !important;
 }
 
-/* 親要素のヘッダーも折り返しに対応させる */
-.at-calendar-day-header {
-  flex-wrap: wrap !important; /* 日付と祝日が横に入りきらなければ折り返す */
+/* 当日の日付数字アンダーライン表示 */
+.at-calendar-day-num.is-today {
+  display: inline-block !important;
+  border-bottom: 2px solid currentColor !important;
+  padding-bottom: 2px !important;
+  line-height: 1 !important;
+}
+
+/* ボディ：勤務時間（中央寄せ） */
+.at-calendar-day-body {
+  width: 100% !important;
+  display: flex !important;
+  justify-content: center !important;
+  padding: 2px 0 !important;
+}
+.at-calendar-time-log {
+  font-size: 0.8rem !important;
+  font-weight: bold !important;
+  color: #334155 !important;
+  text-align: center !important;
+}
+
+/* フッター：アイコン（中央寄せ） */
+.at-calendar-day-footer {
+  width: 100% !important;
+  display: flex !important;
+  justify-content: center !important;
+  gap: 4px !important;
+}
+.badge-mini {
+  font-size: 0.8rem !important;
+  cursor: help;
+}
+
+/* --- 背景色＆ホバールール（決定版） --- */
+
+/* ① データのない通常日（白背景）のみ、共通ホバー色（--row-hover-color）を適用*/
+.at-calendar-day-box:not(.out-of-month):not(.is-normal-work):not(.is-paid-leave):not(.is-absent):not(.is-working-now):hover {
+  background-color: var(--row-hover-color) !important;
+  cursor: pointer;
+}
+
+/* ② 今月以外の空マス（前後月）：ホバー時も元の背景色（#f8fafc）を絶対キープして浮かび上がらせない */
+.at-calendar-day-box.out-of-month {
+  background-color: #f8fafc !important;
+  cursor: default !important;
+}
+.at-calendar-day-box.out-of-month:hover {
+  background-color: #f8fafc !important;
+}
+
+/* ③ 通常出勤：淡い水色 ⇒ ホバーで少し濃い水色 */
+.at-calendar-day-box.is-normal-work {
+  background-color: #e9f6ff !important;
+  cursor: pointer;
+}
+.at-calendar-day-box.is-normal-work:hover {
+  background-color: #ddeffd !important;
+}
+
+/* ④ 有給：淡い緑 ⇒ ホバーで少し濃い緑 */
+.at-calendar-day-box.is-paid-leave {
+  background-color: #f2fbf5 !important;
+  position: relative !important;
+  cursor: pointer;
+}
+.at-calendar-day-box.is-paid-leave:hover {
+  background-color: #e1f7e9 !important;
+}
+
+/* ⑤ 欠勤：非活性グレー ⇒ ホバーで少し濃いグレー */
+.at-calendar-day-box.is-absent {
+  background-color: #e2e8f0 !important;
+  position: relative !important;
+  cursor: pointer;
+}
+.at-calendar-day-box.is-absent:hover {
+  background-color: #cbd5e1 !important;
+}
+
+/* ⑥ 🧡 勤怠中（オレンジ系）⇒ ホバーで少し濃いオレンジ */
+.at-calendar-day-box.is-working-now {
+  background-color: #fffbeb !important;
+  border: 2px solid #fbbf24 !important;
+  cursor: pointer;
+}
+.at-calendar-day-box.is-working-now:hover {
+  background-color: #fef3c7 !important;
+  border-color: #f59e0b !important;
+}
+
+/* --- センターラベル中央配置設定 (Pseudo-elements) --- */
+.at-calendar-day-box.is-working-now::after,
+.at-calendar-day-box.is-paid-leave::after,
+.at-calendar-day-box.is-absent::after {
+  position: absolute !important;
+  top: 50% !important;
+  left: 50% !important;
+  transform: translate(-50%, -50%) !important;
+  font-size: 0.6rem;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-weight: bold;
+  white-space: nowrap;
+}
+
+/* 各種特殊ラベルの中身 */
+.at-calendar-day-box.is-working-now::after {
+  content: "打刻中";
+  background-color: #fbbf24;
+  color: white;
+}
+.at-calendar-day-box.is-paid-leave::after {
+  content: "有給";
+  background-color: #ffffff;
+  color: #15803d;
+  border: 1px solid #bbf7d0;
+}
+.at-calendar-day-box.is-absent::after {
+  content: "欠勤";
+  background-color: #cbd5e1;
+  color: #475569;
+  border: 1px solid #94a3b8;
+}
+
+/* --- 曜日・祝日の文字色設定 --- */
+.at-calendar-day-box.is-saturday .at-calendar-day-num {
+  color: #0d6efd !important;
+}
+.at-calendar-day-box.is-sunday .at-calendar-day-num,
+.at-calendar-day-box.is-holiday .at-calendar-day-num {
+  color: #dc3545 !important;
+}
+.at-calendar-day-box.out-of-month .at-calendar-day-num {
+  color: #94a3b8 !important;
 }

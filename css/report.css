@@ -1,51 +1,41 @@
 /* ==========================================================================
-    📂 業務レポート管理画面 専用スタイル（自動フィット版）
+   📂 業務レポート管理画面（自動フィット）
    ========================================================================== */
 
 /* --- 1. 左側：レポート詳細カード --- */
 .report-detail-card {
-  flex-grow: 1;
   display: flex;
   flex-direction: column;
-  /* 💡 高さを固定するのではなく、Flexboxの分配比率に100%委ねます */
-  height: 0; /* 💡中身の量でカード自体が上下に膨らむのを防ぐ、CSSのテクニックです */
-  min-height: 0; /* 💡親要素の col-lg-8 からはみ出さないように制限をかけます */
-  overflow: hidden; /* 💡カードの外枠を固定し、ヘッダーの押し上げを完全にブロックします */
+  flex-grow: 1;
+  height: 0;
+  min-height: 0;
+  overflow: hidden;
 }
 
-/* 💡 詳細内容エリア：カードの枠の中で、溢れた中身だけをスクロールさせる */
+/* 詳細内容エリア（枠内スクロール） */
 .report-content-body {
   flex-grow: 1;
-  overflow-y: auto !important; /* 💡ここだけで縦スクロールを実行 */
-  min-height: 0; /* 💡共通記入事項などのボリュームに引っ張られないためのブレーキ */
-  padding-right: 10px; /* スクロールバーと文字が被らないための余白 */
+  min-height: 0;
   margin-top: 10px;
-}
-
-/* スクロールバーの見た目を少しスタイリッシュに */
-.report-content-body::-webkit-scrollbar {
-  width: 6px;
-}
-.report-content-body::-webkit-scrollbar-thumb {
-  background-color: #dee2e6;
-  border-radius: 3px;
+  padding-right: 10px;
+  overflow-y: auto !important;
 }
 
 /* --- 2. 右側：過去のレポート一覧カード --- */
 .report-list-card {
-  flex-grow: 1;
   display: flex;
   flex-direction: column;
+  flex-grow: 1;
   min-height: 0;
 }
 
-/* 過去ログ一覧をカード内で綺麗にスクロールさせる */
+/* 過去ログ一覧スクロールコンテナ */
 .report-list-scroll-container {
   flex-grow: 1;
   overflow-y: auto;
 }
 
-/* 過去ログ内のリンク色設定 */
+/* 過去ログ内リンク設定 */
 .report-list-scroll-container a {
   color: #8ea3c2;
   text-decoration: none;
@@ -57,31 +47,31 @@
 }
 
 /* ==========================================================================
-    🔒 読み取り専用（入力不可）エリアの共通デザイン
+   🔒 読み取り専用（入力不可）エリア共通
    ========================================================================== */
 .input-readonly-box {
-  background-color: #e9ecef !important;
   color: #495057 !important;
-  font-weight: normal !important;
+  background-color: #e9ecef !important;
   border-color: #dee2e6 !important;
+  font-weight: normal !important;
   cursor: not-allowed;
 }
 
 /* ==========================================================================
-    🔘 レポートモーダル 下部アクションボタン
+   🔘 レポートモーダル：下部アクションボタン
    ========================================================================== */
 
-/* --- キャンセルボタン --- */
+/* キャンセルボタン */
 #cancel_button {
-  background-color: #f8f9fa !important;
-  color: #6c757d !important;
-  border: none !important;
-  font-weight: 600 !important;
-  padding: 10px 16px !important;
-  border-radius: 10px !important;
-  white-space: nowrap !important;
   flex-shrink: 1 !important;
   min-width: 100px;
+  padding: 10px 16px !important;
+  color: #6c757d !important;
+  background-color: #f8f9fa !important;
+  border: none !important;
+  border-radius: 10px !important;
+  font-weight: 600 !important;
+  white-space: nowrap !important;
   transition: all 0.2s ease;
 }
 
@@ -89,29 +79,29 @@
   background-color: #e9ecef !important;
 }
 
-/* --- 一時保存ボタン（アウトライン・ブルー） --- */
+/* 一時保存ボタン（アウトライン・ブルー） */
 .btn-temporary {
+  min-width: 110px;
+  padding: 10px 16px !important;
+  color: #617ca6 !important;
   background-color: transparent !important;
   border: 1px solid #8ba4ca !important;
-  color: #617ca6 !important;
-  font-weight: 600 !important;
-  padding: 10px 16px !important;
   border-radius: 10px !important;
-  min-width: 110px;
+  font-weight: 600 !important;
   transition: all 0.2s ease;
 }
 
 .btn-temporary:hover {
+  color: #4b648a !important;
   background-color: #f0f4f8 !important;
   border-color: #617ca6 !important;
-  color: #4b648a !important;
 }
 
 /* ==========================================================================
-    🚨 バリデーション時の枠線コントロール（完成版）
+   🚨 バリデーション枠線コントロール
    ========================================================================== */
 
-/* 1. 正常に入力されている項目：緑枠やチェックアイコンを完全に排除 */
+/* 正常入力時：緑枠やチェックアイコンを完全に排除 */
 .was-validated .form-control:valid,
 .was-validated .form-select:valid,
 .was-validated [class*="form-"]:valid {
@@ -120,43 +110,43 @@
   box-shadow: none;
 }
 
-/* 2. 送信時：エラーのある入力欄 */
+/* 送信エラー発生時：エラーのある入力欄 */
 .is-invalid,
 .was-validated :invalid {
   background-image: none !important;
 }
 
-/* 3. フォーカス時：カーソルが当たったら、滑らかに青枠＋青シャドウにする */
+/* フォーカス時：滑らかな青枠＋青シャドウ効果（エラー時も含む） */
 .form-control:focus,
 .form-select:focus,
 [class*="form-"]:focus,
 .is-invalid:focus,
 .was-validated :invalid:focus {
+  outline: none !important;
   border-width: 1px !important;
   border-color: #86b7fe !important;
   box-shadow: 0 0 8px rgba(13, 110, 253, 0.5) !important;
-  outline: none !important;
   transition:
     border-color 0.15s ease-in-out,
     box-shadow 0.15s ease-in-out !important;
 }
 
 /* ==========================================================================
-    ぷっくり丸みパステルレッド（削除用）
+   🔴 削除用ボタン
    ========================================================================== */
 .btn-pastel-red-rounded {
-  background-color: #fce8e6 !important;
-  color: #ea4335 !important;
-  font-weight: 700 !important;
-  border: 1px solid #fad2cf !important;
-  padding: 0.25rem 0.85rem !important;
-  border-radius: 50px !important;
   display: inline-flex !important;
   align-items: center !important;
   gap: 0.35rem !important;
+  padding: 0.25rem 0.85rem !important;
+  color: #ea4335 !important;
+  background-color: #fce8e6 !important;
+  border: 1px solid #fad2cf !important;
+  border-radius: 50px !important;
+  font-weight: 700 !important;
+  text-decoration: none !important;
   box-shadow: 0 2px 4px rgba(234, 67, 53, 0.04) !important;
   transition: all 0.2s ease-in-out !important;
-  text-decoration: none !important;
 }
 
 .btn-pastel-red-rounded:hover {
@@ -167,12 +157,12 @@
 .btn-pastel-red-rounded:active,
 .btn-pastel-red-rounded:focus {
   background-color: #fbcbc7 !important;
-  transform: translateY(1px) scale(0.97) !important;
   box-shadow: none !important;
+  transform: translateY(1px) scale(0.97) !important;
 }
 
 /* ==========================================================================
-    共有先チェックボックス
+   ☑️ 共有先チェックボックス
    ========================================================================== */
 .shared-company-checkbox:checked {
   background-color: #3b82f6 !important;
@@ -184,14 +174,14 @@
   box-shadow: 0 0 0 0.25rem rgba(30, 58, 138, 0.25) !important;
 }
 
-/* ==========================================
- * ミニカレンダー専用カスタムCSS（前後月・土日色分け版）
- * ========================================== */
+/* ==========================================================================
+   📅 ミニカレンダー（前後月・土日色分け・共通ホバー適用版）
+   ========================================================================== */
 
 .report-calendar-container {
-  background: #ffffff;
   width: 100%;
   margin: 0 auto;
+  background: #ffffff;
 }
 
 .report-cal-table {
@@ -200,12 +190,13 @@
   table-layout: fixed;
 }
 
+/* 曜日ヘッダー */
 .report-cal-table th {
-  text-align: center;
-  font-size: 0.75rem;
-  color: #6c757d;
   padding-bottom: 6px;
+  color: #6c757d;
+  font-size: 0.75rem;
   font-weight: bold;
+  text-align: center;
 }
 
 .report-cal-table th.text-danger {
@@ -215,61 +206,61 @@
   color: #0d6efd !important;
 }
 
-/* カレンダーの1マス（通常時） */
+/* --- 日付セル（通常時） --- */
 .report-cal-day {
-  height: 32px;
   position: relative;
-  cursor: pointer;
+  height: 32px;
   padding: 0;
   background-color: #ffffff;
   border: 1px solid #dee2e6;
+  cursor: pointer;
   transition: background-color 0.15s ease;
 }
 
-/* マウスホバー時（※当日も含めてホバーが効くように設定） */
-.report-cal-day:hover {
-  background-color: #f8f9fa !important;
+/* 💡 修正：当月の日付にマウスを乗せた時のみ、共通のホバー色（赤色）を適用 */
+.report-cal-day:not(.other-month):hover {
+  background-color: var(--row-hover-color) !important;
 }
 
-/* 【左上固定】日にちの数字 */
+/* 日付数字（左上固定） */
 .report-cal-day .day-num {
   position: absolute;
   top: 2px;
   left: 4px;
-  font-size: 0.75rem;
   color: #495057;
+  font-size: 0.75rem;
   line-height: 1;
 }
 
-/* ─── 土日の日付の色分け ─── */
-/* 日曜日（1列目） */
+/* 曜日別の色分け（1列目:日、7列目:土） */
 .report-cal-table tbody tr td:nth-child(1) .day-num {
   color: #dc3545;
 }
-
-/* 土曜日（7列目） */
 .report-cal-table tbody tr td:nth-child(7) .day-num {
   color: #0d6efd;
 }
 
-/* ─── 祝日の日付の色分け ─── */
+/* 祝日対応 */
 .report-cal-day.is-holiday .day-num {
-  color: #dc3545 !important; /* 祝日も鮮やかな赤色に */
+  color: #dc3545 !important; /* 祝日を赤色に */
 }
 
-/* ─── 先月・来月のグレーアウト設定 ─── */
+/* --- 当月以外のグレーアウト --- */
 .report-cal-day.other-month {
   background-color: #fdfdfd;
   cursor: default;
 }
+
 .report-cal-day.other-month .day-num {
   color: #ced4da !important;
 }
+
+/* 💡 修正：前月・翌月のマスはホバー時に赤色にならないよう、背景を白（#fdfdfd）で固定 */
 .report-cal-day.other-month:hover {
-  background-color: #fdfdfd !important; /* 先・来月はホバーを無効化 */
+  background-color: #fdfdfd !important;
 }
 
-/* 【右下固定】提出マークの絵文字（📝） */
+/* 提出マーク（📝）（右下固定） */
 .report-cal-day .report-icon {
   position: absolute;
   bottom: 2px;
@@ -279,19 +270,19 @@
   pointer-events: none;
 }
 
-/* ─── 🌟 当日（Today）の洗練された下線デザイン ─── */
+/* --- 当日（Today）のデザイン --- */
 .report-cal-day.today {
   position: relative;
 }
 
-/* 1. 【基本】数字の下に下線を引く（土日祝の文字色はnth-childのカラーをキープ） */
+/* 数字の下線（土日祝の文字色は維持） */
 .report-cal-day.today .day-num {
-  font-weight: bold;
-  border-bottom: 2px solid #6d7bc7; /* 指定された見やすい上品な青紫色 */
   padding-bottom: 1px;
+  border-bottom: 2px solid #6d7bc7; /* 上品な青紫色 */
+  font-weight: bold;
 }
 
-/* 2. 【平日限定】平日の当日だけ、文字色も下線と同じ青紫色にする */
+/* 平日の当日限定：文字色も青紫色に変更 */
 .report-cal-day.today:not(.is-holiday):not(:nth-child(1)):not(:nth-child(7)) .day-num {
   color: #6d7bc7;
 }

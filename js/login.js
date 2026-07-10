@@ -69,7 +69,13 @@ document.addEventListener("DOMContentLoaded", () => {
         // ❌ Supabase側で認証エラーが起きた場合
         if (error) {
           console.error("ログインエラー:", error.message);
-          // ユーザー向けの優しいメッセージ（セキュリティ上、どちらが間違っているかは明かさないのが一般的です）
+
+          // --- ここを追加して修正 ---
+          loginBtn.disabled = false;
+          loginBtn.innerText = "ログイン";
+          // ------------------------
+
+          // ユーザー向けの優しいメッセージ
           showError("メールアドレスまたはパスワードが正しくありません", emailInput);
           return;
         }
@@ -103,7 +109,7 @@ document.addEventListener("DOMContentLoaded", () => {
           loginBtn.disabled = false;
           loginBtn.innerText = "ログイン";
         }
-      } 
+      }
     });
   }
 
