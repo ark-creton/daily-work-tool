@@ -35,15 +35,25 @@
   overflow-y: auto;
 }
 
-/* 過去ログ内リンク設定 */
+/* --- 2. 右側：過去のレポート一覧カード 内のリンク設定 --- */
 .report-list-scroll-container a {
   color: #8ea3c2;
-  text-decoration: none;
+  text-decoration: none !important; /* 初期状態の下線を排除 */
 }
 
+/* 過去ログ一覧内のホバー時に、中の文字と日付にだけ綺麗な1本線を引く（統一仕様） */
 .report-list-scroll-container a:hover {
   color: #2b2c3a;
+  text-decoration: none !important; /* aタグ自体の下線は引かない */
+}
+
+/* タイトルと日付だけにスマートに下線を適用 */
+.report-list-scroll-container a:hover .text-truncate,
+.report-list-scroll-container a:hover .text-muted {
   text-decoration: underline !important;
+  text-underline-offset: 3px !important;
+  text-decoration-thickness: 1px !important;
+  text-decoration-color: inherit !important;
 }
 
 /* ==========================================================================
@@ -129,6 +139,14 @@
   transition:
     border-color 0.15s ease-in-out,
     box-shadow 0.15s ease-in-out !important;
+}
+
+/* 無効化されたセレクトボックスのスタイル */
+select:disabled {
+  background-color: #e9ecef !important;
+  color: #6c757d !important;
+  cursor: not-allowed !important;
+  pointer-events: none !important; /* 👈 これでクリックや展開を完全にブロックします */
 }
 
 /* ==========================================================================
@@ -275,14 +293,22 @@
   position: relative;
 }
 
-/* 数字の下線（土日祝の文字色は維持） */
+/* 数字の下線（1pxで細く、落ち着いた色に変更） */
 .report-cal-day.today .day-num {
   padding-bottom: 1px;
-  border-bottom: 2px solid #6d7bc7; /* 上品な青紫色 */
-  font-weight: bold;
+  border-bottom: 1px solid #475569; /* 紫をやめ、細いダークグレーの下線に */
+  font-weight: 600; /* 必要に応じて少しだけ強調（不要なら削除可） */
 }
 
-/* 平日の当日限定：文字色も青紫色に変更 */
+/* 平日の当日限定：文字色の変更（紫指定を廃止して標準テキスト色に合わせる） */
 .report-cal-day.today:not(.is-holiday):not(:nth-child(1)):not(:nth-child(7)) .day-num {
-  color: #6d7bc7;
+  color: #334155; /* もしくは inherit にして通常の平日カラーのままにする */
+}
+
+/* ==========================================================================
+   🎯 過去レポート一覧：選択中（アクティブ）のスタイル
+   ========================================================================== */
+#past_report_list a.past-report-item.active-report,
+#past_report_list .past-report-item.active-report {
+  background-color: #f1f5f9 !important; /* 薄いグレー/ブルー */
 }

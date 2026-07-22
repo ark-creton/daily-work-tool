@@ -1,5 +1,5 @@
 document.addEventListener("DOMContentLoaded", async () => {
-  console.log("インデックス（共通基盤）のJSが正常に読み込まれました");
+  console.log("共通基盤が正常に読み込まれました");
 
   // ==========================================
   // 共通の便利関数エリア
@@ -279,17 +279,40 @@ document.addEventListener("DOMContentLoaded", async () => {
     });
   }
 
-  if (mobileToggle && sidebarNav) {
-    mobileToggle.addEventListener("click", (event) => {
-      sidebarNav.classList.toggle("mobile-active");
-      event.stopPropagation();
-    });
-  }
-
+  // ==========================================
+  // 📱【完全解決版】スマホ用サイドバー開閉・遷移時自動クローズ処理
+  // ==========================================
   document.addEventListener("click", (event) => {
-    if (sidebarNav && sidebarNav.classList.contains("mobile-active")) {
-      if (!sidebarNav.contains(event.target)) {
-        sidebarNav.classList.remove("mobile-active");
+    // 制御対象の親要素（サイドバー全体）
+    const activeSidebar = document.querySelector(".sidebar-area");
+    if (!activeSidebar) return;
+
+    // ① 三本線マーク（ハンバーガーボタン）がクリックされた場合
+    const toggleBtn = event.target.closest("#mobile-menu-toggle");
+    if (toggleBtn) {
+      event.stopPropagation();
+      activeSidebar.classList.toggle("mobile-active");
+      console.log("📱スマホメニューの開閉を切り替えました");
+      return;
+    }
+
+    // ② メニューが開いている状態のときの処理
+    if (activeSidebar.classList.contains("mobile-active")) {
+      // 🌟【追加】メニューの中の項目（リンクやボタン）がクリックされた場合
+      // クリックされた要素、またはその親に「.nav-item」や「a」タグがあるか判定
+      const isMenuItem = event.target.closest(".nav-item") || event.target.closest("a") || event.target.closest("button");
+
+      if (isMenuItem) {
+        // メニュー項目をクリックした瞬間にメニューを閉じる！
+        activeSidebar.classList.remove("mobile-active");
+        console.log("📱メニュー項目がタップされたため、メニューを閉じて遷移処理を開始します");
+        return; // これにより、裏のローディング画面がすぐに見えるようになります
+      }
+
+      // ③ メニューの外側をクリックした時に閉じる処理
+      if (!activeSidebar.contains(event.target)) {
+        activeSidebar.classList.remove("mobile-active");
+        console.log("📱メニュー外をタップしたため非表示にしました");
       }
     }
   });
@@ -300,88 +323,124 @@ document.addEventListener("DOMContentLoaded", async () => {
   const dynamicArea = document.getElementById("main_content_dynamic_area");
   const navItems = document.querySelectorAll(".sidebar-nav .nav-item");
 
-  /**
-   * 指定されたHTMLファイルを非同期で読み込んで、メインエリアに表示する関数
-   * @param {string} pageName - 読み込むページ名
-   * @param {boolean} isInitial - 最初の自動読み込みかどうか（初期値はfalse）
-   */
   async function loadPage(pageName, isInitial = false) {
+    // 1. 【ここを修正】画面切替が始まった瞬間に、コンテンツエリアを即座にフェードアウト（透明化）させる
+    if (dynamicArea) {
+      dynamicArea.style.transition = "opacity 0.15s ease-in-out"; // 素早くフワッと消す
+      dynamicArea.style.opacity = "0";
+      dynamicArea.classList.remove("is-ready");
+    }
+
+    // 2. 【ここを修正】フェードアウトの開始と同時に、ローディング画面もフワッと表示する
+    if (!isInitial && typeof showGlobalLoading === "function") {
+      showGlobalLoading();
+    }
+
+    // 画面が完全に消えてローディングが乗るまで、ほんの一瞬（0.1秒ほど）待ってから中身のフェッチに移る
+    await new Promise((resolve) => setTimeout(resolve, 100));
+
     try {
-      // ログイン直後の最初の起動時（isInitialがtrue）は、ロード画面を回さない！
-      if (!isInitial) {
-        showGlobalLoading();
-      }
-
-      await new Promise((resolve) => setTimeout(resolve, 50));
-
-      // ボカシの裏に完全に隠れてから、安全に画面の切り替えを開始する
+      // HTMLのフェッチ
       const response = await fetch(`./${pageName}.html`);
-      if (!response.ok) {
-        throw new Error(`ページの読み込みに失敗しました: ${response.status}`);
-      }
-
+      if (!response.ok) throw new Error(`ページの読み込みに失敗しました: ${response.status}`);
       const htmlContent = await response.text();
 
-      if (dynamicArea) {
-        dynamicArea.innerHTML = htmlContent;
-      }
+      // メモリ上の仮要素で組み立てる
+      const tempWrapper = document.createElement("div");
+      tempWrapper.innerHTML = htmlContent;
 
-      // ==================================================================
-      // メイン画面読み込み時、経費専用モーダルをセットで自動フェッチして合成する
-      // ==================================================================
+      // モーダル合成
       if (pageName === "main") {
+        // 1. 経費モーダルの合成
         try {
           const modalResponse = await fetch("./modal-expense-entry.html");
           if (modalResponse.ok) {
-            const modalHtml = await modalResponse.text();
-            dynamicArea.insertAdjacentHTML("beforeend", modalHtml);
-            console.log("共通基盤: modal-expense-entry.html をメイン画面に正常に合流させました。");
-          } else {
-            console.warn("共通基盤: modal-expense-entry.html の読み込みに失敗しました。ファイルパスを確認してください。");
+            tempWrapper.insertAdjacentHTML("beforeend", await modalResponse.text());
           }
         } catch (modalErr) {
-          console.error("共通基盤: 経費モーダルのフェッチ中にエラーが発生しました:", modalErr);
+          console.error("経費モーダル読み込みエラー:", modalErr);
+        }
+
+        // 2. 🌟【追加】レポートモーダルの合成
+        try {
+          // ※お手元のレポートモーダルHTMLの正しいファイル名（例：report-modal.html等）に変更してください
+          const reportModalResponse = await fetch("./modal-report-entry.html");
+          if (reportModalResponse.ok) {
+            tempWrapper.insertAdjacentHTML("beforeend", await reportModalResponse.text());
+            console.log("📄 レポートモーダルのHTMLをメイン画面に合流させました");
+          } else {
+            console.warn("⚠️ レポートモーダルHTMLが見つかりませんでした。ファイル名を確認してください。");
+          }
+        } catch (reportModalErr) {
+          console.error("レポートモーダル読み込みエラー:", reportModalErr);
         }
       }
 
-      // 各画面の初期化JavaScriptの実行を待つ
-      if (pageName === "main" && typeof initializeMainPage === "function") {
-        await initializeMainPage();
-      }
-      // メイン画面の初期化に続けてカレンダーを描画する
-      if (typeof renderCalendar === "function") {
-        console.log("共通基盤: main画面の同期完了を検知。カレンダーを描画します。");
-        renderCalendar();
+      // 画面（dynamicArea）にHTMLを反映
+      if (dynamicArea) {
+        dynamicArea.innerHTML = tempWrapper.innerHTML;
       }
 
-      if (pageName === "report" && typeof initializeReportPage === "function") {
-        await initializeReportPage();
+      // 各画面の初期化処理を「安全に」実行（エラーが起きても全体を止めないよう個別で try-catch）
+      try {
+        if (pageName === "main" && typeof initializeMainPage === "function") {
+          await initializeMainPage();
+        }
+      } catch (e) {
+        console.error("initializeMainPage 実行エラー:", e);
       }
 
-      if (pageName === "attendance" && typeof window.initAttendanceCalendar === "function") {
-        await window.initAttendanceCalendar();
+      try {
+        if (typeof renderCalendar === "function") {
+          await renderCalendar();
+        }
+      } catch (e) {
+        console.error("renderCalendar 実行エラー:", e);
       }
 
-      if (pageName === "admin" && typeof initializeAdminPage === "function") {
-        await initializeAdminPage();
+      try {
+        if (pageName === "report" && typeof initializeReportPage === "function") {
+          await initializeReportPage();
+        }
+      } catch (e) {
+        console.error("initializeReportPage 実行エラー:", e);
       }
 
-      // HTMLが完全に描画された後、共通のポップオーバー初期化を実行
-      initGlobalPopovers();
+      try {
+        if (pageName === "attendance" && typeof window.initAttendanceCalendar === "function") {
+          await window.initAttendanceCalendar();
+        }
+      } catch (e) {
+        console.error("initAttendanceCalendar 実行エラー:", e);
+      }
 
-      // ブラウザが新しい画面を描き切るのを少し待つ
+      try {
+        if (pageName === "admin" && typeof initializeAdminPage === "function") {
+          await initializeAdminPage();
+        }
+      } catch (e) {
+        console.error("initializeAdminPage 実行エラー:", e);
+      }
+
+      if (typeof initGlobalPopovers === "function") {
+        initGlobalPopovers();
+      }
+
+      // 描画がブラウザに確定するのを待つ
       await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
     } catch (error) {
-      console.error("画面の切り替え中にエラーが発生しました:", error);
+      console.error("画面切り替え中に致命的なエラーが発生しました:", error);
       if (dynamicArea) {
-        dynamicArea.innerHTML = `
-     <div class="alert alert-danger m-4" role="alert">
-      <i class="bi bi-exclamation-triangle-fill"></i> 画面の読み込み中にエラーが発生しました。
-     </div>
-    `;
+        dynamicArea.innerHTML = `<div class="alert alert-danger m-4">画面の読み込み中にエラーが発生しました。</div>`;
       }
     } finally {
-      if (!isInitial) {
+      // ⚠️【超重要】エラーが発生しようが何が起きようが、最後は絶対に透明化を解除し、ローディングを消す
+      if (dynamicArea) {
+        dynamicArea.classList.add("is-ready");
+        dynamicArea.style.opacity = "1";
+      }
+
+      if (typeof hideGlobalLoading === "function") {
         hideGlobalLoading();
       }
     }
@@ -425,6 +484,16 @@ document.addEventListener("DOMContentLoaded", async () => {
       if (!clickedItem) return;
 
       if (clickedItem.classList.contains("mobile-logout-item") || clickedItem.classList.contains("logout-btn")) return;
+
+      // 🌟【同一ページガードの追加】
+      if (clickedItem.classList.contains("active")) {
+        console.log("すでにアクティブなページが選択されたため、遷移処理をスキップします。");
+        // モバイル用に展開されたサイドバーメニューだけ閉じる（もし開いていれば）
+        if (sidebarNav && sidebarNav.classList.contains("mobile-active")) {
+          sidebarNav.classList.remove("mobile-active");
+        }
+        return;
+      }
 
       // 一旦すべてのメニューから active クラスを消す
       navItems.forEach((i) => i.classList.remove("active"));

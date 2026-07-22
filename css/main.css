@@ -4,18 +4,18 @@
 .dashboard-container {
   display: flex;
   flex-direction: column;
-  justify-content: flex-start !important; 
-  gap: 0px; 
+  justify-content: flex-start !important;
+  gap: 20px;
   padding: 20px;
   box-sizing: border-box;
-  height: 100% !important;     
-  max-height: 100% !important;
-  overflow: hidden !important;
+  height: auto !important;
+  min-height: 100vh !important;
+  overflow: visible !important;
 }
+
 /* ==========================================================================
    ⏰ 2. 上段：左右縦グループ分けレイアウト（下端揃え完全版）
    ========================================================================== */
-/* 左右を綺麗に50%ずつに割る大枠 */
 .main-top-split-layout {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
@@ -212,7 +212,7 @@
    📝 右側：当日備考・経費入力エリア（横一列・完全固定版）
    ========================================================================== */
 .today-remarks-area {
-  margin-top: 5px; /* 👈 外枠を消した分、少し位置を微調整 */
+  margin-top: 5px;
   padding-top: 15px;
   border-top: 1px dashed #e2e4ed;
   width: 100%;
@@ -307,44 +307,82 @@
 }
 
 /* ==========================================================================
-   📢 3. 中段：お知らせ ＆ 勤怠ログ（左右カード下端自動揃え）
+   📢 3. 中段：お知らせ ＆ 勤怠ログ（コンパクト版・重なり解消設定済み）
    ========================================================================== */
-/* 🟦 左側：お知らせエリア（独立した白カード） */
-.news-section {
-  background-color: #ffffff;
-  border: 1px solid #dee2e6;
-  border-radius: 12px;
-  padding: 20px;
-  display: flex;
-  flex-direction: column;
-  box-sizing: border-box;
-  margin-top: 0px;
 
-  /* 👇 これを追加！残りの高さを限界まで使い切らせます */
-  flex: 1;
+/* セクション全体の余白を極限までカット */
+.news-section-bordered {
+  border-top: 1px dotted #cbd5e1 !important;
+  border-bottom: 1px dotted #cbd5e1 !important;
+  margin: 5px 0 !important;
+  padding: 8px 0 !important;
+
+  flex-grow: 1 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  width: 100% !important;
+  position: relative;
+  background: transparent !important;
 }
 
-/* お知らせの文字が入るボックス */
-.news-body {
-  border: 1px solid #e0e2ee;
-  background-color: #fafafa;
-  border-radius: 8px;
-  padding: 12px;
-  flex: 1; /* 親の伸びに合わせて自動拡張 */
-  min-height: 110px;
-  overflow-y: auto;
+/* タイトル：アイテムより常に上に表示させるため z-index を高く設定 */
+.news-section-bordered .section-title {
+  position: absolute;
+  top: -10px;
+  left: 8px;
+  background-color: #f8f9fa; /* 画面背景色と一致させてください */
+  padding: 0 6px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #4a5568;
+  z-index: 2 !important;
 }
 
+/* お知らせアイテム：縦幅を詰め、重なりを制御 */
 .news-item {
-  font-size: 0.85rem;
-  color: #495057;
-  line-height: 1.6;
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+  font-size: 0.8rem !important;
+  line-height: 1.4 !important;
+  padding: 6px 12px !important;
+
+  /* ガラスエフェクト */
+  background: rgba(255, 255, 255, 0.6) !important;
+  backdrop-filter: blur(6px) !important;
+  -webkit-backdrop-filter: blur(6px) !important;
+
+  border: 1px solid rgba(255, 255, 255, 0.5) !important;
+  border-left: 4px solid #888dc5 !important;
+  border-radius: 3px 6px 6px 3px !important;
+
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03) !important;
+  transition: all 0.2s ease;
+  position: relative; /* アイテムの動きを制御 */
+  z-index: 1 !important; /* タイトルより下に設定 */
 }
 
+/* ホバー時は控えめに浮き上がる */
+.news-item:hover {
+  transform: translateY(-1px) !important;
+  background: rgba(255, 255, 255, 0.8) !important;
+  z-index: 1 !important; /* ホバー時もタイトルより下を維持 */
+}
+
+/* 日付バッジ：さらにコンパクトに */
 .news-date {
-  font-weight: bold;
-  color: #888dc5;
-  margin-right: 10px;
+  font-size: 0.65rem !important;
+  font-weight: 700 !important;
+  color: #888dc5 !important;
+  background-color: rgba(241, 242, 250, 0.8) !important;
+  padding: 1px 6px !important;
+  border-radius: 3px !important;
+  white-space: nowrap !important;
+}
+
+/* セクション内の余白も最小限に */
+.news-section-bordered .news-body {
+  margin-top: 2px !important;
 }
 
 /* 🟥 右側：勤怠ログ */
@@ -356,27 +394,20 @@
   display: flex;
   flex-direction: column;
   box-sizing: border-box;
-
-  /* 👇 ここが超重要！
-     HTML側で textarea を囲んでいる「#collapseLogs」を縦いっぱいに広げるため、
-     ログセクション自体も残りの高さを目一杯使うように設定します */
   flex: 1;
   display: flex;
   flex-direction: column;
 }
 
-.logs-section .section-title,
-.news-section .section-title {
-  display: flex;
-  align-items: center;
-  margin-bottom: 12px;
-  color: #55555c;
-  font-size: 1rem;
-  font-weight: bold;
+.section-title,
+.section-title span {
+  display: flex !important;
+  align-items: center !important;
+  color: #55555c !important;
+  font-size: 1rem !important;
+  font-weight: bold !important;
 }
 
-/* 👇 新たにこれをCSSに追加してください！
-   HTML内の #collapseLogs と textarea を縦に最大化させる設定です */
 #collapseLogs {
   flex: 1;
   display: flex;
@@ -384,7 +415,7 @@
 }
 
 .logs-textarea {
-  flex: 1 !important; /* rows="4" の固定高さを無視して、枠いっぱいに広げる */
+  flex: 1 !important;
   min-height: 110px;
   padding: 12px !important;
   color: #495057 !important;
@@ -406,9 +437,14 @@
    📊 4. 下段レイアウト土台枠（カレンダー & レポート 左右分割）
    ========================================================================== */
 .content-grid-section {
-  display: flex !important;
+  display: grid !important;
+  grid-template-columns: repeat(2, 1fr) !important;
   gap: 20px !important;
+  margin-top: -10px !important;
   height: auto !important;
+  min-height: 350px !important;
+  max-height: none !important;
+  box-sizing: border-box !important;
 }
 
 .grid-card {
@@ -445,95 +481,108 @@
 }
 
 /* ==========================================================================
-   📅 5. 下段・左側：カレンダー（外枠サイズ固定の格子型カスタム）
+    📅 5. 下段・左側：カレンダー（バグ完全排除・高さ完全同期版）
    ========================================================================== */
-
-/* 👇 ここでカレンダー全体の高さを「最大250px」にキュッと制限します */
-.custom-calendar,
-#calendar_container,
-.calendar-wrapper {
+/* 1. カレンダーの核となるコンテナ */
+.custom-calendar {
   display: flex !important;
   flex-direction: column !important;
   width: 100% !important;
-  max-width: 100% !important;
-  height: 240px !important;
-  min-height: 240px !important;
+  height: calc(100% - 36px) !important;
+  padding: 0 !important;
+  margin: 0 !important;
   box-sizing: border-box !important;
   overflow: hidden !important;
 }
 
-#calendar_container table,
-.calendar-table {
-  width: 100% !important;
-  margin: 0 !important;
-  table-layout: fixed !important;
-  box-sizing: border-box !important;
-}
-
-/* 曜日行 */
+/* 2. 曜日行：タイトル直下の定位置にピタッと配置 🎯 */
 .calendar-weekdays {
   display: grid !important;
   grid-template-columns: repeat(7, 1fr) !important;
   align-items: center !important;
   flex-shrink: 0 !important;
-  height: 28px !important;
-  margin-bottom: 4px !important; /* 👈 隙間を少し詰めました */
-  text-align: center;
+  height: 22px !important;
+  margin: 0 0 4px 0 !important;
+  padding: 0 !important;
+  text-align: center !important;
   border-bottom: 1px solid #dee2e6 !important;
-  font-weight: bold;
+  font-weight: bold !important;
+  position: relative !important;
+  top: 0 !important;
+  left: 0 !important;
 }
 
 .calendar-weekdays > div {
   display: flex !important;
   justify-content: center !important;
   align-items: center !important;
-  color: #495057;
-  font-size: 0.72rem !important;
+  color: #495057 !important;
+  font-size: 0.75rem !important;
 }
 
-/* 日付グリッド全体 */
+/* 3. 日付グリッド全体：生まれた縦スペースを全て使って限界まで大きく広げる 🚀 */
 #calendar-days {
   display: grid !important;
   grid-template-columns: repeat(7, 1fr) !important;
   grid-auto-rows: 1fr !important;
   gap: 0px !important;
   padding: 0px !important;
+  margin: 0px !important;
   width: 100% !important;
-  height: 100% !important;
   flex-grow: 1 !important;
-  border-bottom: 1px solid #dee2e6 !important;
+  border: 1px solid #dee2e6 !important;
   box-sizing: border-box !important;
+  background-color: #dee2e6 !important;
 }
 
-/* グリッド内の各日付マス */
+/* 4. 各日付マス */
+#calendar-days > div.calendar-day-cell,
 #calendar-days > div {
   position: relative !important;
   display: flex !important;
   flex-direction: column !important;
-  justify-content: flex-start !important; /* 👈 space-between から変更して上寄せに */
-  padding: 4px !important; /* 👈 6px から 4px にしてマスをスリムに */
+  justify-content: flex-start !important;
+  align-items: stretch !important;
+  padding: 3px 5px !important; /* マスが縦に広がるため、ゆとりを持たせる */
   background-color: #ffffff !important;
-  border-right: 1px solid #dee2e6 !important;
-  border-bottom: 1px solid #dee2e6 !important;
-  border-radius: 0px !important;
+  border: none !important;
+  outline: 1px solid #dee2e6 !important;
   box-sizing: border-box !important;
 }
 
-#calendar-days > div:nth-child(7n + 1) {
-  border-left: 1px solid #dee2e6 !important;
-}
-#calendar-days > div:nth-child(-n + 7) {
-  border-top: 1px solid #dee2e6 !important;
+/* 5. アイコン・インジケーターの自動最下部沈下＆高さバグ修正完全版 🎯 */
+.calendar-day-bottom-flex {
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: flex-end !important;
+  width: 100% !important;
+  margin-top: auto !important;
+  padding-top: 2px !important;
+  height: auto !important;
+  min-height: 16px !important;
+  box-sizing: border-box !important;
+  overflow: visible !important;
 }
 
-#calendar_container th,
-#calendar_container td {
-  padding: 0.4rem 0.2rem !important;
-  font-size: 0.8rem !important;
-  vertical-align: middle !important;
+/* 左側：出勤・退勤インジケーターグループ */
+.calendar-attendance-group {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  height: 16px !important;
+  position: relative !important;
 }
 
-/* 日付文字の色ルール */
+/* 右側：レポートアイコン（下書き・提出済）グループ */
+.calendar-report-group {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-end !important;
+  gap: 4px !important;
+  height: 16px !important;
+}
+
+/* 土日・祝日の色ルール */
 #calendar-days > div.is-sat {
   color: #0d6efd !important;
 }
@@ -542,13 +591,11 @@
   color: #dc3545 !important;
 }
 
-/* 当日マスの特別デザイン */
+/* 当日マスのデザイン */
 #calendar-days > div.is-today {
   background-color: #f1f5f9 !important;
-  border: none !important;
   z-index: 1;
 }
-
 #calendar-days > div.is-today .day-number {
   color: #1e293b !important;
   font-weight: bold !important;
@@ -556,33 +603,20 @@
 
 /* 他月（先月・来月）のマス */
 #calendar-days > div.is-other-month {
-  background-color: #ffffff !important;
-  border-top: none !important;
+  background-color: #fcfcfd !important;
   pointer-events: none;
 }
 
 #calendar-days > div.is-other-month .day-number {
   color: #cbd5e1 !important;
-  opacity: 0.8 !important;
+  opacity: 0.5 !important;
   font-weight: normal !important;
 }
 
-#calendar-days > div:not(.is-other-month) {
-  transition: background-color 0.15s ease;
-}
-
-#calendar-days > div:not(.is-other-month):hover {
-  background-color: var(--row-hover-color) !important;
-  cursor: pointer;
-}
-
-#calendar-days > div.is-other-month:hover {
-  background-color: #ffffff !important;
-}
-
-#calendar-days > div:not(.is-other-month):active,
-#calendar-days > div.is-selected {
-  background-color: #e9ecef !important;
+#calendar-days > div.is-other-month .calendar-day-bottom-flex,
+#calendar-days > div.is-other-month .report-icon,
+#calendar-days > div.is-other-month .cal-working-indicator {
+  opacity: 0.1 !important;
 }
 
 /* ==========================================================================
@@ -600,7 +634,7 @@
 
 .day-number {
   font-size: 0.8rem !important;
-  font-weight: bold !important;
+  font-weight: 500 !important;
   line-height: 1 !important;
   color: inherit;
 }
@@ -655,26 +689,26 @@
   cursor: pointer;
 }
 
-/* 有給休暇バッジ */
+/* 💚 有給休暇バッジ（メイン画面用：カレンダーと統一） */
 .label-paid {
   display: inline-block !important;
-  padding: 1px 4px !important;
-  color: #15803d !important;
-  background-color: #ffffff !important;
-  border: 1px solid #bbf7d0 !important;
+  padding: 1px 6px !important;
+  color: #166534 !important; /* 上品な深緑 */
+  background-color: #e8f5e9 !important; /* 極淡いセージグリーン */
+  border: 1px solid #c8e6c9 !important; /* 繊細な緑の枠線 */
   border-radius: 4px !important;
   font-size: 0.65rem !important;
   font-weight: bold !important;
   white-space: nowrap !important;
 }
 
-/* 欠勤バッジ */
+/* 🖤 欠勤バッジ（メイン画面用：カレンダーと統一） */
 .label-absent {
   display: inline-block !important;
-  padding: 1px 4px !important;
-  color: #475569 !important;
-  background-color: #cbd5e1 !important;
-  border: 1px solid #94a3b8 !important;
+  padding: 1px 6px !important;
+  color: #475569 !important; /* 落ち着いたスレートグレー */
+  background-color: #f1f5f9 !important; /* 透明感のあるライトグレー */
+  border: 1px solid #e2e8f0 !important; /* 馴染む薄い境界線 */
   border-radius: 4px !important;
   font-size: 0.65rem !important;
   font-weight: bold !important;
@@ -690,47 +724,21 @@
   margin-left: 4px;
   vertical-align: middle;
 }
+
+/* 未読ドットを右上のスタイリッシュな「しおり（バッジ）」に変身させる */
 .cal-unread-dot-fixed {
-  display: inline-block;
-  width: 6px;
-  height: 6px;
-  background-color: #4f46e5;
-  border-radius: 50%;
-  margin-left: 5px;
-  vertical-align: middle;
-}
-
-/* 出勤中ライブインジケーター */
-.cal-working-indicator {
-  display: inline-block;
+  display: block !important;
   position: absolute !important;
-  bottom: 6px !important;
-  left: 6px !important;
-  width: 32px;
-  height: 6px;
-  background-color: #10b981;
-  border-radius: 10px;
-  overflow: hidden;
-}
-
-.cal-working-indicator::after {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: -100%;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.6), transparent);
-  animation: loading-pulse 2s infinite;
-}
-
-@keyframes loading-pulse {
-  0% {
-    left: -100%;
-  }
-  100% {
-    left: 100%;
-  }
+  top: 0 !important;
+  right: 0 !important;
+  width: 0 !important;
+  height: 0 !important;
+  margin: 0 !important;
+  /* 右上の角を斜めに青く塗る（三角マーカー） */
+  border-style: solid !important;
+  border-width: 0 12px 12px 0 !important;
+  border-color: transparent #4f46e5 transparent transparent !important;
+  border-top-right-radius: 4px; /* カレンダーのセルの角丸に合わせる */
 }
 
 .cal-report-draft-flat {
@@ -746,7 +754,185 @@
   transform: rotate(0deg);
 }
 
-/* 👇 このブロックをそのまま新規追記してください */
+/* 1. 出勤中：青い呼吸するドット */
+.cal-working-indicator {
+  display: inline-block;
+  width: 7px !important;
+  height: 7px !important;
+  border-radius: 50% !important;
+  background-color: #3b82f6 !important;
+  box-shadow: 0 0 6px rgba(59, 130, 246, 0.5);
+  animation: gentle-glow 3s ease-in-out infinite;
+  position: absolute !important;
+  bottom: 8px !important;
+  left: 5px !important;
+
+  flex-shrink: 0;
+  vertical-align: middle;
+}
+
+@keyframes gentle-glow {
+  0%,
+  100% {
+    opacity: 0.4;
+    transform: scale(0.95);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.05);
+  }
+}
+
+/* 2. 退勤済み：主張しすぎないグレーの丸付きチェックマーク */
+.cal-completed-indicator {
+  position: absolute !important;
+  bottom: 6px !important;
+  left: 3px !important;
+  color: #cbd5e1 !important;
+  font-size: 11px !important;
+  line-height: 1 !important;
+  pointer-events: none;
+  display: inline-block !important;
+  width: 11px !important;
+  height: 11px !important;
+}
+
+/* ==========================================================================
+   📝 レポートアイコン共通設定＆ステータス別デザイン（未読・既読・下書き・提出済）
+   ========================================================================== */
+
+/* 共通アイコン基本定義 */
+.report-icon {
+  display: inline-block !important;
+  line-height: 1 !important;
+  vertical-align: middle !important;
+  margin-top: 2px !important; /* カレンダー内での位置微調整 */
+}
+
+/* 🩶 提出済み（自分） */
+.report-icon.is-submitted {
+  color: #475569 !important;
+  font-size: 0.85rem !important;
+  filter: drop-shadow(0px 1px 1px rgba(0, 0, 0, 0.05)) !important;
+}
+
+/* 🟡 下書き（自分） */
+.report-icon.is-draft {
+  color: #ca8a04 !important;
+  font-size: 0.8rem !important;
+  filter: drop-shadow(0px 1px 1px rgba(0, 0, 0, 0.1)) !important;
+}
+
+/* 🔵 他人の未読（青いインジケータードット） */
+.report-icon.is-unread-dot {
+  width: 7px !important;
+  height: 7px !important;
+  background-color: #4f46e5 !important;
+  border-radius: 50% !important;
+  margin: 3px auto 0 auto !important;
+  box-shadow: 0 0 4px rgba(79, 70, 229, 0.4) !important;
+}
+
+/* ⚪ 他人の既読（グレーアウトされたアイコン） */
+.report-icon.is-read {
+  color: #94a3b8 !important;
+  font-size: 0.8rem !important;
+  opacity: 0.8 !important;
+}
+
+/* ==========================================================================
+   📅 レポート管理画面：ミニカレンダー用アイコン位置調整
+   ========================================================================== */
+
+/* カレンダーのセル（td）自体を相対配置にし、中の絶対配置を有効化 */
+.report-cal-table td.report-cal-day {
+  position: relative !important;
+  vertical-align: top !important;
+  text-align: left !important;
+  height: 40px !important; /* セルの高さを確保 */
+  padding: 4px !important;
+}
+
+/* 📄 アイコンを包む右下コンテナ（ここを右下に絶対配置） */
+.calendar-report-bottom {
+  position: absolute !important;
+  bottom: 2px !important;
+  right: 3px !important;
+  display: inline-flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  gap: 2px !important; /* アイコン同士の間隔 */
+  pointer-events: none !important;
+}
+
+/* ⭕ アイコン自体の絶対配置を解除し、Flexboxで並べる */
+.calendar-report-bottom .report-icon {
+  position: static !important;
+  margin: 0 !important;
+  line-height: 1 !important;
+}
+
+/* アイコンサイズの微調整 */
+.report-icon.is-submitted,
+.report-icon.is-read {
+  font-size: 0.8rem !important;
+  color: #64748b !important;
+}
+
+.report-icon.is-draft {
+  font-size: 0.75rem !important;
+  color: #ca8a04 !important;
+}
+
+/* 💡 アイコン横の数字をコンパクトな丸バッジにする */
+.icon-wrapper {
+  position: relative !important;
+  display: inline-flex !important;
+}
+
+.icon-count-badge {
+  font-size: 0.55rem !important; /* フォントを小さく */
+  font-weight: bold !important;
+  line-height: 1 !important;
+  color: #ffffff !important;
+  background-color: #64748b !important; /* グレーの丸背景 */
+  border-radius: 50% !important;
+  width: 11px !important;
+  height: 11px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  position: absolute !important;
+  top: -4px !important;
+  right: -5px !important;
+}
+
+/* アイコンと数字をまとめるラッパー */
+.calendar-report-bottom .icon-wrapper {
+  position: relative !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  margin-right: 4px !important; /* 隣のアイコン（鉛筆など）との隙間 */
+}
+
+/* アイコン右上の丸型件数バッジ */
+.icon-count-badge {
+  font-size: 0.55rem !important;
+  font-weight: 700 !important;
+  line-height: 1 !important;
+  color: #ffffff !important;
+  background-color: #475569 !important; /* 控えめなダークグレー */
+  border-radius: 9999px !important;
+  padding: 1px 3px !important;
+  min-width: 11px !important;
+  text-align: center !important;
+  position: absolute !important;
+  top: -3px !important;
+  right: -6px !important;
+  box-shadow: 0 0 0 1px #ffffff !important; /* カレンダー背景との白ふち */
+}
+
+
 /* ==========================================================================
    📊 下段：カレンダーと過去のレポートカードの高さ強制固定
    ========================================================================== */
@@ -754,23 +940,23 @@
   display: grid !important;
   grid-template-columns: repeat(2, 1fr) !important;
   gap: 20px !important;
-  height: 350px !important; /* 👈 白枠カード全体の縦幅を350pxに完全固定 */
+  height: 350px !important;
   max-height: 350px !important;
   min-height: 350px !important;
   box-sizing: border-box !important;
 }
 
 .content-grid-section .grid-card {
-  height: 100% !important;
-  max-height: 100% !important;
-  min-height: 100% !important;
-  flex-grow: 0 !important; /* 👈 これ以上下に伸びるのを完全に禁止 */
-  flex-shrink: 0 !important;
+  /* 修正：高さのパーセント固定を解除 */
+  height: auto !important;
+  min-height: 350px !important;
+  max-height: none !important;
+  flex-grow: 1 !important;
   box-sizing: border-box !important;
 }
 
 .main-report-scroll-box {
-  height: 265px !important; /* 👈 レポート一覧が白枠からはみ出ないように制限 */
+  height: 265px !important;
   overflow-y: auto !important;
 }
 
@@ -850,4 +1036,131 @@
     height: auto !important;
     min-height: 160px; /* スマホ画面で潰れないための最低保証高さ */
   }
+
+  /* スマホの初期状態：親の .sidebar-area 自体を完全に非表示＆全画面固定の準備 */
+  .sidebar-area {
+    display: none !important;
+    position: fixed !important;
+    top: 60px !important; /* ヘッダーの高さ直下 */
+    left: 0 !important;
+    width: 100% !important;
+    height: calc(100vh - 60px) !important; /* 画面いっぱいに広げる */
+    background-color: #ffffff !important; /* 背景を白に強制固定 */
+    z-index: 99999 !important; /* カレンダーなどの裏に回り込ませない */
+    border-top: 1px solid #dee2e6 !important;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15) !important;
+    overflow-y: auto !important;
+  }
+
+  /* JSで mobile-active クラスが付与された瞬間に表示する */
+  .sidebar-area.mobile-active {
+    display: flex !important;
+    flex-direction: column !important;
+  }
+
+  /* 親が表示されたので、中のナビゲーションを確実に表示 */
+  .sidebar-area.mobile-active .sidebar-nav {
+    display: block !important;
+    width: 100% !important;
+  }
+
+  /* リスト内の配置調整 */
+  .sidebar-area.mobile-active ul {
+    display: flex !important;
+    flex-direction: column !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    list-style: none !important;
+  }
+
+  .sidebar-area.mobile-active li.nav-item {
+    display: flex !important;
+    align-items: center !important;
+    width: 100% !important;
+    height: 60px !important; /* タップしやすい高さ */
+    padding: 0 25px !important;
+    border-bottom: 1px solid #f1f3f5 !important;
+    background-color: #ffffff !important;
+    color: #2b2c3a !important;
+    margin: 0 !important;
+    border-radius: 0 !important; /* スマホ時は丸みを無くす */
+  }
+
+  .sidebar-area.mobile-active li.nav-item:active {
+    background-color: #f8fafc !important;
+  }
+
+  .sidebar-area.mobile-active .nav-text {
+    display: inline !important; /* テキストを確実に表示 */
+    font-size: 1rem !important;
+    font-weight: 600 !important;
+  }
+
+  .sidebar-area.mobile-active i {
+    margin-right: 15px !important;
+    color: #888dc5 !important; /* テーマの薄い紫 */
+    font-size: 1.3rem !important;
+  }
+
+  /* スマホメニュー内のユーザー名表示エリア */
+  .sidebar-user-info {
+    display: flex !important;
+    align-items: center !important;
+    padding: 20px 25px !important;
+    background-color: #f8fafc !important;
+    border-bottom: 1px solid #dee2e6 !important;
+    color: #2b2c3a !important;
+  }
+
+  /* スマホメニュー内専用：ログアウト項目を赤く強調 */
+  .sidebar-area.mobile-active .mobile-logout-item {
+    display: flex !important;
+    background-color: #fff0f0 !important;
+    color: #e53e3e !important;
+  }
+  .sidebar-area.mobile-active .mobile-logout-item i {
+    color: #e53e3e !important;
+  }
+}
+
+/* ==========================================================================
+   📝 メイン画面専用：過去レポートホバー制御（2重線防止）
+   ========================================================================== */
+/* 親リンク(a)の丸ごと下線を強制OFFにし、中のタイトルと日付にのみ綺麗な1本線を引く */
+a.past-report-item:hover {
+  text-decoration: none !important;
+}
+
+a.past-report-item:hover .text-truncate,
+a.past-report-item:hover .text-muted {
+  text-decoration: underline !important;
+  text-underline-offset: 3px !important;
+  text-decoration-thickness: 1px !important;
+  text-decoration-color: inherit !important;
+}
+
+/* ==========================================================================
+   📝 メイン画面：過去レポート 選択時の背景色変化を完全廃止（下線のみで識別）
+   ========================================================================== */
+
+/* 1. 通常時・訪問済み・フォーカス時・アクティブ時、すべての状態で背景は「完全に透明（または白）」で固定 */
+a.past-report-item,
+a.past-report-item:visited,
+a.past-report-item:focus,
+a.past-report-item:active,
+a.past-report-item:hover {
+  background-color: transparent !important; /* または背景に合わせて #ffffff !important */
+  background: transparent !important;
+  text-decoration: none !important; /* 行全体へのデフォルト下線は常にOFF */
+}
+
+/* 2. 【ホバー・フォーカス時】文字と日付だけにスマートに下線を引き、どこを選択しているかを示します */
+a.past-report-item:hover .text-truncate,
+a.past-report-item:hover .text-muted,
+a.past-report-item:focus .text-truncate,
+a.past-report-item:focus .text-muted {
+  text-decoration: underline !important;
+  text-underline-offset: 3px !important;
+  text-decoration-thickness: 1px !important;
+  text-decoration-color: inherit !important;
 }

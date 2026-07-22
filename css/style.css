@@ -57,7 +57,6 @@ body {
 /* ==========================================================================
    ⏳ ローディング（グローバル）
    ========================================================================== */
-
 #global-loading {
   position: fixed;
   top: 0;
@@ -95,6 +94,18 @@ body {
     visibility 0.05s,
     backdrop-filter 0.05s ease-out,
     -webkit-backdrop-filter 0.05s ease-out;
+}
+
+/* 🌟 重複していた2つの定義を綺麗に合体させました！ */
+#main_content_dynamic_area {
+  opacity: 0;
+  transition: opacity 0.2s ease-in-out;
+  display: block !important;
+  background-color: #f8f9fa; /* 背景にメイン画面の「骨組み」の背景色をあらかじめ設定しておく */
+}
+
+#main_content_dynamic_area.is-ready {
+  opacity: 1;
 }
 
 /* --- ドットアニメーション --- */
@@ -629,16 +640,17 @@ body {
 @media (max-width: 991px) {
   /* 1. PC用の左固定サイドバーを非表示化 */
   .sidebar-area {
-    display: none !important;
+    display: none;
   }
 
   /* 2. PC用メニュー配置を画面最上部固定の全幅ドロップダウン形式へ変更 */
   .sidebar-nav {
-    position: fixed !important; /* 👈 ここに !important を追記してください */
-    top: 60px;
+    position: fixed !important;
+    top: 60px; /* ヘッダーの高さ */
     left: 0;
-    display: none;
     width: 100%;
+    display: none; /* 初期状態は非表示 */
+    z-index: 1045 !important; /* ブートストラップのヘッダーや他のコンテンツより前面に */
   }
 
   /* 3. メイン全幅化 */
@@ -666,8 +678,12 @@ body {
 
   /* 6. スマホ用アクティブメニュー展開状態 */
   .sidebar-nav.mobile-active {
-    display: block !important;
-    z-index: 9999;
+    display: block !important; /* 👈 親の非表示を上書きして強制表示！ */
+    position: fixed !important;
+    top: 60px;
+    left: 0;
+    width: 100%;
+    z-index: 9999 !important; /* 最前面に配置 */
     height: auto;
     background-color: #ffffff;
     border-top: 1px solid #eee;

@@ -54,15 +54,24 @@
 
           <div class="row g-3 mb-3">
             <div class="col-12">
-              <label class="form-label small fw-bold text-muted mb-1">作業期間</label>
-              <div class="row g-3" id="period_range_wrapper">
-                <div class="col-md-6">
-                  <label for="work_period_start" class="form-label mb-1 text-muted opacity-75 lh-1" style="font-size: 0.7rem">開始</label>
-                  <input type="date" id="work_period_start" class="form-control rounded" />
-                </div>
-                <div class="col-md-6">
-                  <label for="work_period_end" class="form-label mb-1 text-muted opacity-75 lh-1" style="font-size: 0.7rem">終了</label>
-                  <input type="date" id="work_period_end" class="form-control rounded" />
+              <div class="row g-3 mb-3">
+                <div class="col-12">
+                  <label class="form-label small fw-bold text-muted mb-1">作業期間</label>
+
+                  <div class="row g-3 d-none" id="period_range_wrapper">
+                    <div class="col-md-6">
+                      <label for="work_period_start" class="form-label mb-1 text-muted opacity-75 lh-1" style="font-size: 0.7rem">開始</label>
+                      <input type="date" id="work_period_start" class="form-control rounded" />
+                    </div>
+                    <div class="col-md-6">
+                      <label for="work_period_end" class="form-label mb-1 text-muted opacity-75 lh-1" style="font-size: 0.7rem">終了</label>
+                      <input type="date" id="work_period_end" class="form-control rounded" />
+                    </div>
+                  </div>
+
+                  <div id="period_single_wrapper" class="mt-2">
+                    <input type="date" id="work_period_single" class="form-control rounded" />
+                  </div>
                 </div>
               </div>
               <div id="period_single_wrapper" class="d-none mt-2">

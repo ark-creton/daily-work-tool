@@ -37,26 +37,45 @@ window.initAttendanceCalendar = async () => {
   }
 
   // ◆ 表示対象ユーザー（ドロップダウン）の初期化とログインユーザー優先ソート
-  // 【目的】マスタから有効なユーザー一覧を取得して選択肢を作り、操作中のユーザーを初期選択・最上位にする
+  // 【目的】マスタからログインユーザーと同じ会社に所属する有効なユーザー一覧を取得して選択肢を作り、操作中のユーザーを初期選択・最上位にする
   const userSwitcher = document.getElementById("target_user_id");
   if (userSwitcher) {
     try {
-      // Step1: 有効なユーザー一覧（user_master）を名前順で取得
-      const { data: users, error: masterError } = await supabase
-        .from("user_master")
-        .select("id, user_name")
-        .eq("is_active", true)
-        .order("user_name", { ascending: true });
-
-      if (masterError) throw masterError;
-
-      // Step2: 現在ログインしているユーザーの情報を取得
+      // Step1: 現在ログインしているAuthユーザーの情報を取得
       const {
         data: { user: currentUser },
       } = await supabase.auth.getUser();
 
-      // Step3: ログインユーザーが一覧にあれば、ドロップダウンの先頭（インデックス-1）に並び替える
-      if (currentUser && users) {
+      if (!currentUser) throw new Error("ログインユーザーが見つかりません。");
+
+      // Step2: ログインユーザー自身のマスタレコードを取得して所属会社ID（company_id）を特定する
+      const { data: loggedInUserMaster, error: loggedInUserError } = await supabase
+        .from("user_master")
+        .select("company_id")
+        .eq("id", currentUser.id)
+        .single();
+
+      if (loggedInUserError) throw loggedInUserError;
+      const myCompanyId = loggedInUserMaster?.company_id;
+
+      if (!myCompanyId) {
+        console.warn("⚠️ ログインユーザーに会社ID（company_id）が紐づいていません。全体を表示します。");
+      }
+
+      // Step3: 同じ会社に所属する、有効なユーザー一覧（user_master）を名前順で取得
+      let query = supabase.from("user_master").select("id, user_name").eq("is_active", true);
+
+      // 会社IDが存在する場合はフィルタリングをかける
+      if (myCompanyId) {
+        query = query.eq("company_id", myCompanyId);
+      }
+
+      const { data: users, error: masterError } = await query.order("user_name", { ascending: true });
+
+      if (masterError) throw masterError;
+
+      // Step4: ログインユーザーが一覧にあれば、ドロップダウンの先頭（インデックス-1）に並び替える
+      if (users) {
         users.sort((a, b) => {
           if (a.id === currentUser.id) return -1;
           if (b.id === currentUser.id) return 1;
@@ -64,7 +83,7 @@ window.initAttendanceCalendar = async () => {
         });
       }
 
-      // Step4: 生成したユーザーリストをドロップダウンにDOM反映
+      // Step5: 生成したユーザーリストをドロップダウンにDOM反映
       userSwitcher.innerHTML = "";
       users.forEach((u) => {
         const option = document.createElement("option");
@@ -73,11 +92,9 @@ window.initAttendanceCalendar = async () => {
         userSwitcher.appendChild(option);
       });
 
-      // Step5: ログインユーザーを初期選択状態にして最初のデータ読み込みを開始
-      if (currentUser) {
-        userSwitcher.value = currentUser.id;
-        await handlePeriodChange();
-      }
+      // Step6: ログインユーザーを初期選択状態にして最初のデータ読み込みを開始
+      userSwitcher.value = currentUser.id;
+      await handlePeriodChange();
 
       // 二重登録を防ぐためイベントをリセットして再登録
       userSwitcher.removeEventListener("change", handlePeriodChange);
@@ -309,9 +326,9 @@ window.initAttendanceCalendar = async () => {
             })
           : "--:--";
 
-      let totalWorkStr = "-",
-        overtimeStr = "-",
-        outingStr = "-";
+      let totalWorkStr = '<span class="text-muted">-</span>',
+        overtimeStr = '<span class="text-muted">-</span>',
+        outingStr = '<span class="text-muted">-</span>';
 
       // Step3: 通常勤務日における各実労働時間の計算とカウンター加算
       if (record && record.work_type !== "paid" && record.work_type !== "absent" && record.clock_in) {
@@ -321,7 +338,7 @@ window.initAttendanceCalendar = async () => {
             return Math.floor(new Date(iso).getTime() / (1000 * 60));
           };
 
-          // 💡 それぞれの「分の数値」を取得
+          // それぞれの「分の数値」を取得
           const startM = toM(record.clock_in);
           let endM = toM(record.clock_out);
 
@@ -348,9 +365,9 @@ window.initAttendanceCalendar = async () => {
           summary.outingMin += outingM;
           if (isHolidayOrWeekend) summary.holidayWorkDays++;
         } else {
-          totalWorkStr = "-";
-          overtimeStr = "-";
-          outingStr = "-";
+          totalWorkStr = '<span class="text-muted">-</span>';
+          overtimeStr = '<span class="text-muted">-</span>';
+          outingStr = '<span class="text-muted">-</span>';
         }
       }
 
@@ -370,7 +387,7 @@ window.initAttendanceCalendar = async () => {
       // Step4: セル表示用データの文字列整形とツールチップ用テキストの生成
       const isLeave = record?.work_type === "paid" || record?.work_type === "absent";
 
-      let timeRangeStr = "-";
+      let timeRangeStr = '<span class="text-muted">-</span>';
       if (!isLeave && record?.clock_in) {
         const startTime = formatTime(record.clock_in);
         if (record.clock_out) {
@@ -380,7 +397,7 @@ window.initAttendanceCalendar = async () => {
         }
       }
 
-      const breakTimeDisplay = isLeave || !record?.total_break_m ? "-" : `${record.total_break_m} 分`;
+      const breakTimeDisplay = isLeave || !record?.total_break_m ? '<span class="text-muted">-</span>' : `${record.total_break_m} 分`;
 
       // 経費内訳のバッジ風テキストの結合
       const expenseText =
@@ -398,10 +415,10 @@ window.initAttendanceCalendar = async () => {
       const todayNum = new Date().getDate();
       const isToday = year === new Date().getFullYear() && month === new Date().getMonth() + 1 && day === todayNum;
 
-      // 💡 修正：引数で渡されている「recordMap」から対象日の勤怠レコードを正しく取得
+      // 引数で渡されている「recordMap」から対象日の勤怠レコードを正しく取得
       const dayRecord = recordMap ? recordMap.get(day) : null;
 
-      // 💡判定ロジックのアップデート
+      // 判定ロジックのアップデート
       // 1. 今日、かつ現在進行形で「通常打刻の出勤中」か
       const isStillWorkingToday = isToday ? await window.isUserWorking() : false;
 
@@ -411,12 +428,16 @@ window.initAttendanceCalendar = async () => {
       let finalRowClass = rowClass || "";
 
       if (isMyData) {
-        // 💡 修正判定：今日、かつ「現在出勤中」または「まだ退勤ボタンを押していない（statusがfinished以外）」場合のみロックする
+        // 今日、かつ「現在出勤中」または「まだ退勤ボタンを押していない（statusがfinished以外）」場合のみロックする
         const isNotFinishedYet = dayRecord && dayRecord.status !== "finished";
 
         if (isStillWorkingToday || (hasClockedToday && isNotFinishedYet)) {
-          // 出勤中の場合は「打刻中」ボタンにする（見た目だけ黄色、クリックは不可っぽくする）
-          editButtonHtml = `<button class="btn btn-sm btn-table-edit" data-day="${day}" style="background-color: #fbbf24 !important; color: #ffffff !important; font-weight: bold !important; border: none !important; cursor: not-allowed !important;">打刻中</button>`;
+          // 出勤中の場合は「打刻中」ボタンにする（青い点滅ドット）
+          editButtonHtml = `
+              <button class="btn btn-sm btn-table-edit" data-day="${day}" style="background-color: #f0f7ff !important; color: #1e40af !important; border: 1px solid #bfdbfe !important; font-weight: bold !important; cursor: not-allowed !important; display: inline-flex; align-items: center; gap: 6px;">
+                <span class="pulsing-blue-dot"></span>打刻中
+              </button>
+            `;
 
           finalRowClass += " at-row-working-now";
         } else {
@@ -471,7 +492,7 @@ window.initAttendanceCalendar = async () => {
       console.error("グリッドカレンダーの描画中にエラーが発生しました:", error);
     }
 
-    // Step6: 画面最下部の「月間合計サマリー欄」のDOMテキスト書き換え
+    // Step6: 「月間合計サマリー欄」のDOMテキスト書き換え
     document.getElementById("work_days_count").textContent = summary.workDays > 0 ? summary.workDays : "-";
 
     // 総勤務時間
@@ -656,16 +677,9 @@ window.initAttendanceCalendar = async () => {
         }
       });
 
-      // Step2: 画面上の経費入力欄をすべて消去し、登録されていた経費は「削除対象（論理削除）」としてリストに退避
+      // Step2: 画面上の経費入力欄をすべて消去する
       const expenseList = document.getElementById("expense_list");
       if (expenseList) {
-        const expenseRows = expenseList.querySelectorAll(".expense-notebook-row");
-        expenseRows.forEach((row) => {
-          const dbId = row.getAttribute("data-db-id");
-          if (dbId && !deletedExpenseIds.includes(dbId)) {
-            deletedExpenseIds.push(dbId);
-          }
-        });
         expenseList.innerHTML = "";
         // 最低1行は空の経費入力欄を表示しておく
         if (typeof addExpenseRow === "function") {
@@ -682,7 +696,6 @@ window.initAttendanceCalendar = async () => {
     // 金額や勤務時間の再計算を走らせる
     calculateAttendance();
   }
-
   // 【状態管理】現在モーダルで開いているデータの一時保管場所
   let currentModalDate = null; // 開いている「日付（Dateオブジェクト）」
   let currentModalRecord = null; // DBから取得した「勤怠レコードの生データ」
@@ -749,20 +762,20 @@ window.initAttendanceCalendar = async () => {
       // 移動ボタンを押した時と同じ window.isUserWorking() で厳密にチェック
       const isNextDayWorking = isNextDayToday ? await window.isUserWorking() : false;
 
-      // 💡【追加】移動先の日付のレコードを取得し、すでに通常打刻（button）がされているかチェック
+      // 移動先の日付のレコードを取得
       const nextDayRecord = recordMap ? recordMap.get(nextDayNum) : null;
-      const isNextDayClocked = isNextDayToday && nextDayRecord && nextDayRecord.registration_mode === "button";
+      // この日（今日）すでに通常打刻（button）されたデータがあるかチェック
+      const hasNextDayClocked = isNextDayToday && nextDayRecord && nextDayRecord.registration_mode === "button";
+      // 通常打刻があっても、まだ退勤していない（finished 以外）ときだけロック対象にする
+      const isNextDayNotFinishedYet = nextDayRecord && nextDayRecord.status !== "finished";
 
-      // 💡 条件に「または通常打刻済みの場合」を追加
-      if (isNextDayWorking || isNextDayClocked) {
+      // 「現在出勤中」または「今日通常打刻があって、まだ退勤していない」ならブロック
+      if (isNextDayWorking || (hasNextDayClocked && isNextDayNotFinishedYet)) {
         // 退勤ステータスに合わせてメッセージを親切に変更
-        const msg =
-          nextDayRecord && nextDayRecord.status === "finished"
-            ? "本日は通常打刻データがあるため、移動・編集はできません。"
-            : "本日は現在打刻中のため、移動・編集はできません。\n退勤後に編集が可能になります。";
+        const msg = "本日は現在打刻中のため、移動・編集はできません。\n退勤後に編集が可能になります。";
 
         window.showToast(msg, "error");
-        return; // ❌ ここで処理を終了し、日付の移動を絶対にさせない
+        return;
       }
 
       deletedExpenseIds = [];
@@ -818,7 +831,6 @@ window.initAttendanceCalendar = async () => {
     // ◆ カレンダー各行の「編集」ボタンが押された時の処理
     document.querySelectorAll(".btn-table-edit").forEach((button) => {
       button.addEventListener("click", async (e) => {
-        // 💡 元のシンプルな形に戻します
         const dayStr = e.target.getAttribute("data-day");
         let dayNum = parseInt(dayStr);
         const record = recordMap.get(dayNum);
@@ -986,7 +998,7 @@ window.initAttendanceCalendar = async () => {
                 newSaveButton.disabled = false;
                 newSaveButton.textContent = "保存";
 
-                return; 
+                return;
               }
 
               // 入力された「時:分」を、現在編集中の「年月日」と組み合わせて完全なISOタイムスタンプ（日時）を作る補助関数
@@ -1054,10 +1066,10 @@ window.initAttendanceCalendar = async () => {
                 upsertData.id = currentModalRecord.id;
               }
 
-              // Step1: 勤怠親データの保存（なければ新規作成、あれば上書き）
+              // Step1: 勤怠親データの保存
               const { data: savedAttendance, error: attendanceError } = await supabase
                 .from("attendance_data")
-                .upsert(upsertData, { onConflict: "user_id,work_date" })
+                .upsert(upsertData, { onConflict: "id" })
                 .select()
                 .single();
 
@@ -1067,6 +1079,7 @@ window.initAttendanceCalendar = async () => {
               const parentAttendanceId = savedAttendance.id;
               const expenseRows = document.querySelectorAll("#expense_list .expense-notebook-row");
               const expenseRecordsToUpsert = [];
+              const activeRowDbIds = new Set(); // 💡 追加：画面に現在存在する経費IDを記録するセット
 
               // 各経費の入力行をループしてデータを取り出す
               expenseRows.forEach((row) => {
@@ -1079,17 +1092,22 @@ window.initAttendanceCalendar = async () => {
                 const categoryValue = categoryEl ? categoryEl.value.trim() : "";
                 const detailValue = detailEl ? detailEl.value.trim() : "";
 
-                // 金額が0より大きい有効な入力がある場合のみ保存対象にする
+                // 金根が有効（金額 > 0）なものだけ保存
                 if (amountValue > 0) {
-                  // IDがない（新規追加の経費）場合は、フロント側でランダムなUUIDを生成して割り当てる
+                  const finalDbId = dbId && dbId.trim() !== "" ? dbId.trim() : null;
                   const fallbackUUID = "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => {
                     const r = (Math.random() * 16) | 0;
                     const v = c === "x" ? r : (r & 0x3) | 0x8;
                     return v.toString(16);
                   });
 
+                  const recordId = finalDbId || fallbackUUID;
+                  if (finalDbId) {
+                    activeRowDbIds.add(finalDbId); // 画面上に残っている既存IDとしてキープ
+                  }
+
                   expenseRecordsToUpsert.push({
-                    id: dbId && dbId.trim() !== "" ? dbId.trim() : fallbackUUID,
+                    id: recordId,
                     attendance_id: parentAttendanceId,
                     user_id: user.id,
                     expense_date: targetDateStr,
@@ -1103,27 +1121,47 @@ window.initAttendanceCalendar = async () => {
               });
 
               // ========================================================
+              // 論理削除対象（ゴミ箱）の最終決定
+              // ========================================================
+              // もともとこのレコードに紐づいていた既存の経費レコードのうち、
+              // 今回の画面上から消えてしまった（金額0になった、有休切替で消えた、行が削除された）IDを論理削除対象にする
+              const finalDeleteIds = [];
+
+              // ① ユーザーが手動で削除ボタンを押して蓄積されたID
+              if (deletedExpenseIds && deletedExpenseIds.length > 0) {
+                deletedExpenseIds.forEach((id) => finalDeleteIds.push(id));
+              }
+
+              // ② DBに存在していたが、有休切り替えや入力値クリアによって画面上に残らなくなった既存IDを自動回収
+              if (currentModalRecord?.expense_records) {
+                currentModalRecord.expense_records.forEach((orig) => {
+                  if (orig.is_active !== false && orig.id && !activeRowDbIds.has(orig.id)) {
+                    if (!finalDeleteIds.includes(orig.id)) {
+                      finalDeleteIds.push(orig.id);
+                    }
+                  }
+                });
+              }
+
+              // ========================================================
               // 経費データのクリーンアップ＆保存処理
               // ========================================================
-              // Step1: ゴミ箱（deletedExpenseIds）に溜まった経費を一括で論理削除（1回のみ実行）
-              // 【目的】画面上で削除された既存の経費データを、システム全体の統一ルール（is_active = false）に更新する
-              if (deletedExpenseIds && deletedExpenseIds.length > 0) {
-                console.log("🗑️ 削除された経費を無効化中...", deletedExpenseIds);
+              // Step1: 検出された経費を一括で論理削除（is_active = false）
+              if (finalDeleteIds.length > 0) {
+                console.log("🗑️ 削除された経費を無効化中...", finalDeleteIds);
                 const { error: deleteError } = await supabase
                   .from("expense_records")
                   .update({
                     is_active: false,
                     updated_at: currentNowIso,
                   })
-                  .in("id", deletedExpenseIds);
+                  .in("id", finalDeleteIds);
 
                 if (deleteError) throw deleteError;
                 console.log("✅ 経費の論理削除が成功しました！");
-                deletedExpenseIds = [];
               }
 
               // Step2: 新しい経費データの保存
-              // 【目的】有効な金額が入力されている経費データを、Supabaseへ一括で追加・上書き（Upsert）する
               if (expenseRecordsToUpsert.length > 0) {
                 console.log("🚀 Supabaseに送信する直前の経費データの中身:", expenseRecordsToUpsert);
                 const { error: expenseError } = await supabase.from("expense_records").upsert(expenseRecordsToUpsert, { onConflict: "id" });
@@ -1133,12 +1171,13 @@ window.initAttendanceCalendar = async () => {
               }
 
               // Step3: モーダルのクローズと画面の再読込
+              deletedExpenseIds = [];
               const bootstrapModal = bootstrap.Modal.getInstance(modalEl);
               if (bootstrapModal) bootstrapModal.hide();
               await handlePeriodChange();
             } catch (err) {
               console.error("❌ 保存処理でエラーが発生しました:", err);
-              alert("保存に失敗しました。");
+              window.showToast("保存に失敗しました。時間をおいて再度お試しください。", "error");
               newSaveButton.disabled = false;
               newSaveButton.textContent = "保存";
             }
@@ -1152,7 +1191,6 @@ window.initAttendanceCalendar = async () => {
         const discardModalEl = document.getElementById("discardConfirmModal");
 
         // ◆ メイン画面の「データをリセット」ボタンを押した時の処理
-        // 【目的】誤操作防止のため、現在の編集モーダルを非表示にし、確認用モーダルを重ねて表示する
         const resetButton = document.getElementById("attendance_reset_btn");
         resetButton.onclick = () => {
           if (!record || !record.id) {
@@ -1178,7 +1216,6 @@ window.initAttendanceCalendar = async () => {
         };
 
         // ◆ 確認画面：「キャンセル」で元の編集画面に戻る処理
-        // 【目的】確認モーダルを閉じ、直前まで開いていた編集モーダルを再表示する
         const cancelBtn = document.getElementById("btn_discard_cancel");
         cancelBtn.onclick = () => {
           discardModalEl.classList.remove("show");
@@ -1192,7 +1229,6 @@ window.initAttendanceCalendar = async () => {
         };
 
         // ◆ 確認画面：「手入力をクリアして再入力」ボタンを押した時の処理
-        // 【目的】DBのデータは削除せず、モーダル内の各手入力フォームの値だけを完全に初期化する
         const clearInputsBtn = document.getElementById("btn_clear_inputs");
         clearInputsBtn.onclick = () => {
           // Step1: 各種勤務時間・メモ入力欄のクリア
@@ -1232,10 +1268,8 @@ window.initAttendanceCalendar = async () => {
         };
 
         // ◆ 確認画面：「この日の記録を完全消去」ボタンを押した時の処理
-        // 【目的】対象日の勤怠レコード、および関連する全ての経費レコードを一発で論理削除する
         const completelyDeleteBtn = document.getElementById("btn_completely_delete");
         completelyDeleteBtn.onclick = async (e) => {
-          // イベントのバブリング（連鎖）を完全に阻止
           if (e) {
             e.preventDefault();
             e.stopPropagation();
@@ -1393,29 +1427,29 @@ window.initAttendanceCalendar = async () => {
     const isOther = currentCategory === "other" || currentCategory === "その他" ? "selected" : "";
 
     div.innerHTML = `
-    <div class="d-flex align-items-center justify-content-start gap-3 w-100 m-0 p-0">
-      <select class="form-select form-select-sm expense-notebook-select" 
-              style="width: 120px !important; height: 32px !important; background-color: #ffffff !important; color: #2b2c3a !important; font-size: 0.875rem !important; font-weight: 500 !important; border: 1px solid #ced4da !important; display: inline-block !important;">
-        <option value="transportation" ${isTransport}>交通費</option>
-        <option value="other" ${isOther}>その他</option>
-      </select>
+        <div class="d-flex align-items-center justify-content-start gap-3 w-100 m-0 p-0">
+        <select class="form-select form-select-sm expense-notebook-select" 
+                style="width: 120px !important; height: 32px !important; background-color: #ffffff !important; color: #2b2c3a !important; font-size: 0.875rem !important; font-weight: 500 !important; border: 1px solid #ced4da !important; display: inline-block !important;">
+          <option value="transportation" ${isTransport}>交通費</option>
+          <option value="other" ${isOther}>その他</option>
+        </select>
 
-      <div class="d-flex align-items-center bg-transparent border-bottom expense-notebook-amount-wrap">
-        <input type="number" class="form-control form-control-sm border-0 p-0 text-end bg-transparent fw-bold expense-notebook-amount-field" 
-               placeholder="0" min="0" value="${data.amount ?? ""}">
-        <span class="text-muted ms-1 text-yen">円</span>
-      </div>
-      
-      <button type="button" class="btn btn-sm text-secondary border-0 p-0 rounded-circle btn-delete-expense d-flex align-items-center justify-content-center expense-notebook-delete-btn" title="削除">
-        <i class="bi bi-x-circle-fill"></i>
-      </button>
-    </div>
-    
-    <div class="w-100 m-0 pt-1">
-      <input type="text" class="form-control form-control-sm border-0 border-bottom bg-transparent expense-notebook-input w-100" 
-             placeholder="摘要・ルートなど" value="${data.detail || ""}">
-    </div>
-  `;
+        <div class="d-flex align-items-center bg-transparent border-bottom expense-notebook-amount-wrap">
+          <input type="number" class="form-control form-control-sm border-0 p-0 text-end bg-transparent fw-bold expense-notebook-amount-field" 
+                placeholder="0" min="0" value="${data.amount ?? ""}">
+          <span class="text-muted ms-1 text-yen">円</span>
+        </div>
+
+        <button type="button" class="btn btn-sm text-secondary border-0 p-0 rounded-circle btn-delete-expense d-flex align-items-center justify-content-center expense-notebook-delete-btn" title="削除">
+          <i class="bi bi-x-circle-fill"></i>
+        </button>
+        </div>
+
+        <div class="w-100 m-0 pt-1">
+        <input type="text" class="form-control form-control-sm border-0 border-bottom bg-transparent expense-notebook-input w-100" 
+              placeholder="摘要・ルートなど" value="${data.detail || ""}">
+        </div>
+        `;
 
     // Bootstrapコンポーネントのインラインデザイン微調整
     const selectEl = div.querySelector(".expense-notebook-select");
@@ -1539,7 +1573,7 @@ window.initAttendanceCalendar = async () => {
       <div class="at-calendar-day-header">
         <span class="at-calendar-day-num">${dayNum}</span>
       </div>
-    `;
+      `;
       grid.appendChild(blankBox);
     }
 
@@ -1584,36 +1618,44 @@ window.initAttendanceCalendar = async () => {
           currentBox.classList.add("is-absent");
           timeLogHtml = "";
         } else if (record.clock_in) {
-          // clock_in さえあれば表示対象にする
           currentBox.classList.add("is-normal-work");
 
           if (record.clock_out) {
-            // 退勤まで揃っている場合
+            // 退勤済
             timeLogHtml = `<span class="at-calendar-time-log">${formatTime(record.clock_in)} ～ ${formatTime(record.clock_out)}</span>`;
           } else {
-            // 出勤のみ（現在進行形など）の場合 ➔ 「9:00 ～」の形式にする
-            timeLogHtml = `<span class="at-calendar-time-log">${formatTime(record.clock_in)} ～</span>`;
+            // 現在勤務中（ここからドットを抜き、純粋な時間テキストだけにします）
+            if (isStillWorkingToday) {
+              timeLogHtml = `<span class="at-calendar-time-log fw-normal" style="color: #1e40af;">${formatTime(record.clock_in)} ～</span>`;
+            } else {
+              timeLogHtml = `<span class="at-calendar-time-log">${formatTime(record.clock_in)} ～</span>`;
+            }
           }
         }
 
-        // 経費・備考アイコンの判定（badgesHtmlへの追加）
+        // 経費・備考アイコンの判定
         if (record.expense_records && record.expense_records.filter((e) => e.is_active).length > 0) {
-          badgesHtml += `<span class="badge-mini" title="経費あり">💰</span>`;
+          // 💰 → コインの線画アイコンへ
+          badgesHtml += `<span class="badge-mini" title="経費あり"><i class="bi bi-cash-stack"></i>`;
         }
         if (record.memo) {
-          badgesHtml += `<span class="badge-mini" title="${record.memo}">📝</span>`;
+          // 📝 → メモ帳の線画アイコンへ
+          badgesHtml += `<span class="badge-mini" title="${record.memo}"><i class="bi bi-chat-left-text"></i></span>`;
         }
       }
 
       // 祝日名の取得ロジック部分
       const holidayDisplay = holidayName || "";
-
       const holidayHtml = holidayName ? `<span class="at-holiday-name-mini" title="${holidayName}">${holidayDisplay}</span>` : "";
+
+      // 【✨ここをアップデート】今日かつ現在勤務中なら、日付のすぐ右隣にドットを配置する
+      const dotHtml = isStillWorkingToday ? `<span class="pulsing-blue-dot" style="margin-left: 6px;"></span>` : "";
 
       // HTMLの構成を更新
       currentBox.innerHTML = `
-        <div class="at-calendar-day-header">
+        <div class="at-calendar-day-header" style="display: flex; align-items: center;">
           <span class="at-calendar-day-num ${isToday ? "is-today" : ""}">${day}</span>
+          ${dotHtml}
           ${holidayHtml}
         </div>
         <div class="at-calendar-day-body">
@@ -1662,11 +1704,10 @@ window.initAttendanceCalendar = async () => {
       <div class="at-calendar-day-header">
         <span class="at-calendar-day-num">${i}</span>
       </div>
-    `;
+      `;
       grid.appendChild(nextBox);
     }
 
-    // カレンダーを描画し終わったタイミングで、確実に切り替えボタンのイベントを呼び出す
     setupViewModeSwitchEvents();
   }
 };

@@ -34,7 +34,7 @@
           <div id="report_detail_view" class="d-none animate__animated animate__fadeIn" style="overflow-x: hidden">
             <div class="d-flex justify-content-between align-items-center border-bottom pb-3 mb-4">
               <div>
-                <h3 class="fw-bold mb-0 d-flex align-items-center fs-5 text-secondary">
+                <h3 id="view_report_title_header" class="fw-bold mb-0 d-flex align-items-center fs-5 text-secondary">
                   <span id="view_report_type">ー</span>
                   <span>：<span id="view_reporter_name">ー</span></span>
                   <span id="view_report_status_badge" class="ms-2"></span>
@@ -191,17 +191,14 @@
             id="target_user_id"
             class="form-select fw-normal text-secondary border-light-subtle ms-2"
             style="
-              width: 145px; 
+              width: 145px;
               max-width: 145px;
-              font-size: 0.75rem; 
-              padding: 0.15rem 1.6rem 0.15rem 0.5rem; 
-              height: 1.8rem; 
+              font-size: 0.75rem;
+              padding: 0.15rem 1.6rem 0.15rem 0.5rem;
+              height: 1.8rem;
               background-size: 8px 10px;
             "
           >
-            <option value="all" selected>全てのレポート</option>
-            <option value="mine">自分のレポート</option>
-            <!-- テキストを追加 -->
           </select>
         </div>
 
