@@ -559,7 +559,6 @@ async function initializeMainPage() {
             // イベントの二重登録（多重発火）による競合を完全に排除するため、要素をクローンして既存のリスナーを一度消去する
             const newRow = row.cloneNode(true);
             row.replaceWith(newRow);
-
             newRow.addEventListener("click", async (e) => {
               // 重複するブラウザの既定動作やイベントのバブルアップ（親要素への伝播）を完全に遮断
               e.preventDefault();
@@ -573,7 +572,7 @@ async function initializeMainPage() {
                 return;
               }
 
-              // 🌟【UI即時反映】通信の完了を待たず、クリックされた瞬間にその場でリストの見た目を「既読スタイル」へ変更する
+              // 🌟【UI即時反映】リスト項目の見た目を「既読スタイル」へ変更
               newRow.classList.add("bg-secondary-subtle", "fw-bold");
 
               const indicator = newRow.querySelector('div[style*="#6366f1"]') || newRow.querySelector('div[style*="background-color: #6366f1"]');
@@ -583,7 +582,7 @@ async function initializeMainPage() {
 
               const icon = newRow.querySelector(".bi-circle-fill");
               if (icon) {
-                icon.className = "bi bi-file-earmark ms-1";
+                icon.className = "bi bi-file-earmark";
                 icon.style.color = "#c7d2fe";
                 icon.style.fontSize = "0.85rem";
               }
@@ -593,30 +592,28 @@ async function initializeMainPage() {
                 textSpan.className = "text-body fw-normal text-truncate ms-1";
               }
 
-              // 未読を示す「NEW」バッジが存在すれば画面から削除
-              const allSpans = newRow.querySelectorAll("span");
-              allSpans.forEach((span) => {
-                if (span.textContent.trim() === "NEW") {
-                  span.remove();
-                }
-              });
+              const newBadge = newRow.querySelector('span[style*="background-color: #e0e7ff"]') || newRow.querySelector(".badge");
+              if (newBadge && newBadge.textContent.trim() === "NEW") {
+                newBadge.remove();
+              }
 
-              // 🌟【カレンダー連動】対応する日付セルの「未読ドット」をカレンダー画面上から直接検索して消去する
+              // 🎯【追加】カレンダーの「選択中（追尾）」スタイルを即時反映する処理
               const dateEl = newRow.querySelector(".text-muted");
               if (dateEl && dateEl.textContent) {
-                const dateStr = dateEl.textContent;
+                const dateStr = dateEl.textContent; // 例: "2026/05/20"
                 const dateParts = dateStr.split("/");
                 if (dateParts.length === 3) {
                   const dayNum = parseInt(dateParts[2], 10);
 
-                  const allDots = document.querySelectorAll(".cal-unread-dot-fixed");
-                  allDots.forEach((dot) => {
-                    const parentCell = dot.closest(".calendar-day-cell");
-                    if (parentCell) {
-                      const dayNumEl = parentCell.querySelector(".day-number");
-                      if (dayNumEl && parseInt(dayNumEl.textContent, 10) === dayNum) {
-                        dot.remove();
-                      }
+                  // カレンダー全セルの選択クラスを解除し、対象日のセルだけに追尾クラスを付与
+                  document.querySelectorAll(".calendar-day-cell").forEach((cell) => {
+                    cell.classList.remove("selected-day", "active-date");
+                  });
+
+                  document.querySelectorAll(".calendar-day-cell").forEach((parentCell) => {
+                    const dayNumEl = parentCell.querySelector(".day-number");
+                    if (dayNumEl && parseInt(dayNumEl.textContent, 10) === dayNum) {
+                      parentCell.classList.add("selected-day");
                     }
                   });
                 }
@@ -646,6 +643,11 @@ async function initializeMainPage() {
                     console.error("❌ DBへの既読書き込みに失敗しました:", readUpdateError);
                   } else {
                     console.log("✏️ DBへの既読保存が正常に完了しました！");
+
+                    // 🎯【追加】DBへの既読保存が完了した「この瞬間」にカレンダーを再描画！
+                    if (typeof renderCalendarInternal === "function") {
+                      await renderCalendarInternal();
+                    }
                   }
                 }
               } catch (dbErr) {
@@ -658,15 +660,15 @@ async function initializeMainPage() {
                   .from("report_logs")
                   .select(
                     `
-                    *,
-                    user_master (
-                      id,
-                      user_name,
-                      last_name,
-                      first_name,
-                      company_id
-                    )
-                  `,
+              *,
+              user_master (
+                id,
+                user_name,
+                last_name,
+                first_name,
+                company_id
+              )
+            `,
                   )
                   .eq("id", reportId)
                   .single();
@@ -1141,6 +1143,41 @@ function initCalendarSelector() {
   };
 }
 
+// ◆ 年月プルダウンが変更された時の追従処理
+const monthSelector = document.getElementById("calendar-month-selector");
+
+if (monthSelector) {
+  monthSelector.addEventListener("change", async (e) => {
+    const val = e.target.value; // 例: "2026-10" や "2026/10" 等
+    if (!val) return;
+
+    // 数値（年・月）を抽出
+    const matches = val.match(/\d+/g);
+    if (!matches || matches.length < 2) return;
+
+    const year = parseInt(matches[0], 10);
+    const month = parseInt(matches[1], 10);
+
+    // 1. グローバル基準日をユーザーが選択した年月に更新
+    if (typeof currentCalendarDate !== "undefined") {
+      currentCalendarDate = new Date(year, month - 1, 1);
+    }
+    if (window.currentCalendarDate) {
+      window.currentCalendarDate = new Date(year, month - 1, 1);
+    }
+
+    // 2. カレンダーと過去レポート一覧の両方を再描画して追従させる
+    if (typeof onFilterChange === "function") {
+      await onFilterChange();
+    } else if (typeof renderCalendarInternal === "function") {
+      await renderCalendarInternal();
+      if (typeof updateMainPageReportList === "function") {
+        await updateMainPageReportList();
+      }
+    }
+  });
+}
+
 // 祝日の多重同期を防ぐための実行済みフラグ
 let isHolidaySyncDone = false;
 
@@ -1291,6 +1328,7 @@ async function renderCalendarInternal() {
           const isMyReport = String(r.user_id) === String(currentUser.id);
           const currentStatus = String(r.status || "").toLowerCase();
 
+          // --- 1. 除外判定（表示しないものを弾く） ---
           // 他人の下書きレポートはカレンダーに一切表示しない
           if (!isMyReport && currentStatus === "draft") continue;
 
@@ -1299,38 +1337,48 @@ async function renderCalendarInternal() {
             if (!(isMyReport && currentStatus === "draft")) continue;
           }
 
+          // 日付データの妥当性チェック
           if (!r.report_date) continue;
           const dateParts = r.report_date.split("-");
           if (dateParts.length < 3) continue;
           const dayNum = parseInt(dateParts[2], 10);
           if (isNaN(dayNum)) continue;
 
+          // --- 2. 自分のレポートの場合 ---
           if (isMyReport) {
             if (!myReportMap.has(dayNum)) {
               myReportMap.set(dayNum, []);
             }
             myReportMap.get(dayNum).push({ id: r.id, status: currentStatus, type: r.report_type });
+
+            // 自分のレポートはここで仕分け完了（未読判定などは不要なため、次のデータへ）
             continue;
           }
 
-          // 他人から共有されたレポートの既読・未読チェック
-          let isRead = false;
+          // --- 3. 他人のレポートの場合（共有と未読のチェック） ---
           const shares = Array.isArray(r.report_shares) ? r.report_shares : r.report_shares ? [r.report_shares] : [];
           const myShare = shares.find((s) => s && String(s.user_id) === String(currentUser.id));
-          isRead = myShare ? myShare.is_read : false;
 
-          if (filterUserVal === "all") {
-            const isSharedToMe = shares.some((s) => s && String(s.user_id) === String(currentUser.id));
-            if (!isSharedToMe) continue;
+          // 自分宛てに共有されていない他人のレポートは、カレンダーに出さない
+          if (!myShare) continue;
+
+          const isRead = myShare.is_read;
+
+          // 【修正ポイント】戻していただいたコードにあったトラップを修正
+          // 以前のコードでは、filterUserVal === "all" の時に「既読ならスキップ」していました。
+          // もし「未読のみ表示」という専用のフィルター機能がある場合のみ、スキップさせます。
+          if (filterUserVal === "unread") {
+            // ※もし未読フィルターの value が "unread" の場合
             if (isRead) continue;
           }
 
-          // 他人のレポートもセル制御用にIDをマップに保存
+          // 他人のレポート（自分宛て共有あり）をマップに登録
           if (!otherUserReportMap.has(dayNum)) {
             otherUserReportMap.set(dayNum, []);
           }
           otherUserReportMap.get(dayNum).push({ id: r.id, type: r.report_type });
 
+          // 未読ドットの判定（未読の場合のみ点灯）
           if (!isRead) {
             unreadDotsMap.set(dayNum, true);
           }
@@ -1353,7 +1401,7 @@ async function renderCalendarInternal() {
   function createDayCell(dayNum, isOtherMonth = false, otherMonthOffset = 0) {
     const div = document.createElement("div");
     div.className = "calendar-day-cell";
-    div.style.cursor = "pointer";
+    div.style.cursor = "default"; // 閲覧専用のためデフォルトカーソルに変更
     div.innerHTML = `
       <div class="calendar-day-header">
         <span class="day-number">${dayNum}</span>
@@ -1361,7 +1409,7 @@ async function renderCalendarInternal() {
       </div>
       <div class="calendar-day-bottom-flex" style="display: flex; justify-content: space-between; align-items: center; width: 100%; margin-top: auto;">
         <div class="calendar-attendance-group"></div>
-        <div class="calendar-report-group" style="display: flex; align-items: center;"></div>
+        <div class="calendar-report-group" style="display: flex; align-items: center; gap: 4px;"></div>
       </div>
     `;
 
@@ -1437,35 +1485,50 @@ async function renderCalendarInternal() {
     // 自分のレポートマークの出し分け（下書き：鉛筆アイコン / 提出済：チェック付き書類アイコン）
     if (isLookingAtMe && myReportMap.has(d)) {
       const reports = myReportMap.get(d);
+      if (reports.length > 0) {
+        targetReportId = reports[0].id; // 代表のIDを保持
+      }
 
-      reports.forEach((rep) => {
-        targetReportId = rep.id; // クリックされた際に詳細を開く対象IDをセット
-        if (rep.status === "draft") {
-          const reportIconDraft = document.createElement("i");
-          reportIconDraft.className = "bi bi-pencil report-icon is-draft";
-          reportIconDraft.title = "下書き";
-          reportGroup.appendChild(reportIconDraft);
-        } else {
-          const reportIconSubmitted = document.createElement("i");
-          reportIconSubmitted.className = "bi bi-file-earmark-check report-icon is-submitted";
-          reportIconSubmitted.title = "提出済";
-          reportGroup.appendChild(reportIconSubmitted);
-        }
-      });
+      const mySubmittedReps = reports.filter((r) => r.status !== "draft");
+      const myDraftReps = reports.filter((r) => r.status === "draft");
+
+      // ① 提出済みレポートの描画（2件以上の場合は数字バッジ）
+      if (mySubmittedReps.length > 0) {
+        const wrapper = document.createElement("span");
+        wrapper.className = "icon-wrapper";
+        wrapper.title = `提出済み ${mySubmittedReps.length}件`;
+
+        const countBadge = mySubmittedReps.length > 1 ? `<span class="icon-count-badge">${mySubmittedReps.length}</span>` : "";
+        wrapper.innerHTML = `<i class="bi bi-file-earmark-check report-icon is-submitted"></i>${countBadge}`;
+        reportGroup.appendChild(wrapper);
+      }
+
+      // ② 下書きレポートの描画（2件以上の場合は数字バッジ）
+      if (myDraftReps.length > 0) {
+        const wrapper = document.createElement("span");
+        wrapper.className = "icon-wrapper";
+        wrapper.title = `下書き ${myDraftReps.length}件`;
+
+        const countBadge = myDraftReps.length > 1 ? `<span class="icon-count-badge">${myDraftReps.length}</span>` : "";
+        wrapper.innerHTML = `<i class="bi bi-pencil report-icon is-draft"></i>${countBadge}`;
+        reportGroup.appendChild(wrapper);
+      }
     }
 
     // 他人の共有レポートマークの生成エリア（書類アイコンを半透明で薄く表示）
     if (!isLookingAtMe && otherUserReportMap.has(d)) {
       const reports = otherUserReportMap.get(d);
       if (reports.length > 0) {
-        targetReportId = reports[0].id; // 複数のレポートがある場合は最初の1件目を代表のIDとして保持
-      }
+        targetReportId = reports[0].id;
 
-      const reportIconSubmitted = document.createElement("i");
-      reportIconSubmitted.className = "bi bi-file-earmark report-icon is-submitted";
-      reportIconSubmitted.title = "共有レポート";
-      reportIconSubmitted.style.opacity = "0.7";
-      reportGroup.appendChild(reportIconSubmitted);
+        const wrapper = document.createElement("span");
+        wrapper.className = "icon-wrapper";
+        wrapper.title = `共有レポート ${reports.length}件`;
+
+        const countBadge = reports.length > 1 ? `<span class="icon-count-badge">${reports.length}</span>` : "";
+        wrapper.innerHTML = `<i class="bi bi-file-earmark report-icon is-submitted" style="opacity: 0.7;"></i>${countBadge}`;
+        reportGroup.appendChild(wrapper);
+      }
     }
 
     // 未読ドット（通知ドット）の表示制御
@@ -1475,30 +1538,9 @@ async function renderCalendarInternal() {
       badgeArea.appendChild(reportIconUnread);
     }
 
-    // カレンダーセルをクリックした時のイベントリスナー登録
+    // 💡 カレンダーセルは閲覧専用とするためタップイベントは未登録に設定
     if (targetReportId) {
       div.setAttribute("data-report-id", targetReportId);
-      div.addEventListener("click", async (e) => {
-        const repId = e.currentTarget.getAttribute("data-report-id");
-        console.log("📅【カレンダーイベント発火】詳細表示を開始します。ID:", repId);
-
-        // Step1: 該当レポートの単一レコードデータを非同期で取得・画面へ反映するグローバル関数を呼び出す
-        if (typeof fetchAndDisplaySingleReport === "function") {
-          await fetchAndDisplaySingleReport(repId);
-        } else {
-          console.error("❌ fetchAndDisplaySingleReport 関数が見つかりません。");
-        }
-
-        // Step2: レポート詳細モーダル（report_detail_modal）のBootstrapインスタンスを呼び出して画面に表示
-        const modalElement = document.getElementById("report_detail_modal");
-        if (modalElement) {
-          const modal = bootstrap.Modal.getOrCreateInstance(modalElement);
-          modal.show();
-        }
-
-        // Step3: 詳細の閲覧に伴う未読解消やハイライトの変更をメイン画面側のリストにも即座に同期反映
-        await updateMainPageReportList();
-      });
     }
   }
 
@@ -1588,18 +1630,35 @@ async function updateMainPageReportList() {
       }
 
       // 存在するレポートの作成者一覧を走査し、自分以外の実在するユーザーをプルダウンに動的追加
-      // 【セキュリティ強化】クエリの段階でアクティブなものに限定
-      const { data: allReports } = await supabaseClient
-        .from("report_logs")
-        .select(
-          `
-          id, report_type, report_date, is_active, status, user_id,
-          report_shares ( user_id )
-        `,
-        )
-        .eq("is_active", true);
+      // 【セキュリティ強化】自分が作成したレポート & 自分に共有されたレポートを並行取得して結合
+      const [resMy, resShared] = await Promise.all([
+        // 1. 自分が作成したレポート
+        supabaseClient
+          .from("report_logs")
+          .select("id, report_type, report_date, is_active, status, user_id")
+          .eq("is_active", true)
+          .eq("user_id", loginUser.id),
 
-      if (allReports) {
+        // 2. 自分に共有されたレポート（INNER JOIN で自分宛てに限定）
+        supabaseClient
+          .from("report_logs")
+          .select(
+            `
+            id, report_type, report_date, is_active, status, user_id,
+            report_shares!inner ( user_id )
+          `,
+          )
+          .eq("is_active", true)
+          .eq("report_shares.user_id", loginUser.id),
+      ]);
+
+      // 重複を除外して 1 つの配列（allReports）に合体
+      const allReportsMap = new Map();
+      (resMy.data || []).forEach((r) => allReportsMap.set(r.id, r));
+      (resShared.data || []).forEach((r) => allReportsMap.set(r.id, r));
+      const allReports = Array.from(allReportsMap.values());
+
+      if (allReports.length > 0) {
         const seenUserIds = new Set();
         allReports.forEach((r) => {
           const authorId = r.user_id; // 作成者はuser_id
@@ -1610,7 +1669,7 @@ async function updateMainPageReportList() {
 
           // 他人の下書きレポート（status: draft）は、プルダウン構築の対象からも完全に除外
           if (!isMyReport && currentStatus === "draft") {
-            return; 
+            return;
           }
 
           if (authorId != loginUser.id && !seenUserIds.has(authorId) && r.is_active !== false) {
@@ -1649,21 +1708,45 @@ async function updateMainPageReportList() {
     const endDateObj = new Date(baseYear, baseMonth + 1, 0);
     const endStr = `${baseYear}-${String(baseMonth + 1).padStart(2, "0")}-${String(endDateObj.getDate()).padStart(2, "0")}`;
 
-    // Step5: 指定された日付範囲から、有効なレポートログおよび共有状態をSupabaseから非同期取得
-    let query = supabaseClient
-      .from("report_logs")
-      .select(
-        `
-        id, report_date, report_type, status, user_id, is_active,
-        report_shares(report_id, user_id, is_read)
-      `,
-      )
-      .eq("is_active", true)
-      .gte("report_date", startStr)
-      .lte("report_date", endStr);
+    // Step5: 指定された日付範囲から、自分が作成したレポートと自分に共有されたレポートを並行取得して結合
+    const [resMy, resShared] = await Promise.all([
+      // 1. 自分が作成したレポート
+      supabaseClient
+        .from("report_logs")
+        .select(
+          `
+          id, report_date, report_type, status, user_id, is_active,
+          report_shares(report_id, user_id, is_read)
+        `,
+        )
+        .gte("report_date", startStr)
+        .lte("report_date", endStr)
+        .eq("user_id", loginUser.id),
 
-    const { data: rawReports, error } = await query;
-    if (error) throw error;
+      // 2. 自分に共有されたレポート（!inner で自分宛てに限定）
+      supabaseClient
+        .from("report_logs")
+        .select(
+          `
+          id, report_date, report_type, status, user_id, is_active,
+          report_shares!inner(report_id, user_id, is_read)
+        `,
+        )
+        .eq("is_active", true)
+        .gte("report_date", startStr)
+        .lte("report_date", endStr)
+        .eq("report_shares.user_id", loginUser.id),
+    ]);
+
+    if (resMy.error) throw resMy.error;
+    if (resShared.error) throw resShared.error;
+
+    // 重複（自身が作成して自身に共有設定されているようなケース）を除外して1つの配列に合体
+    const reportMap = new Map();
+    (resMy.data || []).forEach((r) => reportMap.set(r.id, r));
+    (resShared.data || []).forEach((r) => reportMap.set(r.id, r));
+
+    const rawReports = Array.from(reportMap.values());
 
     // Step6: フロント側でのセキュリティおよび閲覧権限フィルタリング（他人の下書きは除外）
     let displayReports = [];
@@ -1766,26 +1849,27 @@ async function updateMainPageReportList() {
       let badgeHtml = "";
 
       // ステータス（自分/他人・未読/既読・下書き）に応じた装飾パターンの分岐切り替え
+      // 💡位置ズレ防止のため、アイコンラッパー幅・余白位置を統一
       if (isMyReport) {
         if (report.status === "draft" || report.is_active === false) {
           leftBorderHtml = `<div style="width: 3px; height: 16px; background-color: #eab308; border-radius: 2px; margin-right: 8px;"></div>`;
-          iconHtml = `<i class="bi bi-pencil" style="color: #ca8a04; font-size: 0.85rem;"></i>`;
+          iconHtml = `<div style="width: 16px; display: inline-flex; justify-content: center; align-items: center;"><i class="bi bi-pencil" style="color: #ca8a04; font-size: 0.85rem;"></i></div>`;
           textClass = "fw-medium";
           badgeHtml = `<span class="ms-2" style="font-size: 0.65rem; background-color: #fef9c3; color: #713f12; padding: 0.1rem 0.4rem; border-radius: 4px;">下書き</span>`;
         } else {
           leftBorderHtml = `<div style="width: 3px; height: 16px; background-color: #475569; border-radius: 2px; margin-right: 8px;"></div>`;
-          iconHtml = `<i class="bi bi-clipboard-check" style="color: #475569; font-size: 0.85rem;"></i>`;
+          iconHtml = `<div style="width: 16px; display: inline-flex; justify-content: center; align-items: center;"><i class="bi bi-clipboard-check" style="color: #475569; font-size: 0.85rem;"></i></div>`;
           textClass = "text-dark fw-medium";
         }
       } else {
         if (!isRead) {
           leftBorderHtml = `<div style="width: 3px; height: 16px; background-color: #6366f1; border-radius: 2px; margin-right: 8px;"></div>`;
-          iconHtml = `<i class="bi bi-circle-fill" style="color: #6366f1; font-size: 0.5rem; margin-left: 2px; margin-right: 6px;"></i>`;
+          iconHtml = `<div style="width: 16px; display: inline-flex; justify-content: center; align-items: center;"><i class="bi bi-circle-fill" style="color: #6366f1; font-size: 0.5rem;"></i></div>`;
           textClass = "text-dark fw-bold";
           badgeHtml = `<span class="ms-2" style="font-size: 0.65rem; background-color: #e0e7ff; color: #4338ca; padding: 0.1rem 0.4rem; border-radius: 4px; font-weight: 600;">NEW</span>`;
         } else {
           leftBorderHtml = `<div style="width: 3px; height: 16px; background-color: #c7d2fe; border-radius: 2px; margin-right: 8px;"></div>`;
-          iconHtml = `<i class="bi bi-file-earmark" style="color: #c7d2fe; font-size: 0.85rem;"></i>`;
+          iconHtml = `<div style="width: 16px; display: inline-flex; justify-content: center; align-items: center;"><i class="bi bi-file-earmark" style="color: #c7d2fe; font-size: 0.85rem;"></i></div>`;
           textClass = "text-body fw-normal";
         }
       }
@@ -1811,79 +1895,55 @@ async function updateMainPageReportList() {
 
     pastReportListEl.innerHTML = htmlContent;
 
-    // Step9: 生成したリスト内の各アイテム行に対し、個別クリック時の既読変更・詳細モーダル連動イベントをバインド
+    // Step9: 生成したリスト内の各アイテム行に対し、イベントをバインド
     pastReportListEl.querySelectorAll(".past-report-item").forEach((item) => {
       item.addEventListener("click", async (e) => {
         e.preventDefault();
         const currentItem = e.currentTarget;
         const reportId = currentItem.getAttribute("data-id");
 
-        console.log("🔥【メイン画面イベント発火】既読処理とUI即時反映を開始します。ID:", reportId);
+        console.log("🔥【メイン画面イベント発火】タップされました。ID:", reportId);
 
-        // リスト内の選択アクティブ状態スタイルをリセット＆今選択した行に付与
+        // 選択ハイライトの切り替え
         pastReportListEl.querySelectorAll(".past-report-item").forEach((el) => {
-          el.classList.remove("bg-secondary-subtle", "fw-bold");
+          el.classList.remove("bg-secondary-subtle", "active-report", "active");
         });
-        currentItem.classList.add("bg-secondary-subtle", "fw-bold");
+        currentItem.classList.add("active-border");
 
-        // 詳細データをフェッチして所定のDOMフィールドへマッピング展開
-        if (typeof fetchAndDisplaySingleReport === "function") {
-          await fetchAndDisplaySingleReport(reportId);
-        } else {
-          console.error("❌ fetchAndDisplaySingleReport 関数が見つかりません。");
-        }
-
-        // 未読レポートだった場合、フロントUI上のインジケーター（紫丸やNEWバッジ）をその場で既読スタイルへ変更
-        const indicator = currentItem.querySelector('div[style*="#6366f1"]') || currentItem.querySelector('div[style*="background-color: #6366f1"]');
-        if (indicator) {
-          indicator.style.backgroundColor = "#c7d2fe";
-        }
+        // 1. 右側リスト項目の見た目を即座に既読表示へ更新（チラつき防止）
+        const leftBar =
+          currentItem.querySelector('div[style*="background-color: #6366f1"]') || currentItem.querySelector('div[style*="background-color:#6366f1"]');
+        if (leftBar) leftBar.style.backgroundColor = "#c7d2fe";
 
         const icon = currentItem.querySelector(".bi-circle-fill");
         if (icon) {
-          icon.className = "bi bi-file-earmark ms-1";
+          icon.classList.remove("bi-circle-fill");
+          icon.classList.add("bi-file-earmark");
           icon.style.color = "#c7d2fe";
           icon.style.fontSize = "0.85rem";
         }
 
-        const textSpan = currentItem.querySelector(".text-dark.fw-bold");
+        const textSpan = currentItem.querySelector(".text-truncate");
         if (textSpan) {
-          textSpan.className = "text-body fw-normal text-truncate ms-1";
+          textSpan.classList.remove("fw-bold", "text-dark");
+          textSpan.classList.add("fw-normal", "text-body");
         }
 
-        const allSpans = currentItem.querySelectorAll("span");
-        allSpans.forEach((span) => {
-          if (span.textContent.trim() === "NEW") {
-            span.remove();
-          }
-        });
-
-        // 左側メインカレンダー内の該当日のセル上にある「未読ドット（通知）」も連動して消去
-        const dateEl = currentItem.querySelector(".text-muted");
-        if (dateEl && dateEl.textContent) {
-          const dateStr = dateEl.textContent;
-          const dateParts = dateStr.split("/");
-          if (dateParts.length === 3) {
-            const dayNum = parseInt(dateParts[2], 10);
-
-            const allDots = document.querySelectorAll(".cal-unread-dot-fixed");
-            allDots.forEach((dot) => {
-              const parentCell = dot.closest(".calendar-day-cell");
-              if (parentCell) {
-                const dayNumEl = parentCell.querySelector(".day-number");
-                if (dayNumEl && parseInt(dayNumEl.textContent, 10) === dayNum) {
-                  dot.remove();
-                }
-              }
-            });
-          }
+        const newBadge = currentItem.querySelector('span[style*="background-color: #e0e7ff"]') || currentItem.querySelector(".badge");
+        if (newBadge && newBadge.textContent.trim() === "NEW") {
+          newBadge.remove();
         }
 
-        // レポート詳細表示用のBootstrapモーダルウィンドウを開く
-        const modalElement = document.getElementById("report_detail_modal");
-        if (modalElement) {
-          const modal = bootstrap.Modal.getOrCreateInstance(modalElement);
-          modal.show();
+        // 2. モーダル表示＆DB既読処理実行
+        if (typeof fetchAndDisplaySingleReport === "function") {
+          await fetchAndDisplaySingleReport(reportId);
+
+          // 3. 🎯【最重要】DB既読化完了後、カレンダーの最新状態を再計算して再描画
+          if (typeof renderCalendarInternal === "function") {
+            await renderCalendarInternal();
+          }
+        } else {
+          console.error("❌ fetchAndDisplaySingleReport 関数が見つかりません。");
         }
       });
     });

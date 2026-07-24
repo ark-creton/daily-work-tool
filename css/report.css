@@ -235,7 +235,7 @@ select:disabled {
   transition: background-color 0.15s ease;
 }
 
-/* 💡 修正：当月の日付にマウスを乗せた時のみ、共通のホバー色（赤色）を適用 */
+/* 💡 当月の日付にマウスを乗せた時のみ、共通のホバー色を適用 */
 .report-cal-day:not(.other-month):hover {
   background-color: var(--row-hover-color) !important;
 }
@@ -273,19 +273,9 @@ select:disabled {
   color: #ced4da !important;
 }
 
-/* 💡 修正：前月・翌月のマスはホバー時に赤色にならないよう、背景を白（#fdfdfd）で固定 */
+/* 前月・翌月のマスはホバー時に背景を白（#fdfdfd）で固定 */
 .report-cal-day.other-month:hover {
   background-color: #fdfdfd !important;
-}
-
-/* 提出マーク（📝）（右下固定） */
-.report-cal-day .report-icon {
-  position: absolute;
-  bottom: 2px;
-  right: 4px;
-  font-size: 0.75rem;
-  line-height: 1;
-  pointer-events: none;
 }
 
 /* --- 当日（Today）のデザイン --- */
@@ -296,19 +286,78 @@ select:disabled {
 /* 数字の下線（1pxで細く、落ち着いた色に変更） */
 .report-cal-day.today .day-num {
   padding-bottom: 1px;
-  border-bottom: 1px solid #475569; /* 紫をやめ、細いダークグレーの下線に */
-  font-weight: 600; /* 必要に応じて少しだけ強調（不要なら削除可） */
+  border-bottom: 1px solid #475569; /* 細いダークグレーの下線 */
+  font-weight: 600;
 }
 
-/* 平日の当日限定：文字色の変更（紫指定を廃止して標準テキスト色に合わせる） */
+/* 平日の当日限定：標準テキスト色に合わせる */
 .report-cal-day.today:not(.is-holiday):not(:nth-child(1)):not(:nth-child(7)) .day-num {
-  color: #334155; /* もしくは inherit にして通常の平日カラーのままにする */
+  color: #334155;
+}
+
+/* --- 🎨 ミニカレンダー用：アイコン＆件数バッジ配置レイアウト --- */
+
+/* 右下にアイコンとバッジを整列させるコンテナ */
+.report-cal-day .calendar-report-bottom {
+  position: absolute !important;
+  bottom: 3px !important;
+  right: 4px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 2px !important;
+  pointer-events: none !important;
+}
+
+/* アイコンとバッジを包む要素 */
+.report-cal-day .icon-wrapper {
+  position: relative !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  margin-right: 5px !important; /* バッジのはみ出し防止用余白 */
+  vertical-align: middle !important;
+}
+
+/* ミニカレンダー内のアイコン位置固定の解除 */
+.report-cal-day .report-icon {
+  position: static !important;
+  margin: 0 !important;
+  line-height: 1 !important;
+}
+
+/* 件数カウントバッジ（スレートグレー統一版） */
+.report-cal-day .icon-count-badge {
+  position: absolute !important;
+  top: -5px !important;
+  right: -5px !important;
+  background-color: #475569 !important;
+  color: #ffffff !important;
+  font-size: 0.55rem !important;
+  font-weight: 600 !important;
+  line-height: 1 !important;
+  padding: 1px 3px !important;
+  min-width: 11px !important;
+  height: 11px !important;
+  border-radius: 6px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  border: 1px solid #ffffff !important;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1) !important;
+  pointer-events: none;
+}
+
+/* 下書き用のバッジ色（アンバー系） */
+.report-cal-day .report-icon.is-draft + .icon-count-badge {
+  background-color: #ca8a04 !important;
 }
 
 /* ==========================================================================
-   🎯 過去レポート一覧：選択中（アクティブ）のスタイル
+   🎯 レポート画面の過去レポート一覧：選択中（アクティブ）のスタイル
    ========================================================================== */
+/* レポート画面のリストだけ背景色をつける */
 #past_report_list a.past-report-item.active-report,
 #past_report_list .past-report-item.active-report {
   background-color: #f1f5f9 !important; /* 薄いグレー/ブルー */
 }
+

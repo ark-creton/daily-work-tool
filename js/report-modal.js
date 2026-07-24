@@ -20,6 +20,38 @@ let currentReportAuthorName = null;
 // 編集中のデータを丸ごと保持する変数
 let currentEditReportData = null;
 
+// ◆ 週報・月報の「開始日」と「終了日」の範囲制御（開始日より過去を選択不可にする）
+function updateEndDateMinLimit() {
+  const startEl = document.getElementById("work_period_start");
+  const endEl = document.getElementById("work_period_end");
+
+  if (!startEl || !endEl) return;
+
+  const startVal = startEl.value; // 例: "2026-07-23"
+
+  if (startVal) {
+    // ① 終了日のカレンダーで開始日より前の日付を選択不可（min指定）にする
+    endEl.min = startVal;
+
+    // ② もし終了日に「開始日より前の日付」が既に入っていたら、開始日と同じ日付に繰り上げる
+    if (endEl.value && endEl.value < startVal) {
+      endEl.value = startVal;
+    }
+  } else {
+    // 開始日が空なら制限解除
+    endEl.removeAttribute("min");
+  }
+}
+
+// ユーザーが開始日（work_period_start）を手動変更した時のイベントを登録
+document.addEventListener("DOMContentLoaded", () => {
+  const startEl = document.getElementById("work_period_start");
+  if (startEl) {
+    startEl.addEventListener("change", updateEndDateMinLimit);
+    startEl.addEventListener("input", updateEndDateMinLimit);
+  }
+});
+
 // ◆ ログインユーザー情報同期処理
 //  【目的】Supabase Authから現在のセッションユーザーを取得し、さらにuser_masterテーブルから最新のプロファイル情報を取得してローカル変数およびキャッシュに同期する
 async function fetchAndSetLoginUser() {
@@ -607,16 +639,31 @@ function openNewReportModal() {
       el.style.boxShadow = "";
     });
 
-    // 閲覧モードで付与された「disabled = true」をすべて解除
+    // 閲覧モードで付与された「disabled = true」の解除 ＆ プレースホルダーの復元
     Array.from(form.elements).forEach((el) => {
       el.disabled = false;
+
+      // 💡 閲覧モード時に退避させていたプレースホルダーがあれば元に戻す！
+      if (el.hasAttribute("data-original-placeholder")) {
+        el.setAttribute("placeholder", el.getAttribute("data-original-placeholder"));
+      }
     });
   }
 
-  // Step4: 各日付・内容入力フィールドの明示的初期化
-  if (document.getElementById("work_period_start")) document.getElementById("work_period_start").value = "";
-  if (document.getElementById("work_period_end")) document.getElementById("work_period_end").value = "";
-  if (document.getElementById("work_period_single")) document.getElementById("work_period_single").value = "";
+  // Step4: 各日付・内容入力フィールドの初期化（本日の日付を自動セット）
+  const todayStr = new Date().toLocaleDateString("sv-SE"); // "YYYY-MM-DD"
+
+  const startEl = document.getElementById("work_period_start");
+  const endEl = document.getElementById("work_period_end");
+  const singleEl = document.getElementById("work_period_single");
+
+  if (startEl) startEl.value = todayStr; // 週報・月報の開始日: 当日
+  if (endEl) endEl.value = ""; // 終了日は空（任意入力）
+  if (singleEl) singleEl.value = todayStr; // 日報の作業年月日: 当日
+
+  // 💡 開始日(当日)に合わせて終了日の最小選択日(min)をセット！
+  updateEndDateMinLimit();
+
   if (document.getElementById("work_content_free")) document.getElementById("work_content_free").value = "";
 
   const defaultType = "日報";
@@ -718,11 +765,25 @@ async function openEditReportModal(rawReportData) {
 
   console.log(`【編集モーダル】オブジェクトから特定した作成者名: "${currentReportAuthorName}"`);
 
-  // Step4: 自分以外のレポートだった場合は全入力をロック（閲覧専用）
+  // Step4: 自分以外のレポートだった場合は全入力をロック（閲覧専用）＆プレースホルダー非表示化
   const form = document.getElementById("form_report_entry");
   if (form) {
     Array.from(form.elements).forEach((el) => {
       el.disabled = !isMyReport;
+
+      // 💡 閲覧モード（自分以外のレポート）の時はプレースホルダーを非表示にする
+      if (!isMyReport) {
+        if (el.hasAttribute("placeholder") && el.getAttribute("placeholder") !== "") {
+          // 元のプレースホルダーを一時保存して削除
+          el.setAttribute("data-original-placeholder", el.getAttribute("placeholder"));
+          el.removeAttribute("placeholder");
+        }
+      } else {
+        // 編集モード（自分のレポート）の時は元のプレースホルダーを復元
+        if (el.hasAttribute("data-original-placeholder")) {
+          el.setAttribute("placeholder", el.getAttribute("data-original-placeholder"));
+        }
+      }
     });
   }
 
@@ -822,6 +883,9 @@ async function openEditReportModal(rawReportData) {
       document.getElementById("work_period_end").value = reportData.work_period_end;
     }
   }
+
+  // 💡 DBから充填された開始日に合わせて終了日の最小選択日(min)をセット！
+  updateEndDateMinLimit();
 
   // Step9: 週報（JSON構造）または他形式の業務内容データ展開マッピング
   if (reportData.report_type === "週報" && reportData.work_content) {
@@ -968,9 +1032,10 @@ function initReportMenuEvents() {
  * @param {string} status - 登録状態（'published' = 正式提出 / 'draft' = 下書き）
  */
 async function saveReport(status) {
-  const saveButtons = document.querySelectorAll("#form_report_entry button[type='submit'], .btn-save-report");
+  // ★保存ボタンの要素を確実なID指定を含めて取得
+  const saveButtons = document.querySelectorAll("#submit_button, #draft_button, #form_report_entry button[type='submit'], .btn-save-report");
 
-  // すでに処理中の場合は即時中断
+  // すでに処理中の場合は即時中断（二重実行ガード）
   if (window.isReportSaving) {
     console.warn("【モーダル保存】現在保存処理中のため、重複実行をガードしました。");
     return;
@@ -1003,7 +1068,10 @@ async function saveReport(status) {
     }
 
     const reportTypeSelect = document.getElementById("report_type");
-    if (!reportTypeSelect) return;
+    if (!reportTypeSelect) {
+      toggleSaveButtons(false);
+      return;
+    }
     const reportType = reportTypeSelect.value;
 
     // Step1: バリデーション評価
@@ -1019,13 +1087,11 @@ async function saveReport(status) {
 
       if (isFormInvalid) {
         if (form) form.classList.add("was-validated");
-
         let targetElement = form.querySelector(":invalid");
 
         if (targetElement) {
           targetElement.style.setProperty("border", "1px solid #dc3545", "important");
           targetElement.style.setProperty("box-shadow", "0 0 12px rgba(220, 53, 69, 0.8)", "important");
-
           targetElement.scrollIntoView({ behavior: "smooth", block: "center" });
 
           const removeRedStyle = () => {
@@ -1041,6 +1107,9 @@ async function saveReport(status) {
         if (typeof window.showToast === "function") {
           window.showToast("必須項目が入力されていません", "error");
         }
+
+        // ボタンの状態を戻してから終了する
+        toggleSaveButtons(false);
         return;
       }
     }
@@ -1079,12 +1148,18 @@ async function saveReport(status) {
 
     // Step4: データベース用更新カラムデータのマッピングと論理ステータスの統合
     const updateData = {
-      user_id: currentReportId && currentDisplayReportData ? currentDisplayReportData.user_id : loginUser.id,
+      user_id:
+        currentReportId && typeof currentDisplayReportData !== "undefined" && currentDisplayReportData
+          ? currentDisplayReportData.user_id
+          : loginUser.id,
       report_date: startDate || new Date().toISOString().split("T")[0],
       report_type: reportType,
       work_period_start: startDate,
       work_period_end: endDate,
-      company_id: currentReportId && currentDisplayReportData ? currentDisplayReportData.company_id : loginUser.company_id,
+      company_id:
+        currentReportId && typeof currentDisplayReportData !== "undefined" && currentDisplayReportData
+          ? currentDisplayReportData.company_id
+          : loginUser.company_id,
       customer_name: document.getElementById("customer_name") ? document.getElementById("customer_name").value : "",
       subject_title: document.getElementById("subject_title") ? document.getElementById("subject_title").value : "",
       work_location: document.getElementById("work_location") ? document.getElementById("work_location").value : "",
@@ -1104,8 +1179,8 @@ async function saveReport(status) {
 
     let isReportChanged = true;
 
-    // Step5: 既存データおよび共有先チェックボックスとの差異検知
-    if (currentReportId && currentDisplayReportData) {
+    // Step5: 既存データおよび共有先チェックボックスとの差異検知（編集時のみ判定）
+    if (currentReportId && typeof currentDisplayReportData !== "undefined" && currentDisplayReportData) {
       // 共有先会社のチェック状態の差分チェック
       const currentCheckedBoxes = Array.from(document.querySelectorAll(".shared-company-checkbox:checked"))
         .map((cb) => cb.value)
@@ -1153,19 +1228,26 @@ async function saveReport(status) {
       }
     }
 
-    // Step6: 未変更時における処理の早期中断と通知
+    // Step6: 編集モードかつ未変更時のみ処理を中断（新規作成時は絶対中断しない）
     if (currentReportId && status === "published" && !isReportChanged) {
       console.log("【モーダル保存】内容に変更がないため、処理を中断します。");
       if (typeof window.showToast === "function") {
         window.showToast("変更はありませんでした。", "info");
       }
+      toggleSaveButtons(false);
       return;
     }
 
     let shouldResetShares = false;
 
     // Step7: 既存提出済みレポートの更新時における、共有先既読状況リセット可否の確認プロミスフロー
-    if (currentReportId && status === "published" && currentDisplayReportData && currentDisplayReportData.status === "published") {
+    if (
+      currentReportId &&
+      status === "published" &&
+      typeof currentDisplayReportData !== "undefined" &&
+      currentDisplayReportData &&
+      currentDisplayReportData.status === "published"
+    ) {
       const userChoice = await new Promise((resolve) => {
         const modalEl = document.getElementById("reportUpdateConfirmModal");
         if (!modalEl) return resolve("cancel");
@@ -1238,6 +1320,7 @@ async function saveReport(status) {
 
       if (userChoice === "cancel") {
         console.log("【モーダル保存】更新がキャンセルされました。");
+        toggleSaveButtons(false);
         return;
       }
 
@@ -1249,15 +1332,19 @@ async function saveReport(status) {
     let savedReportId = currentReportId;
 
     // Step8: Supabaseデータベースへのデータ登録・更新（Insert/Update）処理の実行
+    let savedReport = null;
+
     if (currentReportId) {
       const { data, error } = await supabase.from("report_logs").update(updateData).eq("id", currentReportId).select();
       if (error) throw error;
+      if (data && data.length > 0) savedReport = data[0];
       console.log("【モーダル保存】レポートを更新しました。");
     } else {
       const { data, error } = await supabase.from("report_logs").insert([updateData]).select();
       if (error) throw error;
       if (data && data.length > 0) {
-        savedReportId = data[0].id;
+        savedReport = data[0];
+        savedReportId = savedReport.id;
       }
       console.log("【モーダル保存】新規レポートを登録しました。ID:", savedReportId);
     }
@@ -1286,7 +1373,7 @@ async function saveReport(status) {
 
     // Step10: 操作内容に応じたトーストメッセージの分岐通知
     if (typeof window.showToast === "function") {
-      if (!isReportChanged) {
+      if (currentReportId && !isReportChanged) {
         window.showToast("変更はありませんでした。", "info");
       } else {
         let msg = "";
@@ -1303,58 +1390,152 @@ async function saveReport(status) {
       }
     }
 
-    // Step11: モーダルの非表示化、および残存する背景（backdrop）の完全破棄とスクロール復帰
+    // Step11: モーダルの非表示化（フォーカスによる画面ジャンプを防ぐ）
     const reportModal = getModalInstance();
     if (reportModal) {
+      // フォーカスが強制移動して画面が上に動くのを防ぐため、一旦ActiveElementのフォーカスを外す
+      if (document.activeElement) {
+        document.activeElement.blur();
+      }
       reportModal.hide();
     }
 
-    document.querySelectorAll(".modal-backdrop").forEach((el) => el.remove());
-    document.body.classList.remove("modal-open");
-    document.body.style.overflow = "";
-    document.body.style.paddingRight = "";
+    setTimeout(() => {
+      if (!document.querySelector(".modal.show")) {
+        document.querySelectorAll(".modal-backdrop").forEach((el) => el.remove());
+        document.body.classList.remove("modal-open");
+        document.body.style.overflow = "";
+        document.body.style.paddingRight = "";
+      }
+    }, 300);
 
-    // Step12: 各種ビューの最新状態への再描画
+    // Step12: 登録・更新成功後の画面即時反映（画面に応じた完全分岐）
     try {
-      const monthInput = document.getElementById("display_period");
-      let year, month;
+      const targetDateStr = updateData.report_date || updateData.work_period_start;
+      if (!targetDateStr) return;
 
-      if (monthInput && monthInput.value) {
-        [year, month] = monthInput.value.split("-").map(Number);
-      } else {
-        const now = new Date();
-        year = now.getFullYear();
-        month = now.getMonth() + 1;
+      const [targetYear, targetMonth] = targetDateStr.split("-").map(Number);
+      const targetVal = `${targetYear}-${String(targetMonth).padStart(2, "0")}`;
+
+      // 💡 今いる画面の判定（画面特有の要素が存在するかでチェック）
+      const isReportPage = !!document.getElementById("report_detail_view") || !!document.getElementById("display_period");
+      const isMainPage = !isReportPage && !!document.getElementById("calendar-month-selector");
+
+      // ==========================================
+      // A. レポート画面（詳細画面）の場合の処理
+      // ==========================================
+      if (isReportPage) {
+        console.log("📄 【レポート画面】で保存が実行されました。");
+
+        // 画面の年月プルダウン（display_period）を自動で保存した年月に変更
+        const reportMonthInput = document.getElementById("display_period");
+        if (reportMonthInput) {
+          reportMonthInput.value = targetVal;
+        }
+
+        // レポート画面専用のリフレッシュ・追尾を実行
+        if (typeof window.refreshReportList === "function") {
+          await window.refreshReportList(targetYear, targetMonth, savedReportId);
+        }
       }
 
-      if (typeof renderReportCalendar === "function") {
-        await renderReportCalendar(year, month);
-        console.log("✨ 【保存完了】カレンダーを即時更新しました。");
-      }
-    } catch (calErr) {
-      console.error("【保存完了】カレンダー更新エラー:", calErr);
-    }
+      // ==========================================
+      // B. メイン画面（ホーム画面）の場合の処理
+      // ==========================================
+      else if (isMainPage) {
+        console.log(`🏠 【メイン画面】保存対象日付: ${targetYear}年${targetMonth}月 (${targetVal})`);
 
-    try {
-      if (typeof fetchAndDisplayPastReportList === "function") {
-        await fetchAndDisplayPastReportList();
-        console.log("✨ 【保存完了】過去レポート一覧を即時更新しました。");
-      }
-    } catch (listErr) {
-      console.error("【保存完了】過去一覧更新エラー:", listErr);
-    }
+        const monthInput = document.getElementById("calendar-month-selector");
+        let isWithinRange = false;
+        let matchedOptionValue = null;
 
-    if (savedReportId) {
-      if (typeof currentReportId !== "undefined") {
-        currentReportId = savedReportId;
-      }
+        if (monthInput) {
+          const options = Array.from(monthInput.options || []);
 
-      if (typeof fetchAndDisplaySingleReport === "function") {
-        console.log("【保存完了】新規作成/更新されたレポートの詳細を表示します。ID:", savedReportId);
-        await fetchAndDisplaySingleReport(savedReportId);
-      } else if (typeof displayReportDetail === "function") {
-        await displayReportDetail(savedReportId);
+          // 💡 プルダウン内に保存した「年・月」が存在するかチェック
+          const targetOption = options.find((opt) => {
+            const val = opt.value;
+            const txt = opt.textContent.trim();
+            const isValMatch =
+              val === targetVal ||
+              val === `${targetYear}-${targetMonth}` ||
+              val === `${targetYear}/${String(targetMonth).padStart(2, "0")}` ||
+              val === `${targetYear}/${targetMonth}`;
+            const isTextMatch =
+              txt.includes(`${targetYear}年${targetMonth}月`) || txt.includes(`${targetYear}年${String(targetMonth).padStart(2, "0")}月`);
+            return isValMatch || isTextMatch;
+          });
+
+          if (targetOption) {
+            isWithinRange = true;
+            matchedOptionValue = targetOption.value;
+          }
+        }
+
+        // 💡 範囲内の場合のみメイン画面の更新＆追尾を実行！
+        if (isWithinRange) {
+          console.log("🚀 【メイン画面】範囲内のため画面更新と追尾を実行します。");
+
+          if (monthInput && matchedOptionValue !== null) {
+            monthInput.value = matchedOptionValue;
+          }
+          if (typeof window.currentCalendarDate !== "undefined") {
+            window.currentCalendarDate = new Date(targetYear, targetMonth - 1, 1);
+          }
+
+          // 1. カレンダーの更新
+          if (typeof renderCalendarInternal === "function") {
+            await renderCalendarInternal();
+          }
+
+          // 2. 過去レポート一覧の更新
+          if (typeof updateMainPageReportList === "function") {
+            await updateMainPageReportList(targetYear, targetMonth);
+          }
+          // 3. 🎯 【統一カラー版】メイン画面の過去レポート一覧（<a>タグ）へスクロール＆選択色ハイライト！
+          if (savedReportId) {
+            setTimeout(() => {
+              const targetItem =
+                document.querySelector(`#past_report_list a[data-id="${savedReportId}"]`) || document.querySelector(`[data-id="${savedReportId}"]`);
+
+              if (targetItem) {
+                console.log("🎯 【メイン画面追尾成功】対象のレポート行へスクロール＆ハイライト:", targetItem);
+
+                // ① 対象行へスムーズスクロール
+                targetItem.scrollIntoView({ behavior: "smooth", block: "center" });
+
+                // 元の背景色を保持
+                const originalBg = targetItem.style.background || targetItem.style.backgroundColor;
+
+                // ② 画像と同じ淡いブルーグレー (#f1f5f9) を適用
+                targetItem.style.setProperty("transition", "background-color 0.5s ease", "important");
+                targetItem.style.setProperty("background-color", "#f1f5f9", "important");
+
+                // ③ 2.5秒後にふわっと元の透明（背景色）に戻す
+                setTimeout(() => {
+                  if (originalBg) {
+                    targetItem.style.setProperty("background-color", originalBg);
+                  } else {
+                    targetItem.style.removeProperty("background-color");
+                  }
+
+                  // アニメーションプロパティのクリア
+                  setTimeout(() => {
+                    targetItem.style.removeProperty("transition");
+                  }, 500);
+                }, 2500);
+              } else {
+                console.warn("⚠️ 【メイン画面追尾失敗】#past_report_list 内に対象IDが見つかりませんでした。ID:", savedReportId);
+              }
+            }, 200);
+          }
+        } else {
+          console.warn(`🛑 【メイン画面】${targetYear}年${targetMonth}月 は表示範囲外のため更新をスキップしました。`);
+        }
       }
+      console.log("✨ 【保存完了】一連の処理が正常に完了しました。");
+    } catch (err) {
+      console.error("【保存完了】画面反映中にエラーが発生しました:", err);
     }
   } catch (err) {
     console.error("【モーダル保存】エラーが発生しました:", err.message);
@@ -1362,6 +1543,7 @@ async function saveReport(status) {
       window.showToast(`保存に失敗しました: ${err.message}`, "error");
     }
   } finally {
+    // 処理完了後に必ずボタンを再活性化
     toggleSaveButtons(false);
   }
 }

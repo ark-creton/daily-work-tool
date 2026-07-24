@@ -122,6 +122,54 @@ async function initializeReportPage() {
 }
 
 /**
+ * モーダル保存完了時にモーダル側（report-modal.js）から呼び出される画面追尾関数
+ * @param {number} year - 保存された年 (例: 2026)
+ * @param {number} month - 保存された月 (例: 7)
+ * @param {string} [specificReportId] - 保存された特定のレポートID (指定時は最優先で表示・フォーカス)
+ */
+window.onReportSavedSuccess = async function (year, month, specificReportId = null) {
+  console.log(`🔄 【レポート画面同期】保存された年月 (${year}年${month}月) に追尾更新を開始します。`);
+
+  // 1. レポート画面の年月インプット (#display_period) を保存された年月（YYYY-MM）に自動書き換え
+  const monthInput = document.getElementById("display_period");
+  if (monthInput) {
+    const formattedPeriod = `${year}-${String(month).padStart(2, "0")}`;
+    monthInput.value = formattedPeriod;
+  }
+
+  // 2. カレンダーや過去一覧の更新
+  if (typeof renderReportCalendar === "function") await renderReportCalendar(year, month);
+  if (typeof fetchAndDisplayPastReportList === "function") await fetchAndDisplayPastReportList();
+
+  // 3. 🎯 特定のレポートIDが渡されている場合は、自動検索をスキップしてそのレポートをピンポイントで中央表示＆フォーカス
+  if (specificReportId && typeof fetchAndDisplaySingleReport === "function") {
+    const emptyDiv = document.getElementById("report_detail_empty");
+    const viewDiv = document.getElementById("report_detail_view");
+    if (emptyDiv) emptyDiv.classList.add("d-none");
+    if (viewDiv) viewDiv.classList.remove("d-none");
+
+    await fetchAndDisplaySingleReport(specificReportId);
+
+    // 該当行・要素へのフォーカス＆ハイライト演出
+    setTimeout(() => {
+      const targetRow = document.querySelector(`[data-report-id="${specificReportId}"]`);
+      if (targetRow) {
+        // 💡 保存直後（window.isJustSaved）でない場合のみ画面スクロールを実行
+        if (!window.isJustSaved) {
+          targetRow.scrollIntoView({ behavior: "smooth", block: "center" });
+        }
+
+        targetRow.classList.add("table-active", "highlight-flash");
+        setTimeout(() => targetRow.classList.remove("highlight-flash"), 2000);
+      }
+    }, 300);
+  } else {
+    // 通常のフィルター変更時などは従来の最新レポート表示関数を通す
+    if (typeof fetchAndDisplayLatestReport === "function") await fetchAndDisplayLatestReport(year, month);
+  }
+};
+
+/**
  * 指定年月（未指定時は当月）の最新レポート制御関数（一括フィルター連動改修版）
  * @param {number} [year] - 対象年 (例: 2026)
  * @param {number} [month] - 対象月 (例: 7)
@@ -237,7 +285,7 @@ async function fetchAndDisplayLatestReport(year, month, targetUserId = "all") {
 /**
  * 過去のレポート一覧を取得してサイドバーに描画する関数（月指定・ユーザー指定・非干渉完全修復版）
  */
-async function fetchAndDisplayPastReportList(targetUserId = null, targetYearMonth = null) {
+async function fetchAndDisplayPastReportList(targetUserId = null, targetYearMonth = null, forceActiveId = null) {
   const listContainer = document.getElementById("past_report_list");
   const userSelect = document.getElementById("target_user_id");
   const monthInput = document.getElementById("display_period");
@@ -454,15 +502,35 @@ async function fetchAndDisplayPastReportList(targetUserId = null, targetYearMont
 
     listContainer.innerHTML = htmlContent;
 
-    // アクティブ選択状態の維持
+    // 💡 🎯【追加】生成された要素にクリックイベント（詳細表示／モーダル表示）をバインドする
+    listContainer.querySelectorAll(".past-report-item").forEach((item) => {
+      item.addEventListener("click", function (e) {
+        e.preventDefault();
+        const reportId = this.getAttribute("data-id");
+        if (!reportId) return;
+
+        // 1. 詳細表示関数を呼び出す
+        if (typeof fetchAndDisplaySingleReport === "function") {
+          fetchAndDisplaySingleReport(reportId);
+        }
+
+        // 2. モーダル表示関数や選択状態（ハイライト）の更新
+        if (typeof highlightSelectedReportItem === "function") {
+          highlightSelectedReportItem(reportId);
+        }
+      });
+    });
+
+    // アクティブ選択状態の維持（引数で明示指定されたIDを最優先にする！）
     const activeId =
-      typeof currentReportId !== "undefined" && currentReportId
-        ? currentReportId
-        : typeof currentDisplayReportData !== "undefined"
-          ? currentDisplayReportData?.id
-          : null;
+      forceActiveId ||
+      (typeof currentReportId !== "undefined" && currentReportId ? currentReportId : null) ||
+      (typeof currentDisplayReportData !== "undefined" ? currentDisplayReportData?.id : null);
 
     if (activeId) {
+      // 既存のアクティブクラスを解除
+      listContainer.querySelectorAll(".past-report-item").forEach((el) => el.classList.remove("bg-secondary-subtle"));
+
       const activeItem = listContainer.querySelector(`.past-report-item[data-id="${activeId}"]`);
       if (activeItem) {
         activeItem.classList.add("bg-secondary-subtle");
@@ -541,27 +609,83 @@ async function fetchAndDisplaySingleReport(reportId) {
         } else {
           console.log(`【report.js】レポートID: ${reportId} を正常に既読に更新しました！`);
 
-          // 💡 DBを更新したので、画面上のreportオブジェクト内の自分のステータスも既読に書き換える
+          // DBを更新したので、画面上のreportオブジェクト内の自分のステータスも既読に書き換える
           myShare.is_read = true;
           myShare.read_at = new Date().toISOString();
 
-          // 🎯 既読に変わったので、左側の一覧も再取得・再描画してアイコンの配置崩れを完全にリセット！
-          const userSelect = document.getElementById("target_user_id");
-          const monthInput = document.getElementById("display_period");
+          // 🎯 1. 新規作成後のガードフラグを解除（後続の描画をブロックさせない）
+          window.isJustSaved = false;
 
-          if (typeof fetchAndDisplayPastReportList === "function" && monthInput) {
-            const currentPeriod = monthInput.value;
-            const currentUserId = userSelect && !userSelect.disabled ? userSelect.value : "all";
+          // 🎯 2. リロード不要でUIを即時「既読」へ書き換える（DOM直接更新）
+          const targetItem = document.querySelector(`.past-report-item[data-id="${reportId}"]`);
+          if (targetItem) {
+            // ① NEWバッジを消去
+            const badge = targetItem.querySelector("span[style*='background-color: #e0e7ff']");
+            if (badge) badge.remove();
 
-            await fetchAndDisplayPastReportList(currentUserId, currentPeriod);
+            // ② 未読アイコン（丸）を既読アイコン（書類）に変更
+            const icon = targetItem.querySelector("i.bi-circle-fill");
+            if (icon) {
+              icon.className = "bi bi-file-earmark";
+              icon.style.color = "#c7d2fe";
+              icon.style.fontSize = "0.85rem";
+            }
+
+            // ③ 左端のインジケーターの色を既読カラーへ変更
+            const leftBorder = targetItem.querySelector("div[style*='background-color: #6366f1']");
+            if (leftBorder) {
+              leftBorder.style.backgroundColor = "#c7d2fe";
+            }
+
+            // ④ 太字テキストを通常のフォントに戻す
+            const textSpan = targetItem.querySelector(".fw-bold");
+            if (textSpan) {
+              textSpan.classList.remove("fw-bold", "text-dark");
+              textSpan.classList.add("text-body");
+            }
           }
         }
       }
     }
 
-    // 最後に画面へのマッピングを実行（これで最新の状態がアバタースタック等に反映されます）
+    // 画面上のフィールド（埋め込み領域等）へのマッピングを実行
     mapReportToDisplay(report);
-    highlightSelectedReportItem(reportId);
+    if (typeof highlightSelectedReportItem === "function") {
+      highlightSelectedReportItem(reportId);
+    }
+
+    // 現在表示中のページ（data-page）または要素の存在で画面を判別
+    // 1. サイドバーで active になっている nav-item の data-page を取得
+    const activeNavItem = document.querySelector(".sidebar-nav .nav-item.active");
+    const activePage = activeNavItem ? activeNavItem.getAttribute("data-page") : null;
+
+    // 2. または、メイン画面固有の要素（出退勤ボタンやメイン画面用のコンテナ等）が存在するかチェック
+    const isMainScreenElement = document.getElementById("main_clock_in") !== null;
+
+    // activePage が "home" であるか、またはメイン画面固有の要素が見えている場合はメイン画面
+    const isMainPage = activePage === "home" || (activePage !== "report" && isMainScreenElement);
+
+    if (isMainPage) {
+      // 💡 保存直後（window.isJustSaved === true）の自動描画時のみモーダルをスキップ
+      if (window.isJustSaved) {
+        console.log("【メイン画面】保存直後のためモーダル起動をスキップしました。");
+      } else {
+        // 🎯 手動クリック時はメイン画面でもモーダルを起動する！
+        console.log("【メイン画面】手動選択のためモーダルを開きます。");
+        if (typeof openEditReportModal === "function") {
+          openEditReportModal(report);
+        } else {
+          const modalElement = document.getElementById("modal_report_entry");
+          if (modalElement) {
+            const modal = bootstrap.Modal.getOrCreateInstance(modalElement);
+            modal.show();
+          }
+        }
+      }
+    } else {
+      // ■ レポート画面の場合：画面内の詳細エリアに描画
+      console.log("【レポート画面】画面内の詳細エリアに描画しました。");
+    }
   } catch (err) {
     console.error("レポートの単体取得・表示中にエラーが発生しました:", err);
   }
@@ -598,7 +722,7 @@ function mapReportToDisplay(report) {
   }
 
   // 1. 期間データの整形（開始〜終了）
-  let periodText = report.work_period_start || "ー";
+  let periodText = report.work_period_start || "-";
   if (report.work_period_end && report.work_period_start !== report.work_period_end) {
     periodText += " 〜 " + report.work_period_end;
   }
@@ -614,17 +738,17 @@ function mapReportToDisplay(report) {
     if (report.work_content) {
       try {
         const weeklyData = JSON.parse(report.work_content);
-        if (document.getElementById("view_work_mon")) document.getElementById("view_work_mon").innerText = weeklyData.mon || "ー";
-        if (document.getElementById("view_work_tue")) document.getElementById("view_work_tue").innerText = weeklyData.tue || "ー";
-        if (document.getElementById("view_work_wed")) document.getElementById("view_work_wed").innerText = weeklyData.wed || "ー";
-        if (document.getElementById("view_work_thu")) document.getElementById("view_work_thu").innerText = weeklyData.thu || "ー";
-        if (document.getElementById("view_work_fri")) document.getElementById("view_work_fri").innerText = weeklyData.fri || "ー";
-        if (document.getElementById("view_work_sat")) document.getElementById("view_work_sat").innerText = weeklyData.sat || "ー";
-        if (document.getElementById("view_work_sun")) document.getElementById("view_work_sun").innerText = weeklyData.sun || "ー";
+        if (document.getElementById("view_work_mon")) document.getElementById("view_work_mon").innerText = weeklyData.mon || "-";
+        if (document.getElementById("view_work_tue")) document.getElementById("view_work_tue").innerText = weeklyData.tue || "-";
+        if (document.getElementById("view_work_wed")) document.getElementById("view_work_wed").innerText = weeklyData.wed || "-";
+        if (document.getElementById("view_work_thu")) document.getElementById("view_work_thu").innerText = weeklyData.thu || "-";
+        if (document.getElementById("view_work_fri")) document.getElementById("view_work_fri").innerText = weeklyData.fri || "-";
+        if (document.getElementById("view_work_sat")) document.getElementById("view_work_sat").innerText = weeklyData.sat || "-";
+        if (document.getElementById("view_work_sun")) document.getElementById("view_work_sun").innerText = weeklyData.sun || "-";
       } catch (e) {
         console.warn("週報の作業内容パースに失敗しました。プレーンテキストとして処理します。", e);
         if (freeWorkDiv) {
-          freeWorkDiv.innerText = report.work_content || "ー";
+          freeWorkDiv.innerText = report.work_content || "-";
           freeWorkDiv.classList.remove("d-none");
         }
         if (weeklyWorkDiv) weeklyWorkDiv.classList.add("d-none");
@@ -632,7 +756,7 @@ function mapReportToDisplay(report) {
     }
   } else {
     if (freeWorkDiv) {
-      freeWorkDiv.innerText = report.work_content || "ー";
+      freeWorkDiv.innerText = report.work_content || "-";
       freeWorkDiv.classList.remove("d-none");
     }
     if (weeklyWorkDiv) weeklyWorkDiv.classList.add("d-none");
@@ -670,12 +794,12 @@ function mapReportToDisplay(report) {
         updatedAtSpan.innerText = `${uYyyy}-${uMm}-${uDd} ${uHh}:${uMin}`;
         if (updatedAtWrapper) updatedAtWrapper.classList.remove("d-none");
       } else {
-        updatedAtSpan.innerText = "ー";
+        updatedAtSpan.innerText = "-";
         if (updatedAtWrapper) updatedAtWrapper.classList.add("d-none");
       }
     } else {
-      reportDateSpan.innerText = "ー";
-      updatedAtSpan.innerText = "ー";
+      reportDateSpan.innerText = "-";
+      updatedAtSpan.innerText = "-";
       if (updatedAtWrapper) updatedAtWrapper.classList.add("d-none");
     }
   }
@@ -705,20 +829,20 @@ function mapReportToDisplay(report) {
   // ==========================================================================
   const mapping = {
     view_reporter_name: currentReporterName,
-    view_report_title: report.subject_title || "ー",
-    view_report_type: report.report_type || "ー",
-    view_work_location: report.work_location || "ー",
-    view_work_period: periodText || "ー",
-    view_customer_name: report.customer_name || "ー",
-    view_companion_name: report.companion_name || "ー",
-    view_instructor_name: report.instructor_name || "ー",
-    view_content_impression: report.content_impression || "ー",
-    view_content_remaining_work: report.content_remaining_work || "ー",
-    view_content_near_goal: report.content_near_goal || "ー",
-    view_content_issue: report.content_issue || "ー",
-    view_content_action_plan: report.content_action_plan || "ー",
-    view_next_schedule: report.next_schedule || "ー",
-    view_content_notice: report.content_notice || "ー",
+    view_report_title: report.subject_title || "-",
+    view_report_type: report.report_type || "-",
+    view_work_location: report.work_location || "-",
+    view_work_period: periodText || "-",
+    view_customer_name: report.customer_name || "-",
+    view_companion_name: report.companion_name || "-",
+    view_instructor_name: report.instructor_name || "-",
+    view_content_impression: report.content_impression || "-",
+    view_content_remaining_work: report.content_remaining_work || "-",
+    view_content_near_goal: report.content_near_goal || "-",
+    view_content_issue: report.content_issue || "-",
+    view_content_action_plan: report.content_action_plan || "-",
+    view_next_schedule: report.next_schedule || "-",
+    view_content_notice: report.content_notice || "-",
   };
 
   Object.keys(mapping).forEach((id) => {
@@ -964,24 +1088,147 @@ function mapReportToDisplay(report) {
 }
 
 /**
- * モーダル側から呼び出され、一覧と最新データを再読込する関数
+ * モーダル側から呼び出され、保存先の年月に合わせて画面全体を更新・追尾する関数
+ * @param {number|string} [targetYear] - 追尾したい年 (例: 2026) または "2026-07" 形式の文字列、あるいは保存されたレポートIDの場合もある
+ * @param {number|string} [targetMonth] - 追尾したい月 (例: 7)
+ * @param {string} [specificReportId] - 🎯 追加: 保存直後にピンポイントで表示したいレポートID
  */
-async function refreshReportList() {
-  console.log("【report.js】データの更新を検知しました。画面をリフレッシュします...");
+let isRefreshingInProgress = 0; // 👈 連続実行を防ぐためのガード用変数
 
-  await fetchAndDisplayPastReportList();
+async function refreshReportList(targetYear, targetMonth, specificReportId = null) {
+  // 🎯【最強ガード1】保存直後（isJustSaved）で、かつ引数に特定のレポートIDが無い自動リフレッシュ呼び出しは、
+  // 完全に無視して1回目の「最新1件を表示」をブロックする！
+  if (window.isJustSaved && !specificReportId) {
+    console.log("⚠️ 【report.js】保存処理中のため、引数なしの自動リフレッシュを完全ブロックしました。");
+    return;
+  }
 
-  if (typeof renderReportCalendar === "function") {
+  // 🎯【ガード2】特定IDが渡された場合は、即座にフラグを立てて後続の自動選択をロックする
+  if (specificReportId) {
+    window.isJustSaved = true;
+  }
+
+  // 🎯【ガード3】すでにリフレッシュ処理中の重なりをガード
+  if (isRefreshingInProgress > 0 && !specificReportId) {
+    console.log("【report.js】重複する自動リフレッシュ要求をガードしました。");
+    return;
+  }
+
+  isRefreshingInProgress++;
+  console.log("【report.js】データの更新を検知しました。画面をリフレッシュ・追尾します...");
+
+  try {
     const monthInput = document.getElementById("display_period");
-    if (monthInput && monthInput.value) {
-      const [y, m] = monthInput.value.split("-").map(Number);
-      await renderReportCalendar(y, m);
-    } else {
-      const now = new Date();
-      await renderReportCalendar(now.getFullYear(), now.getMonth() + 1);
+
+    // ① 引数が "YYYY-MM" 形式で渡された場合の対応
+    if (typeof targetYear === "string" && targetYear.includes("-")) {
+      const [y, m] = targetYear.split("-").map(Number);
+      targetYear = y;
+      targetMonth = m;
     }
+
+    // ② 保存された年月が指定されている場合、画面の指定年月を自動書き換え
+    if (targetYear && targetMonth && monthInput) {
+      const formattedPeriod = `${targetYear}-${String(targetMonth).padStart(2, "0")}`;
+      monthInput.value = formattedPeriod;
+    }
+
+    // ③ カレンダーの更新
+    if (typeof renderReportCalendar === "function") {
+      if (targetYear && targetMonth) {
+        await renderReportCalendar(targetYear, targetMonth);
+      } else if (monthInput && monthInput.value) {
+        const [y, m] = monthInput.value.split("-").map(Number);
+        await renderReportCalendar(y, m);
+      } else {
+        const now = new Date();
+        await renderReportCalendar(now.getFullYear(), now.getMonth() + 1);
+      }
+    }
+
+    // ④ 🎯 保存直後（specificReportIdがある場合）のピンポイント表示
+    if (specificReportId) {
+      // 1. グローバル変数を保存したIDで即座にロック
+      if (typeof currentReportId !== "undefined") currentReportId = specificReportId;
+      if (typeof currentDisplayReportData !== "undefined" && currentDisplayReportData) {
+        currentDisplayReportData.id = specificReportId;
+      }
+
+      // 2. 自動選択（1件目を勝手に選ぶ挙動）を無効化するフラグを立てる
+      window.isJustSaved = true;
+
+      // 3. UIの表示切り替え（初期メッセージを隠して詳細表示部を出す）
+      const emptyDiv = document.getElementById("report_detail_empty");
+      const viewDiv = document.getElementById("report_detail_view");
+      if (emptyDiv) emptyDiv.classList.add("d-none");
+      if (viewDiv) viewDiv.classList.remove("d-none");
+
+      // 4. 【ステップ1】まずリスト（過去のレポート）を最新の状態に描画・更新する
+      if (typeof fetchAndDisplayPastReportList === "function") {
+        // 💡 targetYear と targetMonth から "YYYY-MM" 形式の文字列を作成する
+        let formattedYearMonth = null;
+        if (targetYear && targetMonth) {
+          formattedYearMonth = `${targetYear}-${String(targetMonth).padStart(2, "0")}`;
+        }
+
+        // ユーザーフィルターを取得
+        const filterUserVal = document.getElementById("target_user_id")?.value || "all";
+
+        // 第1引数: ユーザーフィルター, 第2引数: "2026-07" 形式の文字列, 第3引数: 保存したレポートID
+        await fetchAndDisplayPastReportList(filterUserVal, formattedYearMonth, specificReportId);
+      } else if (typeof updateMainPageReportList === "function") {
+        await updateMainPageReportList(targetYear, targetMonth);
+      }
+
+      // 5. 【ステップ2】保存したレポートのデータを詳細エリアに直接セット・描画する
+      if (typeof fetchAndDisplaySingleReport === "function") {
+        await fetchAndDisplaySingleReport(specificReportId);
+      }
+
+      // 6. 【ステップ3】🎯 リスト描画完了後に、保存したレポート行へスクロール＆ハイライト追尾！
+      setTimeout(() => {
+        if (typeof highlightSelectedReportItem === "function") {
+          highlightSelectedReportItem(specificReportId);
+        }
+
+        // DOM要素を直接探してスクロール追尾させる
+        const targetRow = document.querySelector(`[data-report-id="${specificReportId}"]`);
+        if (targetRow) {
+          targetRow.scrollIntoView({ behavior: "smooth", block: "center" });
+          targetRow.classList.add("table-active", "highlight-flash");
+          setTimeout(() => {
+            targetRow.classList.remove("highlight-flash");
+          }, 2000);
+        }
+      }, 150); // DOMレンダリング待ちのため少しだけ遅延させる
+
+      // 7. フラグを少し遅れて解除
+      setTimeout(() => {
+        window.isJustSaved = false;
+      }, 800);
+
+      return; // ここで処理を確実に終了
+    }
+
+    // ⑤ 通常のリフレッシュ時
+    if (typeof fetchAndDisplayPastReportList === "function") {
+      await fetchAndDisplayPastReportList();
+    }
+
+    if (typeof handleReportFilterChange === "function") {
+      await handleReportFilterChange();
+    }
+  } finally {
+    // 処理が終わったらガードを解除（少し遅延させて連続入力を防ぐ）
+    setTimeout(() => {
+      isRefreshingInProgress = Math.max(0, isRefreshingInProgress - 1);
+    }, 300);
   }
 }
+
+// 外部モーダル（report-modal.js）から参照できるようにグローバル展開
+window.refreshReportList = refreshReportList;
+window.onReportSavedSuccess = refreshReportList;
 
 /**
  * レポート用ミニカレンダーを描画する関数（複数レポート＆同日下書き・提出済み併記対応版）
@@ -1067,20 +1314,20 @@ async function renderReportCalendar(targetYear, targetMonth) {
             isRead = myShare ? Boolean(myShare.is_read) : false;
           }
 
-          // ⭕ フィルター処理（仕様に合わせて調整）
+          // ⭕ フィルター処理
           if (filterUserVal === "all") {
             // 「全てのレポート」選択時：
-            // 他人のレポートは【未読かつ共有されているもの】のみ表示する（既読になったら非表示）
             if (!isMyReport) {
               if (r.is_active === false) return;
-              if (isRead) return; // 👈 既読になった他人のレポートは全体のカレンダーから除外！
+
+              // 💡【修正】既読になった他人のレポートも除外せず、既読アイコンとして表示するためコメントアウト
+              // if (isRead) return;
 
               const isSharedToMe = r.report_shares && r.report_shares.some((s) => String(s.user_id).trim() === currentLoginId);
               if (!isSharedToMe) return;
             }
           } else if (filterUserVal !== "mine") {
-            // プルダウンで「特定の人」を選択時：
-            // その人のレポート（既読・未読問わず）を表示する
+            // プルダウンで「特定の人」を選択時
             if (r.is_active === false) return;
           }
 
@@ -1342,11 +1589,10 @@ async function handlePastReportRowClick(rowElement) {
     return;
   }
 
-  // ① リストの選択ハイライト切り替え
-  document.querySelectorAll(".past-report-item").forEach((el) => {
-    el.classList.remove("bg-secondary-subtle");
-  });
-  rowElement.classList.add("bg-secondary-subtle"); // 👈 fw-bold を除去！
+  // ① フォーカス（ハイライト）処理の共通関数化呼び出し
+  if (typeof highlightSelectedReportItem === "function") {
+    highlightSelectedReportItem(reportId);
+  }
 
   // ② 【UI即時反映】未読表示（青丸など）をその場で即座に解除
   const indicator = rowElement.querySelector('div[style*="background-color: #6366f1"]') || rowElement.querySelector('div[style*="#6366f1"]');
@@ -1414,6 +1660,12 @@ async function handlePastReportRowClick(rowElement) {
 document.addEventListener(
   "click",
   (e) => {
+    // メイン画面の要素（例: main.js固有の要素やカレンダー）が存在する場合は横取りせずに main.js に譲る
+    const isMainPage = document.getElementById("calendar_grid") !== null || document.querySelector(".cal-unread-dot-fixed") !== null;
+    if (isMainPage) {
+      return;
+    }
+
     const reportItem = e.target.closest("#past_report_list .past-report-item, .past-report-item");
     if (reportItem) {
       // 既存のモーダル発火・他イベントを完全にカット
@@ -1428,7 +1680,7 @@ document.addEventListener(
       handlePastReportRowClick(reportItem);
     }
   },
-  true, // ✨ true = キャプチャフェーズ（他のあらゆるクリックイベントより先に最優先実行される）
+  true, // ✨ true = キャプチャフェーズ
 );
 
 // 1. fetchAndDisplayPastReportList のオーバーライド
@@ -1547,6 +1799,7 @@ function openReportSelectModal(dateStr, reports) {
   if (oldModal) oldModal.remove();
 
   // 優先度（下書き -> 未読 -> 自分の提出済み -> その他）で並び替え
+  // ＋同じ優先度内では「作成日時/提出日時が最新のもの」を上にする（降順）
   reports.sort((a, b) => {
     const getPriority = (r) => {
       if (r.status === "draft") return 1;
@@ -1554,7 +1807,20 @@ function openReportSelectModal(dateStr, reports) {
       if (r.isMine) return 3;
       return 4;
     };
-    return getPriority(a) - getPriority(b);
+
+    const priorityA = getPriority(a);
+    const priorityB = getPriority(b);
+
+    // ① 優先度が異なる場合は、優先度順
+    if (priorityA !== priorityB) {
+      return priorityA - priorityB;
+    }
+
+    // ② 優先度が同じ場合は、作成日時（createdAtやreportDateなど）の新しい順（降順）
+    const timeA = new Date(a.createdAt || a.created_at || a.updatedAt || 0).getTime();
+    const timeB = new Date(b.createdAt || b.created_at || b.updatedAt || 0).getTime();
+
+    return timeB - timeA; // 👈 b - a にすることで最新（大きい数字）が上に来る！
   });
 
   // リストのHTML生成
@@ -1690,16 +1956,7 @@ async function selectReportAndCloseModal(reportId) {
 
   if (!reportId || reportId === "undefined") return;
 
-  // ② 【最優先】詳細エリアへレポートを描画（内部で既読処理や highlightSelectedReportItem が走る）
-  try {
-    if (typeof fetchAndDisplaySingleReport === "function") {
-      await fetchAndDisplaySingleReport(reportId);
-    }
-  } catch (detailErr) {
-    console.error("❌ 詳細描画エラー:", detailErr);
-  }
-
-  // ③ DBへの既読保存 (report_shares)
+  // ② DBへの既読保存 (report_shares) を【最優先】で完了させる！
   try {
     const supabaseClient = window.supabase || supabase;
     if (supabaseClient && supabaseClient.auth) {
@@ -1725,7 +1982,16 @@ async function selectReportAndCloseModal(reportId) {
     console.error("⚠️ 既読保存エラー (表示更新は継続):", dbErr);
   }
 
-  // ④ 過去一覧を再取得・再描画
+  // ③ 詳細エリアへレポートを描画
+  try {
+    if (typeof fetchAndDisplaySingleReport === "function") {
+      await fetchAndDisplaySingleReport(reportId);
+    }
+  } catch (detailErr) {
+    console.error("❌ 詳細描画エラー:", detailErr);
+  }
+
+  // ④ DB保存が確実に終わった状態で、過去一覧を再取得・再描画
   try {
     if (typeof fetchAndDisplayPastReportList === "function") {
       const userSelect = document.getElementById("target_user_id");
@@ -1740,12 +2006,7 @@ async function selectReportAndCloseModal(reportId) {
     console.error("過去一覧の再読み込みエラー:", listErr);
   }
 
-  // 🎯 【ここが最重要！】一覧の再描画が終わった後に、確実に背景色のフォーカスをつける！
-  if (typeof highlightSelectedReportItem === "function") {
-    highlightSelectedReportItem(reportId);
-  }
-
-  // ⑤ ミニカレンダーの再描画
+  // ⑤ ミニカレンダーの再描画（DBが既読になっているため、確実にドットが消えて書類アイコンになる！）
   try {
     const monthInput = document.getElementById("display_period");
     if (monthInput && monthInput.value) {
@@ -1756,6 +2017,11 @@ async function selectReportAndCloseModal(reportId) {
     }
   } catch (calErr) {
     console.error("カレンダー再描画エラー:", calErr);
+  }
+
+  // ⑥ 最後に選択ハイライトを適用
+  if (typeof highlightSelectedReportItem === "function") {
+    highlightSelectedReportItem(reportId);
   }
 }
 
@@ -1975,22 +2241,27 @@ if (document.readyState === "loading") {
   setupReportFilterListeners();
 }
 
-/* ==========================================================================
-
-   🎨 過去レポート一覧の「選択中」ハイライト処理（CSS連動版）
-
-   ========================================================================== */
-
+/**
+ * 🎨 過去レポート一覧の「選択中」ハイライト＆自動スクロール処理
+ */
 function highlightSelectedReportItem(selectedReportId) {
-  const allItems = document.querySelectorAll("#past_report_list .past-report-item");
+  const allItems = document.querySelectorAll("#past_report_list .past-report-item, .past-report-item");
 
   allItems.forEach((item) => {
     const itemId = item.getAttribute("data-id") || item.getAttribute("data-report-id") || item.id;
 
     if (String(itemId) === String(selectedReportId)) {
-      item.classList.add("active-report"); // 🎯 CSS側の定義を適用
+      // 1. フォーカス用のクラスを追加
+      item.classList.add("active-report", "bg-secondary-subtle");
+
+      // 2. ✨ 自動スクロールを実行！（リスト枠内で見える位置まで移動）
+      item.scrollIntoView({
+        behavior: "smooth", // なめらかにスクロール
+        block: "nearest", // 一番近い位置（リスト内）で止める
+      });
     } else {
-      item.classList.remove("active-report");
+      // フォーカスを外す
+      item.classList.remove("active-report", "bg-secondary-subtle");
     }
   });
 }

@@ -80,7 +80,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       // 先取りキャッシュの読み込み
       const cachedName = localStorage.getItem("cached_user_name");
       const cachedRole = localStorage.getItem("cached_user_role");
-      const cachedCompanyId = localStorage.getItem("cached_user_company_id"); // ←【追加】会社IDもキャッシュから取る
+      const cachedCompanyId = localStorage.getItem("cached_user_company_id");
 
       // キャッシュが存在する場合の先行UI制御
       if (cachedName && cachedRole) {
@@ -98,7 +98,7 @@ document.addEventListener("DOMContentLoaded", async () => {
           adminMenuItem.style.setProperty("display", cachedRole === "admin" ? "flex" : "none", "important");
         }
 
-        // IDで直接指定して非表示にする
+        // アークフォレスト所属キャッシュの場合、レポートメニューを非表示
         const reportMenuItem = document.getElementById("menu_report");
         if (reportMenuItem && cachedCompanyId === "c981e701-94d1-47a6-a23a-7d2b3b84a894") {
           reportMenuItem.style.setProperty("display", "none", "important");
@@ -131,7 +131,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
         let userName = "ゲストユーザー";
         let userRole = "staff";
-        let userCompanyId = null; // 初期値
+        let userCompanyId = cachedCompanyId || null;
 
         if (dbError) {
           console.warn("user_masterからの名前取得に失敗したため、代替値を使用します:", dbError.message);
@@ -141,8 +141,12 @@ document.addEventListener("DOMContentLoaded", async () => {
           userRole = masterData.role;
           userCompanyId = masterData.company_id;
 
-          // 次回スムーズに動くように会社IDもキャッシュに保存する
-          localStorage.setItem("cached_user_company_id", userCompanyId);
+          // 次回スムーズに動くようにキャッシュに保存する
+          localStorage.setItem("cached_user_name", userName);
+          localStorage.setItem("cached_user_role", userRole);
+          if (userCompanyId) {
+            localStorage.setItem("cached_user_company_id", userCompanyId);
+          }
         }
 
         // ヘッダーの表示を書き換える
@@ -156,11 +160,12 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
 
         // ==========================================
-        // アークフォレスト用のレポートメニュー完全非表示化
+        // アークフォレスト用のレポートメニュー完全非表示化（修正箇所）
         // ==========================================
         const reportMenuItem = document.getElementById("menu_report");
         if (reportMenuItem) {
-          if (userCompanyId === "c981e701-94d1-47a6-a23a-7d2b3b84a894") {
+          const isArcForest = userCompanyId === "c981e701-94d1-47a6-a23a-7d2b3b84a894";
+          if (isArcForest) {
             console.log("共通基盤: アークフォレスト所属のため、レポートメニューを非表示にします。");
             reportMenuItem.style.setProperty("display", "none", "important");
           } else {
@@ -173,7 +178,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         if (mobileUserNameSpan) mobileUserNameSpan.innerText = `${userName} さん`;
       } else {
         console.warn("未ログイン状態です。ログイン画面へ遷移します。");
-        window.location.href = "login.html";
+        window.location.href = "login.html"; // 👈 必ず login.html へ
       }
     } catch (err) {
       console.error("ユーザー情報の取得中にエラーが発生しました:", err.message);
@@ -192,11 +197,12 @@ document.addEventListener("DOMContentLoaded", async () => {
         console.log("ログアウト成功");
       }
 
-      // ログアウトに成功したら、LocalStorageのキャッシュも綺麗に掃除しておく
+      // ログアウトに成功したら、LocalStorageのキャッシュも掃除
       localStorage.removeItem("cached_user_name");
       localStorage.removeItem("cached_user_role");
+      localStorage.removeItem("cached_user_company_id");
 
-      // ロードは挟まず、そのままログイン画面へスパッと戻る
+      // ログイン画面へ戻る
       window.location.href = "login.html";
     } catch (err) {
       console.error("ログアウト中にエラーが発生しました:", err.message);
@@ -216,7 +222,6 @@ document.addEventListener("DOMContentLoaded", async () => {
   // ==========================================
   // 1. サイドバーの開閉制御（アプリ全体共通）
   // ==========================================
-  const mobileToggle = document.getElementById("mobile-menu-toggle");
   const sidebarNav = document.querySelector(".sidebar-nav");
   const menuToggle = document.getElementById("menu-toggle");
   const sidebar = document.querySelector(".sidebar-area");
@@ -243,7 +248,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         const newInstance = new bootstrap.Tooltip(item, {
           trigger: "manual",
           placement: "right",
-          title: menuText, // ツールチップでは content ではなく「title」に文字を入れます
+          title: menuText,
           customClass: "sidebar-tooltip",
           animation: true,
           delay: { show: 0, hide: 0 },
@@ -280,7 +285,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 
   // ==========================================
-  // 📱【完全解決版】スマホ用サイドバー開閉・遷移時自動クローズ処理
+  // 📱 スマホ用サイドバー開閉・遷移時自動クローズ処理
   // ==========================================
   document.addEventListener("click", (event) => {
     // 制御対象の親要素（サイドバー全体）
@@ -298,15 +303,13 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     // ② メニューが開いている状態のときの処理
     if (activeSidebar.classList.contains("mobile-active")) {
-      // 🌟【追加】メニューの中の項目（リンクやボタン）がクリックされた場合
-      // クリックされた要素、またはその親に「.nav-item」や「a」タグがあるか判定
       const isMenuItem = event.target.closest(".nav-item") || event.target.closest("a") || event.target.closest("button");
 
       if (isMenuItem) {
         // メニュー項目をクリックした瞬間にメニューを閉じる！
         activeSidebar.classList.remove("mobile-active");
         console.log("📱メニュー項目がタップされたため、メニューを閉じて遷移処理を開始します");
-        return; // これにより、裏のローディング画面がすぐに見えるようになります
+        return;
       }
 
       // ③ メニューの外側をクリックした時に閉じる処理
@@ -326,7 +329,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   async function loadPage(pageName, isInitial = false) {
     // 1. 【ここを修正】画面切替が始まった瞬間に、コンテンツエリアを即座にフェードアウト（透明化）させる
     if (dynamicArea) {
-      dynamicArea.style.transition = "opacity 0.15s ease-in-out"; // 素早くフワッと消す
+      dynamicArea.style.transition = "opacity 0.15s ease-in-out";
       dynamicArea.style.opacity = "0";
       dynamicArea.classList.remove("is-ready");
     }
