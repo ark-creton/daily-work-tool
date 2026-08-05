@@ -924,6 +924,7 @@ async function initializeMainPage() {
                     user_id: user.id,
                     work_date: todayStr,
                     status: "not_started",
+                    registration_mode: "modal",
                     work_type: "normal",
                     is_active: true,
                     total_break_m: 0,
@@ -1015,6 +1016,7 @@ async function initializeMainPage() {
                     user_id: user.id,
                     work_date: todayStr,
                     status: "not_started",
+                    registration_mode: "modal",
                     work_type: "normal",
                     is_active: true,
                     total_break_m: 0,
@@ -1609,6 +1611,7 @@ async function updateMainPageReportList() {
     // Step3: 対象ユーザー選択プルダウン（target_user_id）の初期選択肢（全体・自分）を安全に動生成
     const userSelect = document.getElementById("target_user_id");
     if (userSelect) {
+      userSelect.disabled = false;
       if (userSelect.options.length === 0) {
         const allOption = document.createElement("option");
         allOption.value = "all";
@@ -1808,6 +1811,11 @@ async function updateMainPageReportList() {
     // データが0件なら共通のプレースホルダー表示用HTMLを流し込んで即終了
     if (displayReports.length === 0) {
       pastReportListEl.innerHTML = EMPTY_REPORT_PLACEHOLDER_HTML;
+
+      if (userSelect) {
+        userSelect.value = "";     // 💡【追加】表示テキスト（「すべてのレポート」等）を消すために値を空にする
+        userSelect.disabled = true; // 💡非活性化
+      }
       return;
     }
 

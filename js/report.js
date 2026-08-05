@@ -643,6 +643,13 @@ async function fetchAndDisplaySingleReport(reportId) {
               textSpan.classList.remove("fw-bold", "text-dark");
               textSpan.classList.add("text-body");
             }
+
+            // ⑤ 既読更新に伴い、ミニカレンダーの未読マーク（青三角）も即座に再描画して消す
+            const monthInput = document.getElementById("display_period");
+            if (monthInput && monthInput.value && typeof renderReportCalendar === "function") {
+              const [y, m] = monthInput.value.split("-").map(Number);
+              await renderReportCalendar(y, m);
+            }
           }
         }
       }
@@ -1478,15 +1485,20 @@ async function renderReportCalendar(targetYear, targetMonth) {
     let iconHtml = "";
     let unreadMarkerHtml = "";
 
+    // ----------------------------------------------------
+    // 【修正①】アイコン・未読マーク判定ロジックの適正化
+    // ----------------------------------------------------
     const myDraftReps = dayReports.filter((r) => r.isMine && r.status === "draft");
     const mySubmittedReps = dayReports.filter((r) => r.isMine && r.status !== "draft");
+
+    // ★ r.isRead フラグを正しく参照して他人の未読・既読を分ける
     const otherUnreadReps = dayReports.filter((r) => !r.isMine && r.status !== "draft" && !r.isRead);
     const otherReadReps = dayReports.filter((r) => !r.isMine && r.status !== "draft" && r.isRead);
 
     let icons = [];
 
+    // ★ 未読があれば青い三角マーク（アイコン）を表示
     if (otherUnreadReps.length > 0) {
-      // 💡 数字（unreadCount）を出力せず、マーク（cal-unread-dot-fixed）のみ生成する
       unreadMarkerHtml = `<span class="cal-unread-dot-fixed" title="未読 ${otherUnreadReps.length}件"></span>`;
     }
 
@@ -2006,17 +2018,20 @@ async function selectReportAndCloseModal(reportId) {
     console.error("過去一覧の再読み込みエラー:", listErr);
   }
 
-  // ⑤ ミニカレンダーの再描画（DBが既読になっているため、確実にドットが消えて書類アイコンになる！）
-  try {
-    const monthInput = document.getElementById("display_period");
-    if (monthInput && monthInput.value) {
-      const [y, m] = monthInput.value.split("-").map(Number);
-      if (typeof renderReportCalendar === "function") {
-        await renderReportCalendar(y, m);
-      }
+  // ⑤ ミニカレンダー側の表示を最新の DB（既読状態）を反映してリフレッシュ
+  const monthInput = document.getElementById("display_period");
+  const userSelect = document.getElementById("target_user_id"); // ← ユーザー選択欄を取得
+
+  if (monthInput && monthInput.value) {
+    const [y, m] = monthInput.value.split("-").map(Number);
+    // 現在選択されているユーザーID（未選択時は "all"）
+    const selectedUserId = userSelect ? userSelect.value : "all";
+
+    if (typeof renderReportCalendar === "function") {
+      // ★ 第3引数に selectedUserId を渡して再描画を実行！
+      await renderReportCalendar(y, m, selectedUserId);
+      console.log("✨ 行クリックからのカレンダー既読即時反映に成功しました");
     }
-  } catch (calErr) {
-    console.error("カレンダー再描画エラー:", calErr);
   }
 
   // ⑥ 最後に選択ハイライトを適用
@@ -2178,7 +2193,7 @@ async function updateTargetUserDropdownByMonth(targetYearMonth) {
 }
 
 /* ==========================================================================
-   🔄 フィルター変更一括ハンドラー
+   🔄 フィルター変更一括ハンドラー（既読即時反映版）
    ========================================================================== */
 async function handleReportFilterChange(event) {
   const userSelect = document.getElementById("target_user_id");
@@ -2204,18 +2219,20 @@ async function handleReportFilterChange(event) {
   // 2. 現在選択されているユーザーID
   const selectedUserId = userSelect && !userSelect.disabled ? userSelect.value : "all";
 
-  // 3. 過去レポート一覧（左側）を更新
+  // ★ STEP 3: 先に中央の詳細表示エリアを実行！（ここで自動的にDBへ「既読」が保存されます）
+  if (typeof fetchAndDisplayLatestReport === "function") {
+    await fetchAndDisplayLatestReport(y, m, selectedUserId);
+  }
+
+  // ★ STEP 4: 既読保存が完了した最新のDB状態を基に、過去レポート一覧（左側）を更新
   if (typeof fetchAndDisplayPastReportList === "function") {
     await fetchAndDisplayPastReportList(selectedUserId, selectedPeriod);
   }
 
-  // 4. ミニカレンダーを更新
+  // ★ STEP 5: 既読保存が完了した最新のDB状態を基に、ミニカレンダーを更新（これで青丸が消えます！）
   if (typeof renderReportCalendar === "function") {
     await renderReportCalendar(y, m, selectedUserId);
   }
-
-  // 5. 中央の詳細表示エリア（最新の自分レポート / 他人案内 / 0件案内）を連動更新！
-  await fetchAndDisplayLatestReport(y, m, selectedUserId);
 }
 
 /* ==========================================================================

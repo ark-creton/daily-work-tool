@@ -1,4 +1,5 @@
 <div class="container-fluid p-4">
+  <!-- ヘッダーエリア -->
   <div class="d-flex justify-content-between align-items-end mb-4 flex-wrap row-gap-3">
     <div>
       <h2 class="h4 mb-1 fw-bold page-title">勤怠管理</h2>
@@ -6,114 +7,110 @@
     </div>
 
     <div class="d-flex gap-2">
-      <select id="target_user_id" class="form-select filter-control">
+      <select id="target_user_id" class="form-select filter-control shadow-sm">
         <option value="">表示対象ユーザー</option>
       </select>
-      <input type="month" id="display_period" class="form-control filter-control" />
+      <input type="month" id="display_period" class="form-control filter-control shadow-sm" />
     </div>
   </div>
 
-  <div class="card border-0 shadow-sm p-4 mb-4 summary-card">
-    <div class="d-flex flex-wrap align-items-center summary-container">
-      <div class="d-flex align-items-baseline gap-2">
-        <span class="small fw-bold text-label">労働日数</span>
-        <div>
-          <span id="work_days_count" class="h4 fw-bold mb-0 text-value">-</span>
-          <span class="text-muted small">日</span>
+  <!-- サマリーエリア（レスポンシブ＆高さ揃えを最適化） -->
+  <div class="summary-wrapper mb-4 p-3 bg-white rounded-3 border shadow-sm">
+    <div class="row g-2 align-items-stretch">
+
+      <!-- 労働日数 -->
+      <div class="col-6 col-md">
+        <div class="summary-box h-100 d-flex flex-column justify-content-center">
+          <span class="summary-label">労働日数</span>
+          <div class="summary-value">
+            <span id="work_days_count" class="num">-</span><span class="unit">日</span>
+          </div>
         </div>
       </div>
 
-      <div class="v-divider"></div>
-
-      <div class="d-flex align-items-baseline gap-2">
-        <span class="small fw-bold text-label">総勤務時間</span>
-        <div>
-          <span id="total_work_hours" class="h4 fw-bold mb-0 text-value">-</span>
-          <span class="text-muted small me-1">時間</span>
-
-          <span id="total_work_minutes" class="h4 fw-bold mb-0 text-value">-</span>
-          <span class="text-muted small">分</span>
+      <!-- 総勤務時間（ハイライト表示） -->
+      <div class="col-6 col-md">
+        <div class="summary-box highlight-primary h-100 d-flex flex-column justify-content-center">
+          <span class="summary-label">総勤務時間</span>
+          <div class="summary-value">
+            <span id="total_work_hours" class="num">-</span><span class="unit">h</span>
+            <span id="total_work_minutes" class="num">-</span><span class="unit">m</span>
+          </div>
         </div>
       </div>
 
-      <div class="v-divider"></div>
-
-      <div class="d-flex align-items-baseline gap-2">
-        <span class="small fw-bold text-label">時間外労働</span>
-        <div>
-          <span id="total_overtime_hours" class="h4 fw-bold mb-0 text-value">-</span>
-          <span class="text-muted small me-1">時間</span>
-          <span id="total_overtime_minutes" class="h4 fw-bold mb-0 text-value">-</span>
-          <span class="text-muted small">分</span>
+      <!-- 時間外労働（注意ハイライト） -->
+      <div class="col-6 col-md">
+        <div class="summary-box highlight-warning h-100 d-flex flex-column justify-content-center">
+          <span class="summary-label">時間外労働</span>
+          <div class="summary-value">
+            <span id="total_overtime_hours" class="num">-</span><span class="unit">h</span>
+            <span id="total_overtime_minutes" class="num">-</span><span class="unit">m</span>
+          </div>
         </div>
       </div>
 
-      <div class="v-divider"></div>
-
-      <div class="d-flex align-items-baseline gap-2">
-        <span class="small fw-bold text-label">外出時間数</span>
-        <div>
-          <span id="total_out_hours" class="h4 fw-bold mb-0 text-value">-</span>
-          <span class="text-muted small me-1">時間</span>
-          <span id="total_out_minutes" class="h4 fw-bold mb-0 text-value">-</span>
-          <span class="text-muted small">分</span>
+      <!-- 外出時間数 -->
+      <div class="col-6 col-md">
+        <div class="summary-box h-100 d-flex flex-column justify-content-center">
+          <span class="summary-label">外出時間</span>
+          <div class="summary-value">
+            <span id="total_out_hours" class="num">-</span><span class="unit">h</span>
+            <span id="total_out_minutes" class="num">-</span><span class="unit">m</span>
+          </div>
         </div>
       </div>
 
-      <div class="v-divider"></div>
-
-      <div class="d-flex align-items-baseline gap-2">
-        <span class="small fw-bold text-label">休日出勤日数</span>
-        <div>
-          <span id="holiday_work_days" class="h4 fw-bold mb-0 text-value">0</span>
-          <span class="text-muted small">日</span>
-          <span
-            class="help-icon ms-1"
-            data-bs-toggle="popover"
-            data-bs-content="法的、契約上の会社の休日、およびカレンダー上の祝日に打刻（出勤・退勤の両方）がある日数を集計しています。"
-            tabindex="0"
-            style="cursor: pointer"
-          >
-            <i class="bi bi-question-circle text-muted" style="font-size: 0.85rem"></i>
+      <!-- 休日出勤日数 -->
+      <div class="col-6 col-md">
+        <div class="summary-box h-100 d-flex flex-column justify-content-center">
+          <span class="summary-label d-flex justify-content-center align-items-center gap-1">
+            休日出勤
+            <i class="bi bi-question-circle text-muted" style="font-size: 0.7rem;" data-bs-toggle="popover"
+              data-bs-content="法的・契約上の休日に打刻がある日数です。"></i>
           </span>
+          <div class="summary-value">
+            <span id="holiday_work_days" class="num">0</span><span class="unit">日</span>
+          </div>
         </div>
       </div>
 
-      <div class="v-divider"></div>
-
-      <div class="d-flex align-items-baseline gap-2">
-        <span class="small fw-bold text-label">有給取得日数</span>
-        <div>
-          <span id="paid_leave_days" class="h4 fw-bold mb-0 text-value">0</span>
-          <span class="text-muted small">日</span>
+      <!-- 有給取得日数 -->
+      <div class="col-6 col-md">
+        <div class="summary-box h-100 d-flex flex-column justify-content-center">
+          <span class="summary-label">有給取得</span>
+          <div class="summary-value">
+            <span id="paid_leave_days" class="num">0</span><span class="unit">日</span>
+          </div>
         </div>
       </div>
 
-      <div class="v-divider-dashed"></div>
-
-      <div class="d-flex align-items-baseline gap-2">
-        <span class="small fw-bold text-label">経費合計</span>
-        <div class="d-flex align-items-center">
-          <span id="total_expense_fee" class="h4 fw-bold mb-0 text-value">0</span>
-          <span class="text-muted small me-2">円</span>
-          <span
-            id="expense_breakdown"
-            class="text-muted d-inline-flex flex-column justify-content-center"
-            style="font-size: 0.75rem; margin-left: 4px; opacity: 0.85; line-height: 1.2"
-          >
-            交通費: 0円<br />その他: 0円
-          </span>
+      <!-- 経費合計 -->
+      <div class="col-12 col-md">
+        <div class="summary-box h-100 d-flex flex-column justify-content-center">
+          <span class="summary-label">経費合計</span>
+          <div class="summary-value">
+            <span id="total_expense_fee" class="num">0</span><span class="unit">円</span>
+          </div>
+          <div id="expense_breakdown" class="text-muted extra-small"
+            style="font-size: 0.65rem; line-height: 1.1; margin-top: 1px;">
+            交通費:0 / 他:0
+          </div>
         </div>
       </div>
+
     </div>
   </div>
 
-  <div class="card border-0 shadow-sm p-4 table-card">
+  <!-- テーブルエリア -->
+  <div class="card border-0 shadow-sm p-4 table-card rounded-3">
     <div class="mb-3 d-flex justify-content-between align-items-center">
       <h3 class="fs-5 fw-bold text-value m-0">月間勤務表</h3>
 
       <div class="btn-group" role="group" aria-label="表示切り替え">
-        <button type="button" id="view_mode_list" class="btn btn-outline-secondary btn-sm active"><i class="bi bi-list-task me-1"></i>一覧</button>
+        <button type="button" id="view_mode_list" class="btn btn-outline-secondary btn-sm active">
+          <i class="bi bi-list-task me-1"></i>一覧
+        </button>
         <button type="button" id="view_mode_calendar" class="btn btn-outline-secondary btn-sm">
           <i class="bi bi-grid-3x3-gap me-1"></i>カレンダー
         </button>
@@ -137,11 +134,8 @@
         </thead>
         <tbody id="attendance_tbody" class="table-body-area">
           <tr>
-            <td
-              colspan="9"
-              class="text-center"
-              style="padding-top: 100px !important; padding-bottom: 100px !important; border: none; background-color: #ffffff"
-            >
+            <td colspan="9" class="text-center"
+              style="padding-top: 80px !important; padding-bottom: 80px !important; border: none; background-color: #ffffff">
               <div class="text-muted h-100 d-flex flex-column align-items-center justify-content-center">
                 <i class="bi bi-calendar-check d-block fs-2 mb-2 text-black-50"></i>
                 <p class="mb-1 fw-bold text-value">表示する勤務データがありません</p>
@@ -163,7 +157,7 @@
         <div class="text-muted">金</div>
         <div class="text-primary">土</div>
       </div>
-      <div id="calendar_grid"></div>
+      <div id="calendar_grid" class="at-calendar-grid"></div>
     </div>
   </div>
 </div>

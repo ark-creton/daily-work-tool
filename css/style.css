@@ -66,8 +66,10 @@ body {
   justify-content: center;
   width: 100vw;
   height: 100vh;
-  background-color: rgba(244, 244, 249, 0.2); /* 最初のチカチカを防ぐ半透明グレー */
-  backdrop-filter: blur(12px); /* すりガラス効果 */
+  background-color: rgba(244, 244, 249, 0.2);
+  /* 最初のチカチカを防ぐ半透明グレー */
+  backdrop-filter: blur(12px);
+  /* すりガラス効果 */
   -webkit-backdrop-filter: blur(12px);
   z-index: 9999;
 
@@ -101,7 +103,8 @@ body {
   opacity: 0;
   transition: opacity 0.2s ease-in-out;
   display: block !important;
-  background-color: #f8f9fa; /* 背景にメイン画面の「骨組み」の背景色をあらかじめ設定しておく */
+  background-color: #f8f9fa;
+  /* 背景にメイン画面の「骨組み」の背景色をあらかじめ設定しておく */
 }
 
 #main_content_dynamic_area.is-ready {
@@ -120,18 +123,22 @@ body {
 .hyokkori-dot {
   width: 10px;
   height: 10px;
-  background-color: #b39ddb; /* 淡い紫 */
+  background-color: #b39ddb;
+  /* 淡い紫 */
   border-radius: 50%;
-  animation: hyokkori 0.8s infinite ease-in-out alternate; /* 0.8秒周期で上下反転ループ */
+  animation: hyokkori 0.8s infinite ease-in-out alternate;
+  /* 0.8秒周期で上下反転ループ */
 }
 
 /* 3つの丸のタイミングをずらしておじぎ感を演出 */
 .dot-1 {
   animation-delay: 0s;
 }
+
 .dot-2 {
   animation-delay: 0.15s;
 }
+
 .dot-3 {
   animation-delay: 0.3s;
 }
@@ -140,9 +147,12 @@ body {
   0% {
     transform: translateY(0);
   }
+
   100% {
     transform: translateY(-10px);
-  } /* 上下に跳ねる動き */
+  }
+
+  /* 上下に跳ねる動き */
 }
 
 .loading-text {
@@ -173,7 +183,8 @@ body {
   box-shadow:
     0 12px 30px -4px rgba(148, 163, 184, 0.25),
     0 4px 12px -2px rgba(148, 163, 184, 0.15),
-    inset 0 1px 0 rgba(255, 255, 255, 1); /* 内側の白い光でパーツを際立たせる */
+    inset 0 1px 0 rgba(255, 255, 255, 1);
+  /* 内側の白い光でパーツを際立たせる */
   z-index: 9999;
   font-size: 0.92rem;
   font-weight: 600;
@@ -192,11 +203,14 @@ body {
 @media (max-width: 991px) {
   .custom-toast {
     bottom: 24px;
-    transform: translateX(-50%) translateY(20px); /* 初期値：下へ隠す */
+    transform: translateX(-50%) translateY(20px);
+    /* 初期値：下へ隠す */
   }
+
   .custom-toast.show {
     opacity: 1;
-    transform: translateX(-50%) translateY(0); /* 下からスッと浮き上がる */
+    transform: translateX(-50%) translateY(0);
+    /* 下からスッと浮き上がる */
   }
 }
 
@@ -204,11 +218,14 @@ body {
 @media (min-width: 768px) {
   .custom-toast {
     top: 24px;
-    transform: translateX(-50%) translateY(-20px); /* 初期値：上へ隠す */
+    transform: translateX(-50%) translateY(-20px);
+    /* 初期値：上へ隠す */
   }
+
   .custom-toast.show {
     opacity: 1;
-    transform: translateX(-50%) translateY(0); /* 上からスッと降りてくる */
+    transform: translateX(-50%) translateY(0);
+    /* 上からスッと降りてくる */
   }
 }
 
@@ -542,7 +559,8 @@ body {
 
 /* 👇「+」を削除して、文字を非表示にします */
 .sidebar-area.collapsed .sidebar-nav .nav-text {
-  display: none !important; /* 強制的に非表示 */
+  display: none !important;
+  /* 強制的に非表示 */
 }
 
 /* 👇「+」を削除して、アイコンの位置を真ん中に調整します */
@@ -611,7 +629,7 @@ body {
 .logout-btn {
   padding: 6px 16px;
   color: #ffffff;
-  background-color: #64748b; 
+  background-color: #64748b;
   border: none;
   border-radius: 8px;
   font-size: 13px;
@@ -632,39 +650,221 @@ body {
   transform: translateY(0) scale(0.97);
 }
 
+/* パターンA: フラットでシックなデザイン */
+.notif-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: transparent;
+  /* 通常時は背景なし */
+  color: #475569;
+  /* ユーザー名と同系統の落ち着いたスレートグレー */
+  transition: all 0.2s ease;
+}
+
+.notif-btn:hover {
+  background-color: rgba(255, 255, 255, 0.6);
+  /* ホバー時だけ白の半透明でやわらかく浮かす */
+  color: #1e293b;
+}
+
+/* 赤丸バッジ（フチをヘッダー背景と同色のパープルグレーに完全一致） */
+.notif-badge {
+  position: absolute;
+  top: 3px;
+  right: 3px;
+  width: 8px;
+  height: 8px;
+  background-color: #ef4444;
+  border: 2px solid #dcdfe8;
+  /* ヘッダーの背景色 */
+  border-radius: 50%;
+}
+
 /* ==========================================================================
    📱 5. スマホ用レイアウト (max-width: 991px)
    ========================================================================== */
 
 .mobile-toggle-btn {
-  display: none; /* PC時は初期非表示 */
+  display: none;
+  /* PC時は非表示 */
 }
 
 @media (max-width: 991px) {
-  /* 1. PC用の左固定サイドバーを非表示化 */
+
+  /* 1. PC用の固定サイドバー表示をリセットし、すりガラスの全画面メニューに変身 */
   .sidebar-area {
-    display: none;
-  }
-
-  /* 2. PC用メニュー配置を画面最上部固定の全幅ドロップダウン形式へ変更 */
-  .sidebar-nav {
+    display: none !important;
     position: fixed !important;
-    top: 60px; /* ヘッダーの高さ */
-    left: 0;
-    width: 100%;
-    display: none; /* 初期状態は非表示 */
-    z-index: 1045 !important; /* ブートストラップのヘッダーや他のコンテンツより前面に */
+    top: 60px !important;
+    /* ヘッダー直下 */
+    left: 0 !important;
+    width: 100% !important;
+    height: calc(100vh - 60px) !important;
+
+    /* ✨ すりガラス（グラスモーフィズム）背景 */
+    background: rgba(248, 250, 252, 0.85) !important;
+    backdrop-filter: blur(16px) !important;
+    -webkit-backdrop-filter: blur(16px) !important;
+
+    z-index: 99999 !important;
+    overflow-y: auto !important;
+    padding: 20px 16px 30px !important;
+    box-sizing: border-box !important;
+
+    /* スクロールバー非表示 */
+    -ms-overflow-style: none !important;
+    scrollbar-width: none !important;
+
+    /* アニメーション用初期値 */
+    opacity: 0;
+    transform: translateY(-10px);
+    transition: opacity 0.25s ease, transform 0.25s ease !important;
   }
 
-  /* 3. メイン全幅化 */
+  .sidebar-area::-webkit-scrollbar {
+    display: none !important;
+    width: 0 !important;
+  }
+
+  /* 2. JSで `.mobile-active` が付与されたら全画面展開 */
+  .sidebar-area.mobile-active {
+    display: flex !important;
+    flex-direction: column !important;
+    opacity: 1 !important;
+    transform: translateY(0) !important;
+  }
+
+  /* スマホメニュー内の不要なヘッダー要素（閉じボタン等）は非表示 */
+  .sidebar-area .sidebar-header {
+    display: none !important;
+  }
+
+  .sidebar-area.mobile-active .sidebar-nav {
+    display: block !important;
+    width: 100% !important;
+    position: static !important;
+    /* 絶対配置を解除 */
+    background: transparent !important;
+    box-shadow: none !important;
+    border: none !important;
+  }
+
+  /* 3. リスト全体のレイアウト */
+  .sidebar-area.mobile-active ul {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 8px !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    list-style: none !important;
+    width: 100% !important;
+  }
+
+  /* 4. 👤 スマホ専用：ユーザー情報（カード風デザイン） */
+  .sidebar-area.mobile-active .sidebar-user-info {
+    display: flex !important;
+    align-items: center !important;
+    height: 56px !important;
+    padding: 0 16px !important;
+    margin-bottom: 12px !important;
+    background: rgba(255, 255, 255, 0.75) !important;
+    border: 1px solid rgba(255, 255, 255, 0.9) !important;
+    border-radius: 14px !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03) !important;
+  }
+
+  .sidebar-area.mobile-active .sidebar-user-info i {
+    width: 32px !important;
+    height: 32px !important;
+    border-radius: 50% !important;
+    background: #e2e8f0 !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    margin-right: 12px !important;
+    color: #475569 !important;
+    font-size: 1.1rem !important;
+  }
+
+  /* 5. 📱 メニュー項目（.nav-item） */
+  .sidebar-area.mobile-active .nav-item {
+    position: relative !important;
+    display: flex !important;
+    align-items: center !important;
+    width: 100% !important;
+    height: 52px !important;
+    margin: 0 !important;
+    padding: 0 16px !important;
+    border-radius: 12px !important;
+    background: rgba(255, 255, 255, 0.65) !important;
+    border: 1px solid rgba(255, 255, 255, 0.85) !important;
+    box-sizing: border-box !important;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.02) !important;
+    transition: all 0.2s ease !important;
+  }
+
+  .sidebar-area.mobile-active .nav-text {
+    display: inline !important;
+    color: #334155 !important;
+    font-size: 0.95rem !important;
+    font-weight: 600 !important;
+  }
+
+  .sidebar-area.mobile-active .nav-item i {
+    font-size: 1.2rem !important;
+    margin-right: 12px !important;
+    color: #64748b !important;
+  }
+
+  /* ログアウト以外の右側に矢印「›」を配置 */
+  .sidebar-area.mobile-active .nav-item:not(.mobile-logout-item)::after {
+    content: "›" !important;
+    position: absolute !important;
+    right: 16px !important;
+    top: 50% !important;
+    transform: translateY(-50%) !important;
+    font-size: 1.4rem !important;
+    color: #94a3b8 !important;
+    font-weight: 400 !important;
+    pointer-events: none !important;
+  }
+
+  /* 選択中（.active）の見た目 */
+  .sidebar-area.mobile-active .nav-item.active {
+    background: rgba(136, 141, 197, 0.15) !important;
+    border: 1px solid rgba(136, 141, 197, 0.4) !important;
+  }
+
+  .sidebar-area.mobile-active .nav-item.active i,
+  .sidebar-area.mobile-active .nav-item.active .nav-text {
+    color: #5c527f !important;
+  }
+
+  /* 6. 🔴 スマホ用ログアウトボタン (.mobile-logout-item) */
+  .sidebar-area.mobile-active .mobile-logout-item {
+    display: flex !important;
+    margin-top: 8px !important;
+    background: rgba(239, 68, 68, 0.08) !important;
+    border: 1px solid rgba(239, 68, 68, 0.2) !important;
+  }
+
+  .sidebar-area.mobile-active .mobile-logout-item i,
+  .sidebar-area.mobile-active .mobile-logout-item .nav-text {
+    color: #dc2626 !important;
+  }
+
+  /* 7. レイアウト調整・不要な要素の整理 */
   .main-layout {
-    width: 100%;
+    width: 100% !important;
     margin-left: 0 !important;
   }
 
-  /* 4. ヘッダー右上ハンバーガーボタン有効化（ユーザー名の右側に配置） */
   .mobile-toggle-btn {
-    display: block;
+    display: block !important;
     margin-left: 10px;
     color: #444;
     background: none;
@@ -674,95 +874,74 @@ body {
     order: 2;
   }
 
-  /* 5. PC用の単体ログアウトボタンを非表示化 */
-  .header-right .logout-btn {
-    display: none !important;
-  }
-
-  /* 6. スマホ用アクティブメニュー展開状態 */
-  .sidebar-nav.mobile-active {
-    display: block !important; /* 👈 親の非表示を上書きして強制表示！ */
-    position: fixed !important;
-    top: 60px;
-    left: 0;
-    width: 100%;
-    z-index: 9999 !important; /* 最前面に配置 */
-    height: auto;
-    background-color: #ffffff;
-    border-top: 1px solid #eee;
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
-  }
-
-  /* 7. リストの縦一列配置・余白リセット */
-  .sidebar-nav.mobile-active ul {
-    flex-direction: column;
-    margin: 0;
-    padding: 0;
-    list-style: none;
-  }
-
-  .sidebar-nav.mobile-active li {
-    width: 100%;
-    height: auto;
-    margin: 0;
-    border-bottom: 1px solid #eee;
-    border-radius: 0;
-  }
-
-  .sidebar-nav.mobile-active .nav-item {
-    display: flex;
-    align-items: center;
-    width: 100%;
-    height: auto;
-    margin: 0;
-    padding: 18px 25px; /* 項目間隔を広めにする */
-    color: #444;
-    border-radius: 0;
-    text-decoration: none;
-    cursor: pointer;
-  }
-
-  .sidebar-nav.mobile-active .nav-text {
-    display: inline !important; /* テキストの強制表示 */
-  }
-
-  .sidebar-nav.mobile-active i {
-    margin-right: 15px;
-    color: #9297cf; /* アクセントカラーの薄い紫 */
-    font-size: 1.2rem;
-  }
-
-  .sidebar-nav.mobile-active .nav-item:hover,
-  .sidebar-nav.mobile-active .nav-item:active {
-    background-color: #f4f4f9;
-  }
-
-  /* 8. スマホメニュー内専用：ログアウト項目の強調表示 */
-  .sidebar-nav.mobile-active .mobile-logout-item {
-    display: flex !important;
-    background-color: #fff0f0; /* 専用の薄い赤背景 */
-  }
-
-  /* 9. ヘッダーのユーザー名を非表示化 */
+  .header-right .logout-btn,
   .header-right .user-name {
     display: none !important;
   }
 
-  /* 10. スマホメニュー内専用：ユーザー名表示エリア */
-  .sidebar-user-info {
+  /* ヘッダーのカラムをスマホでも縦並びにせず、横並び（Flex）を維持 */
+  #modal_report_entry .modal-header .row {
     display: flex !important;
-    align-items: center;
-    padding: 20px 25px;
-    color: #2b2c3a;
-    background-color: #f8fafc;
-    border-bottom: 1px solid #eee;
-    font-weight: 700;
+    flex-wrap: nowrap !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    width: 100% !important;
+    margin: 0 !important;
   }
 
-  .sidebar-user-info i {
-    margin-right: 12px;
-    color: #8ea3c2;
-    font-size: 1.3rem;
+  /* カラムの幅指定を解除して左右に振り分ける */
+  #modal_report_entry .modal-header .col-md-6 {
+    width: auto !important;
+    padding: 0 !important;
+  }
+
+  /* ✕ボタンを右端に配置 */
+  #modal_report_entry .modal-header .col-md-6:last-child {
+    display: flex !important;
+    justify-content: flex-end !important;
+  }
+
+  /* フッターを1行で左右（両端）に振り分け */
+  #modal_report_entry .modal-footer {
+    display: flex !important;
+    flex-direction: row !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    padding: 10px 12px !important;
+    gap: 4px !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  /* 削除ボタン（スマホ時は「削除」のみを表示させてコンパクト化） */
+  #modal_delete_button {
+    writing-mode: horizontal-tb !important;
+    width: auto !important;
+    height: 34px !important;
+    margin: 0 !important;
+    padding: 4px 10px !important;
+    font-size: 0.75rem !important;
+    white-space: nowrap !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    flex-shrink: 0 !important;
+  }
+
+  /* 右側のボタン群（閉じる・更新等） */
+  #modal_report_entry .modal-footer>div:last-child {
+    display: flex !important;
+    align-items: center !important;
+    gap: 4px !important;
+    width: auto !important;
+    margin-left: auto !important;
+    flex-shrink: 0 !important;
+  }
+
+  #modal_report_entry .modal-footer .btn {
+    font-size: 0.75rem !important;
+    padding: 4px 10px !important;
+    height: 34px !important;
+    white-space: nowrap !important;
   }
 }
 

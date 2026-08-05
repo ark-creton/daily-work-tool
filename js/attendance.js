@@ -321,9 +321,9 @@ window.initAttendanceCalendar = async () => {
       const formatTime = (iso) =>
         iso
           ? new Date(iso).toLocaleTimeString([], {
-              hour: "2-digit",
-              minute: "2-digit",
-            })
+            hour: "2-digit",
+            minute: "2-digit",
+          })
           : "--:--";
 
       let totalWorkStr = '<span class="text-muted">-</span>',
@@ -354,9 +354,9 @@ window.initAttendanceCalendar = async () => {
           const totalM = Math.max(0, endM - startM - (Number(record.total_break_m) || 0) - outingM);
           const overtimeM = Math.max(0, totalM - 8 * 60);
 
-          totalWorkStr = totalM >= 0 ? `${Math.floor(totalM / 60)}:${String(totalM % 60).padStart(2, "0")}` : "-";
-          overtimeStr = overtimeM > 0 ? `${Math.floor(overtimeM / 60)}:${String(overtimeM % 60).padStart(2, "0")}` : "-";
-          outingStr = outingM > 0 ? `${Math.floor(outingM / 60)}:${String(outingM % 60).padStart(2, "0")}` : "-";
+          totalWorkStr = totalM >= 0 ? `${Math.floor(totalM / 60)}:${String(totalM % 60).padStart(2, "0")}` : '<span class="text-muted">-</span>';
+          overtimeStr = overtimeM > 0 ? `${Math.floor(overtimeM / 60)}:${String(overtimeM % 60).padStart(2, "0")}` : '<span class="text-muted">-</span>';
+          outingStr = outingM > 0 ? `${Math.floor(outingM / 60)}:${String(outingM % 60).padStart(2, "0")}` : '<span class="text-muted">-</span>';
 
           summary.workDays++;
           summary.totalWorkMin += totalM;
@@ -399,13 +399,23 @@ window.initAttendanceCalendar = async () => {
 
       const breakTimeDisplay = isLeave || !record?.total_break_m ? '<span class="text-muted">-</span>' : `${record.total_break_m} 分`;
 
-      // 経費内訳のバッジ風テキストの結合
+      // 経費区分の英字を日本語に変換するマップ
+      const expenseTypeLabelMap = {
+        transportation: "交通費",
+        other: "その他",
+      };
+
       const expenseText =
         record?.expense_records && record.expense_records.length > 0
           ? record.expense_records
-              .filter((e) => e.is_active && (e.expense_type || e.amount || e.memo))
-              .map((e) => `【${e.memo || e.expense_type || ""} ${Number(e.amount || 0).toLocaleString()}円】`)
-              .join(", ")
+            .filter((e) => e.is_active && (e.expense_type || e.amount || e.memo))
+            .map((e) => {
+              // メモがあればメモ、無ければ区分の日本語名（無ければそのまま）を取得
+              const typeLabel = expenseTypeLabelMap[e.expense_type] || e.expense_type || "";
+              const label = e.memo || typeLabel;
+              return `【${label} ${Number(e.amount || 0).toLocaleString()}円】`;
+            })
+            .join(", ")
           : "";
 
       const memoText = record?.memo || "";
@@ -428,20 +438,24 @@ window.initAttendanceCalendar = async () => {
       let finalRowClass = rowClass || "";
 
       if (isMyData) {
-        // 今日、かつ「現在出勤中」または「まだ退勤ボタンを押していない（statusがfinished以外）」場合のみロックする
-        const isNotFinishedYet = dayRecord && dayRecord.status !== "finished";
+        // 「ボタン打刻(button)で登録された」かつ「出勤中(working)または外出中(going_out)」の場合だけロック！
+        const isWorkingByButton =
+          isToday &&
+          dayRecord &&
+          dayRecord.registration_mode === "button" &&
+          (dayRecord.status === "working" || dayRecord.status === "going_out");
 
-        if (isStillWorkingToday || (hasClockedToday && isNotFinishedYet)) {
-          // 出勤中の場合は「打刻中」ボタンにする（青い点滅ドット）
+        if (isWorkingByButton) {
+          // 出勤中の場合は「打刻中」ボタンにして編集不可にする
           editButtonHtml = `
-              <button class="btn btn-sm btn-table-edit" data-day="${day}" style="background-color: #f0f7ff !important; color: #1e40af !important; border: 1px solid #bfdbfe !important; font-weight: bold !important; cursor: not-allowed !important; display: inline-flex; align-items: center; gap: 6px;">
-                <span class="pulsing-blue-dot"></span>打刻中
-              </button>
-            `;
+      <button class="btn btn-sm btn-table-edit" data-day="${day}" style="background-color: #f0f7ff !important; color: #1e40af !important; border: 1px solid #bfdbfe !important; font-weight: bold !important; cursor: not-allowed !important; display: inline-flex; align-items: center; gap: 6px;">
+        <span class="pulsing-blue-dot"></span>打刻中
+      </button>
+    `;
 
           finalRowClass += " at-row-working-now";
         } else {
-          // 今日以外、または今日退勤ボタンまで押し終わった（status === 'finished'）場合は、普通に「編集」ボタンにする！
+          // 未打刻(not_started)・退勤済み(finished)・モーダル登録(modal)の場合は「編集」ボタンを表示する
           editButtonHtml = `<button class="btn btn-sm btn-outline-secondary btn-table-edit" data-day="${day}">編集</button>`;
         }
       } else {
@@ -1044,7 +1058,10 @@ window.initAttendanceCalendar = async () => {
                 finalOriginalClockOut = currentNowIso;
               }
 
-              // Supabaseのテーブル構造（カラム名）に合わせたオブジェクトを作成
+              // 外出開始・終了のISO文字列を生成
+              const isoBreakStart = createIsoString(breakStart);
+              const isoBreakEnd = createIsoString(breakEnd);
+
               const upsertData = {
                 user_id: user.id,
                 work_date: targetDateStr,
@@ -1053,6 +1070,8 @@ window.initAttendanceCalendar = async () => {
                 clock_out: isoClockOut,
                 status: calculatedStatus,
                 total_break_m: breakTimeM,
+                break_start: isoBreakStart,  // ← 追加
+                break_end: isoBreakEnd,      // ← 追加
                 memo: memo,
                 original_clock_in: finalOriginalClockIn,
                 original_clock_out: finalOriginalClockOut,
@@ -1377,10 +1396,24 @@ window.initAttendanceCalendar = async () => {
     };
 
     // Step1: 外出（休憩）時間の差分計算
-    const outingM = breakStart && breakEnd ? Math.max(0, toM(breakEnd) - toM(breakStart)) : 0;
+    let outingStartM = breakStart ? toM(breakStart) : 0;
+    let outingEndM = breakEnd ? toM(breakEnd) : 0;
+    // 外出も日をまたぐケースを考慮
+    if (breakStart && breakEnd && outingEndM < outingStartM) {
+      outingEndM += 24 * 60;
+    }
+    const outingM = breakStart && breakEnd ? Math.max(0, outingEndM - outingStartM) : 0;
 
-    // Step2: 総労働時間の算出（退勤 - 出勤 - 固定休憩 - 外出時間）
-    const totalM = Math.max(0, toM(outVal) - toM(inVal) - breakVal - outingM);
+    // Step2: 総労働時間の算出（日またぎ対応）
+    const inM = toM(inVal);
+    let outM = toM(outVal);
+
+    // ★ 退勤時間が出勤時間より前の場合は翌日（+24時間 = +1440分）として計算
+    if (outM < inM) {
+      outM += 24 * 60;
+    }
+
+    const totalM = Math.max(0, outM - inM - breakVal - outingM);
 
     // Step3: 法定外残業時間の算出（総労働から8時間＝480分を引く）
     const overtimeM = Math.max(0, totalM - 8 * 60);
@@ -1624,7 +1657,7 @@ window.initAttendanceCalendar = async () => {
             // 退勤済
             timeLogHtml = `<span class="at-calendar-time-log">${formatTime(record.clock_in)} ～ ${formatTime(record.clock_out)}</span>`;
           } else {
-            // 現在勤務中（ここからドットを抜き、純粋な時間テキストだけにします）
+            // 現在勤務中
             if (isStillWorkingToday) {
               timeLogHtml = `<span class="at-calendar-time-log fw-normal" style="color: #1e40af;">${formatTime(record.clock_in)} ～</span>`;
             } else {
@@ -1635,11 +1668,9 @@ window.initAttendanceCalendar = async () => {
 
         // 経費・備考アイコンの判定
         if (record.expense_records && record.expense_records.filter((e) => e.is_active).length > 0) {
-          // 💰 → コインの線画アイコンへ
           badgesHtml += `<span class="badge-mini" title="経費あり"><i class="bi bi-cash-stack"></i>`;
         }
         if (record.memo) {
-          // 📝 → メモ帳の線画アイコンへ
           badgesHtml += `<span class="badge-mini" title="${record.memo}"><i class="bi bi-chat-left-text"></i></span>`;
         }
       }

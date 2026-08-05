@@ -38,13 +38,15 @@
 /* --- 2. 右側：過去のレポート一覧カード 内のリンク設定 --- */
 .report-list-scroll-container a {
   color: #8ea3c2;
-  text-decoration: none !important; /* 初期状態の下線を排除 */
+  text-decoration: none !important;
+  /* 初期状態の下線を排除 */
 }
 
 /* 過去ログ一覧内のホバー時に、中の文字と日付にだけ綺麗な1本線を引く（統一仕様） */
 .report-list-scroll-container a:hover {
   color: #2b2c3a;
-  text-decoration: none !important; /* aタグ自体の下線は引かない */
+  text-decoration: none !important;
+  /* aタグ自体の下線は引かない */
 }
 
 /* タイトルと日付だけにスマートに下線を適用 */
@@ -146,7 +148,8 @@ select:disabled {
   background-color: #e9ecef !important;
   color: #6c757d !important;
   cursor: not-allowed !important;
-  pointer-events: none !important; /* 👈 これでクリックや展開を完全にブロックします */
+  pointer-events: none !important;
+  /* 👈 これでクリックや展開を完全にブロックします */
 }
 
 /* ==========================================================================
@@ -220,6 +223,7 @@ select:disabled {
 .report-cal-table th.text-danger {
   color: #dc3545 !important;
 }
+
 .report-cal-table th.text-primary {
   color: #0d6efd !important;
 }
@@ -254,13 +258,15 @@ select:disabled {
 .report-cal-table tbody tr td:nth-child(1) .day-num {
   color: #dc3545;
 }
+
 .report-cal-table tbody tr td:nth-child(7) .day-num {
   color: #0d6efd;
 }
 
 /* 祝日対応 */
 .report-cal-day.is-holiday .day-num {
-  color: #dc3545 !important; /* 祝日を赤色に */
+  color: #dc3545 !important;
+  /* 祝日を赤色に */
 }
 
 /* --- 当月以外のグレーアウト --- */
@@ -286,7 +292,8 @@ select:disabled {
 /* 数字の下線（1pxで細く、落ち着いた色に変更） */
 .report-cal-day.today .day-num {
   padding-bottom: 1px;
-  border-bottom: 1px solid #475569; /* 細いダークグレーの下線 */
+  border-bottom: 1px solid #475569;
+  /* 細いダークグレーの下線 */
   font-weight: 600;
 }
 
@@ -314,7 +321,8 @@ select:disabled {
   display: inline-flex !important;
   align-items: center !important;
   justify-content: center !important;
-  margin-right: 5px !important; /* バッジのはみ出し防止用余白 */
+  margin-right: 5px !important;
+  /* バッジのはみ出し防止用余白 */
   vertical-align: middle !important;
 }
 
@@ -348,7 +356,7 @@ select:disabled {
 }
 
 /* 下書き用のバッジ色（アンバー系） */
-.report-cal-day .report-icon.is-draft + .icon-count-badge {
+.report-cal-day .report-icon.is-draft+.icon-count-badge {
   background-color: #ca8a04 !important;
 }
 
@@ -358,6 +366,31 @@ select:disabled {
 /* レポート画面のリストだけ背景色をつける */
 #past_report_list a.past-report-item.active-report,
 #past_report_list .past-report-item.active-report {
-  background-color: #f1f5f9 !important; /* 薄いグレー/ブルー */
+  background-color: #f1f5f9 !important;
+  /* 薄いグレー/ブルー */
 }
 
+/* ==========================================================================
+   📱 スマホ用（991px以下）：ホバーがない端末向けに最初からボタン背景色を適用
+   ========================================================================== */
+@media (max-width: 991px) {
+
+  /* 1. キャンセル（閉じる）ボタン：最初からPCホバー時のしっかりめのグレーにする */
+  #cancel_button {
+    background-color: #e9ecef !important;
+  }
+
+  /* 3. 過去ログ一覧：文字色を少し濃くして視認性をアップ */
+  .report-list-scroll-container a {
+    color: #4b5563 !important;
+  }
+
+  /* タップした瞬間（指で押した時）の視覚フィードバック（全ボタン共通） */
+  #cancel_button:active,
+  .btn-temporary:active,
+  .btn-pastel-red-rounded:active,
+  .report-list-scroll-container a:active {
+    opacity: 0.7 !important;
+    transform: scale(0.98) !important;
+  }
+}

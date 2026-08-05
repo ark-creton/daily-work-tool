@@ -1,12 +1,17 @@
 /* ==========================================================================
-   🎨 1. 画面全体の基本設定・共通パーツ
+   🎨 1. 画面全体の基本設定・共通パーツ ＆ サマリーエリア
    ========================================================================== */
+
+:root {
+  --row-hover-color: rgba(241, 245, 249, 0.7);
+}
 
 /* ◆ 基本文字色 */
 .page-title,
 .text-value {
   color: #2b2c3a !important;
 }
+
 .text-label {
   color: #55555c !important;
 }
@@ -16,40 +21,101 @@
   width: 180px !important;
 }
 
-/* ◆ ベースカード（集計欄・テーブル外枠） */
+/* ◆ ベースカード（外枠） */
 .summary-card,
 .table-card {
   border-radius: 12px !important;
 }
 
-/* ◆ 月間集計コンテナ（等幅数字フォーマット） */
-.summary-container {
-  row-gap: 15px;
-  column-gap: 24px;
+.summary-wrapper {
+  background: #ffffff !important;
+  border-color: #e2e8f0 !important;
+  border-radius: 12px !important;
 }
-.summary-container .fw-bold {
+
+/* ◆ サマリーボックス（数値カード） */
+.summary-box {
+  background-color: #f8fafc;
+  border-radius: 8px;
+  padding: 8px 12px;
+  text-align: center;
+  transition: all 0.2s ease;
+}
+
+.summary-label {
+  display: block;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: #64748b;
+  margin-bottom: 2px;
+  white-space: nowrap;
+}
+
+.summary-value {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 1px;
+}
+
+.summary-value .num {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #0f172a;
   font-variant-numeric: tabular-nums;
+  letter-spacing: -0.03em;
 }
 
-/* ◆ 縦の区切り線（ディバイダー） */
-.v-divider {
-  width: 1px;
-  height: 20px;
-  background-color: #dee2e6;
-}
-.v-divider-dashed {
-  border-left: 1px dashed #ced4da;
-  height: 25px;
+.summary-value .unit {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: #94a3b8;
+  margin-right: 3px;
+  margin-left: 1px;
 }
 
-/* カレンダー内 ＆ リストテーブル内共通：ハイフン（-） */
+/* ★ ハイライトカラー */
+.highlight-primary {
+  background-color: #eff6ff !important;
+  /* 薄いブルー */
+}
+
+.highlight-primary .summary-label {
+  color: #2563eb !important;
+}
+
+.highlight-primary .num {
+  color: #1d4ed8 !important;
+}
+
+.highlight-warning {
+  background-color: #fffbe8 !important;
+  /* 薄いイエロー */
+}
+
+.highlight-warning .summary-label {
+  color: #d97706 !important;
+}
+
+.highlight-warning .num {
+  color: #b45309 !important;
+}
+
+/* 経費の内訳テキスト */
+#expense_breakdown {
+  font-size: 0.65rem !important;
+  color: #94a3b8 !important;
+}
+
+/* カレンダー ＆ リスト共通：ハイフン（-） */
 .at-calendar-day-box .text-muted,
 #attendance_table .text-muted {
   color: #cbd5e1 !important;
   font-weight: 300 !important;
 }
 
-/* カレンダーとリストの当日日付アンダーライン（共通化） */
+/* カレンダーとリストの当日日付アンダーライン */
 .at-calendar-day-num.is-today,
 .at-table-day-num.is-today {
   display: inline-block !important;
@@ -58,8 +124,9 @@
   line-height: 1 !important;
 }
 
+
 /* ==========================================================================
-   📊 2. 【リスト形式】
+   📊 2. 【リスト形式】テーブルレイアウト
    ========================================================================== */
 
 /* ◆ テーブルのスクロールエリア ＆ ヘッダー固定 */
@@ -69,6 +136,7 @@
   border: 1px solid #dee2e6;
   border-radius: 8px;
 }
+
 .table-header-area {
   z-index: 5;
 }
@@ -83,20 +151,22 @@
 #attendance_table tbody tr {
   height: 48px !important;
 }
+
 #attendance_table tbody td {
   vertical-align: middle !important;
   padding-top: 4px !important;
   padding-bottom: 4px !important;
   white-space: nowrap;
+  transition: background-color 0.15s ease;
 }
 
-/* ◆ 日付セル（文字とアイコンの横並び） */
+/* ◆ 日付セル */
 #attendance_table tbody td:nth-child(2) {
   display: table-cell;
   white-space: nowrap;
 }
 
-/* ◆ ポップオーバー（祝日ハテナマーク）アイコン */
+/* ◆ ポップオーバー（ヘルプ）アイコン */
 .help-icon {
   display: inline-flex;
   align-items: center;
@@ -107,37 +177,51 @@
   margin-left: 4px;
 }
 
-/* --- 各列の横幅設定（1〜9番目） --- */
+/* --- 各列の横幅設定 --- */
 #attendance_table th:nth-child(1),
 #attendance_table td:nth-child(1) {
   width: 65px;
-} /* 1: 操作 */
+}
+
+/* 1: 操作 */
 #attendance_table th:nth-child(2),
 #attendance_table td:nth-child(2) {
   width: 130px;
-} /* 2: 日付 */
+}
+
+/* 2: 日付 */
 #attendance_table th:nth-child(3),
 #attendance_table td:nth-child(3) {
   width: 120px;
-} /* 3: 勤務時間 */
+}
+
+/* 3: 勤務時間 */
 #attendance_table th:nth-child(4),
 #attendance_table td:nth-child(4) {
   width: 80px;
-} /* 4: 総勤務 */
+}
+
+/* 4: 総勤務 */
 #attendance_table th:nth-child(5),
 #attendance_table td:nth-child(5) {
   width: 80px;
-} /* 5: 時間外 */
+}
+
+/* 5: 時間外 */
 #attendance_table th:nth-child(6),
 #attendance_table td:nth-child(6) {
   width: 90px;
-} /* 6: 休憩 */
+}
+
+/* 6: 休憩 */
 #attendance_table th:nth-child(7),
 #attendance_table td:nth-child(7) {
   width: 65px;
-} /* 7: 外出 */
+}
 
-/* 8: 経費明細（区切り線付き・はみ出し時省略） */
+/* 7: 外出 */
+
+/* 8: 経費明細 */
 #attendance_table th:nth-child(8),
 #attendance_table td:nth-child(8) {
   width: 500px !important;
@@ -148,7 +232,7 @@
   padding-left: 12px !important;
 }
 
-/* 9: 備考（残りの幅を自動割り当て・はみ出し時省略） */
+/* 9: 備考 */
 #attendance_table th:nth-child(9),
 #attendance_table td:nth-child(9) {
   overflow: hidden;
@@ -157,7 +241,7 @@
   padding-left: 12px !important;
 }
 
-/* ◆ 経費明細・備考セルの2行省略（クランプ設定） */
+/* ◆ 経費明細・備考セルの2行省略 */
 .cell-expense-clamp,
 .cell-memo-clamp {
   display: -webkit-box;
@@ -170,84 +254,81 @@
   max-height: 2.6em;
 }
 
-/* ◆ 祝日・日曜・土曜の背景色（上書きクリア） */
+/* ◆ 休日・祝日の背景透過 */
 #attendance_table tbody tr.row-holiday td,
 #attendance_table tbody tr.row-saturday td {
   background-color: transparent !important;
 }
 
-/* ⚪ 有給：クラス指定を強化して確実に背景色を適用 */
+/* 💚 有給行 */
 #attendance_table tbody tr.at-row-paid td,
 .table tr.at-row-paid td {
   background-color: rgba(34, 197, 94, 0.04) !important;
 }
+
 #attendance_table tbody tr.at-row-paid:hover td,
 .table tr.at-row-paid:hover td {
   background-color: rgba(34, 197, 94, 0.1) !important;
 }
 
-/* 🔘 欠勤：こちらも念のため強化 */
+/* 🖤 欠勤行 */
 #attendance_table tbody tr.at-row-absent td,
 .table tr.at-row-absent td {
   background-color: rgba(148, 163, 184, 0.05) !important;
 }
+
 #attendance_table tbody tr.at-row-absent:hover td,
 .table tr.at-row-absent:hover td {
   background-color: rgba(148, 163, 184, 0.12) !important;
 }
 
-/* 🔵 打刻中：こちらも念のため強化 */
+/* 🔵 打刻中行 */
 #attendance_table tbody tr.at-row-working-now td,
 .table tr.at-row-working-now td {
   background-color: rgba(59, 130, 246, 0.04) !important;
   color: #334155 !important;
 }
+
 #attendance_table tbody tr.at-row-working-now:hover td,
 .table tr.at-row-working-now:hover td {
   background-color: rgba(59, 130, 246, 0.1) !important;
 }
 
-/* 通常日（白背景の行）にマウスを乗せたときだけ、共通ホバー色を適用  */
+/* 通常行ホバー */
 #attendance_table tbody tr:not(.at-row-paid):not(.at-row-absent):not(.at-row-working-now):hover td {
   background-color: var(--row-hover-color) !important;
   cursor: pointer;
 }
 
-/* 通常日の行のtdにも、色変化が滑らかになるようトランジションを設定 */
-#attendance_table tbody tr td {
-  transition: background-color 0.15s ease;
-}
-
-/* --- テーブル内状態バッジ共通スタイル（カプセル型に統一） --- */
+/* --- テーブル内状態バッジ --- */
 .at-status-badge {
   display: inline-block !important;
-  font-size: 0.65rem !important; /* カレンダーと同じサイズ感に */
-  padding: 3px 8px !important; /* 上下左右の余白を美しく調整 */
-  border-radius: 999px !important; /* カレンダー側と同じく「完全な丸角」に */
-  font-weight: 600 !important; /* 上品な文字の太さ */
+  font-size: 0.65rem !important;
+  padding: 3px 8px !important;
+  border-radius: 999px !important;
+  font-weight: 600 !important;
   white-space: nowrap !important;
   text-align: center !important;
 }
 
-/* 💚 有給バッジ（テーブル用） */
 .at-status-badge.is-paid {
-  background-color: #e8f5e9 !important; /* 背景に溶け込む淡い緑 */
-  color: #166534 !important; /* 深みのある上品な緑 */
-  border: 1px solid #c8e6c9 !important; /* 繊細な境界線 */
+  background-color: #e8f5e9 !important;
+  color: #166534 !important;
+  border: 1px solid #c8e6c9 !important;
 }
 
-/* 🖤 欠勤バッジ（テーブル用） */
 .at-status-badge.is-absent {
-  background-color: #f1f5f9 !important; /* 明るいニュアンスグレー */
-  color: #475569 !important; /* 落ち着いたスレートグレー */
-  border: 1px solid #e2e8f0 !important; /* 馴染む薄い境界線 */
+  background-color: #f1f5f9 !important;
+  color: #475569 !important;
+  border: 1px solid #e2e8f0 !important;
 }
+
 
 /* ==========================================================================
    🔘 3. 各種アクションボタン（メイン画面 ＆ モーダル）
    ========================================================================== */
 
-/* ◆ テーブル内の「編集」ボタン */
+/* ◆ テーブル内ボタン */
 .btn-table-edit {
   font-size: 0.75rem !important;
   padding: 0px 8px !important;
@@ -275,6 +356,7 @@
   box-shadow: 0 4px 10px -2px rgba(142, 163, 194, 0.25) !important;
   transition: all 0.2s ease !important;
 }
+
 #attendance_save_btn:hover:not(:disabled) {
   background-color: #7a99c5 !important;
   box-shadow: 0 6px 12px -2px rgba(122, 153, 197, 0.35) !important;
@@ -292,6 +374,7 @@
   flex-shrink: 1 !important;
   transition: all 0.2s ease !important;
 }
+
 #attendance_cancel_btn:hover {
   background-color: #e9ecef !important;
   color: #495057 !important;
@@ -305,11 +388,13 @@
   transition: all 0.2s ease-in-out;
   font-weight: 600 !important;
 }
+
 #attendance_reset_btn:hover {
   background-color: #ef5350 !important;
   border-color: #ef5350 !important;
   color: #ffffff !important;
 }
+
 
 /* ==========================================================================
    📝 4. 編集モーダル・基本入力フォーム調整
@@ -320,18 +405,19 @@
 .form-select {
   font-size: 0.875rem !important;
 }
+
 .form-control::placeholder {
   font-size: 0.875rem !important;
 }
 
-/* ◆ 出退勤インプット欄下の隙間解消 */
 #edit_clock_in,
 #edit_clock_out {
   margin-bottom: -11px !important;
 }
 
+
 /* ==========================================================================
-   💰 5. 経費エリア専用（付箋・手帳リフィル風デザイン）
+   💰 5. 経費エリア専用
    ========================================================================== */
 
 /* ◆ 経費エリア全体の土台背景カード */
@@ -344,6 +430,7 @@
 .expense-memo-label {
   color: #4a4b5a !important;
 }
+
 .expense-memo-label i {
   color: #7c7d8f !important;
 }
@@ -374,9 +461,11 @@
   overflow-x: hidden;
   scrollbar-width: thin;
 }
+
 #expense_list::-webkit-scrollbar {
   width: 6px;
 }
+
 #expense_list::-webkit-scrollbar-thumb {
   background-color: rgba(0, 0, 0, 0.15);
   border-radius: 10px;
@@ -430,15 +519,18 @@
   width: 120px !important;
   border-bottom: none !important;
 }
+
 .expense-notebook-amount-field {
   width: 100% !important;
   border: none !important;
 }
+
 .expense-notebook-amount-field::-webkit-outer-spin-button,
 .expense-notebook-amount-field::-webkit-inner-spin-button {
   -webkit-appearance: none !important;
   margin: 0 !important;
 }
+
 .text-yen {
   font-size: 0.9rem !important;
   font-weight: 500 !important;
@@ -456,10 +548,12 @@
   opacity: 0.3;
   transition: opacity 0.2s ease;
 }
+
 .expense-notebook-delete-btn:hover {
   opacity: 0.8;
   color: #e57373 !important;
 }
+
 .expense-notebook-delete-btn i {
   font-size: 0.8rem !important;
 }
@@ -470,24 +564,30 @@
   border-top: 1px dashed #c4c6db !important;
   padding-top: 8px;
 }
+
 .expense-add-btn {
   color: #5a5c6e !important;
   border-color: #dee2e6 !important;
 }
+
 .expense-total-text {
   color: #4a4b5a !important;
 }
+
 .expense-total-text span {
   color: #888dc5 !important;
 }
 
+
 /* ==========================================================================
-   📅 6. 【カレンダー形式】カレンダーグリッド・レイアウト設定
+   📅 6. 【カレンダー形式】グリッド・レイアウト設定
    ========================================================================== */
 
 /* カレンダー専用の外側コンテナ */
 .at-calendar-scroll-container {
-  height: 480px;
+  min-height: 480px;
+  /* 固定高さをやめ、最小高さに変更 */
+  height: auto !important;
   overflow: hidden !important;
   border: 1px solid #dee2e6;
   border-radius: 8px;
@@ -506,12 +606,8 @@
 
 /* 動的カレンダーグリッド */
 #calendar_grid {
-  display: grid !important;
-  grid-template-columns: repeat(7, 1fr) !important;
   grid-auto-rows: 1fr !important;
   flex-grow: 1;
-  width: 100% !important;
-  box-sizing: border-box !important;
 }
 
 /* 曜日ヘッダー */
@@ -521,7 +617,8 @@
   height: 40px;
   flex-shrink: 0;
 }
-.at-calendar-week-header > div {
+
+.at-calendar-week-header>div {
   font-size: 0.85rem !important;
   font-weight: bold;
   text-align: center;
@@ -537,7 +634,7 @@
   margin: 0 !important;
   display: flex !important;
   flex-direction: column !important;
-  justify-content: flex-start !important; /* 上寄せに固定 */
+  justify-content: flex-start !important;
   box-sizing: border-box !important;
   position: relative !important;
   transition: background-color 0.15s ease;
@@ -550,7 +647,11 @@
   cursor: default !important;
 }
 
-/* ヘッダー：日付エリアの配置設定 */
+.at-calendar-day-box.out-of-month:hover {
+  background-color: #f8fafc !important;
+}
+
+/* ヘッダー：日付エリア */
 .at-calendar-day-header {
   display: flex !important;
   align-items: center !important;
@@ -558,7 +659,7 @@
   width: 100% !important;
   padding: 0 2px !important;
   text-align: left !important;
-  flex-wrap: wrap !important; /* 日付と祝日が横に入りきらなければ折り返す */
+  flex-wrap: wrap !important;
 }
 
 /* 日付（左） */
@@ -580,15 +681,7 @@
   max-width: 100% !important;
 }
 
-/* 当日の日付数字アンダーライン表示 */
-.at-calendar-day-num.is-today {
-  display: inline-block !important;
-  border-bottom: 1.5px solid currentColor !important; /* 2pxから1.5pxに細く */
-  padding-bottom: 3px !important; /* 隙間を1px広げて洗練された印象に */
-  line-height: 1 !important;
-}
-
-/* ボディ：勤務時間（中央寄せ） */
+/* ボディ：勤務時間 */
 .at-calendar-day-body {
   width: 100% !important;
   display: flex !important;
@@ -597,11 +690,11 @@
 }
 
 .at-calendar-time-log {
-  font-weight: 400 !important; /* リストと同じ太さに */
-  font-size: 0.85rem !important; /* 必要であればサイズもリストに合わせてください */
+  font-weight: 400 !important;
+  font-size: 0.85rem !important;
 }
 
-/* フッター：アイコン（中央寄せ） */
+/* フッター：アイコン */
 .at-calendar-day-footer {
   width: 100% !important;
   display: flex !important;
@@ -623,139 +716,121 @@
 
 /* アイコン自体のサイズ調整 */
 .badge-mini i {
-  font-size: 0.85rem !important; /* アイコンを少し大きくして見やすく */
+  font-size: 0.85rem !important;
   font-style: normal !important;
 }
 
 /* 経費アイコン（現金）の色 */
 .badge-mini .bi-cash-stack {
-  color: #ca8a04 !important; /* 落ち着いたゴールド */
+  color: #ca8a04 !important;
 }
 
 /* 備考アイコン（コメント）の色 */
 .badge-mini .bi-chat-left-text {
-  color: #94a3b8 !important; /* 落ち着いたグレー */
+  color: #94a3b8 !important;
 }
 
-/* --- 背景色＆ホバールール（決定版） --- */
-
-/* ① データのない通常日（白背景）のみ、共通ホバー色（--row-hover-color）を適用*/
+/* 背景色ルール */
 .at-calendar-day-box:not(.out-of-month):not(.is-normal-work):not(.is-paid-leave):not(.is-absent):not(.is-working-now):hover {
   background-color: var(--row-hover-color) !important;
   cursor: pointer;
 }
 
-/* ② 今月以外の空マス（前後月）：ホバー時も元の背景色（#f8fafc）を絶対キープして浮かび上がらせない */
-.at-calendar-day-box.out-of-month {
-  background-color: #f8fafc !important;
-  cursor: default !important;
-}
-.at-calendar-day-box.out-of-month:hover {
-  background-color: #f8fafc !important;
-}
-
-/* ③ 通常出勤：背景（青） */
 .at-calendar-day-box.is-normal-work {
-  background-color: rgba(59, 130, 246, 0.04) !important; /* ほんのり透明感のある水色 */
-  border: 1px solid #d1e2ff !important; /* 淡い青の境界線 */
-  box-shadow: inset 0 0 4px rgba(59, 130, 246, 0.1) !important; /* 柔らかな質感の影 */
+  background-color: rgba(59, 130, 246, 0.04) !important;
+  border: 1px solid #d1e2ff !important;
+  box-shadow: inset 0 0 4px rgba(59, 130, 246, 0.1) !important;
   cursor: pointer;
 }
+
 .at-calendar-day-box.is-normal-work:hover {
-  background-color: rgba(59, 130, 246, 0.1) !important; /* ホバーで少し濃く */
+  background-color: rgba(59, 130, 246, 0.1) !important;
 }
 
-/* ④ 有給：背景（緑） */
 .at-calendar-day-box.is-paid-leave {
-  background-color: rgba(34, 197, 94, 0.04) !important; /* ほんのり透明感のあるセージグリーン */
-  border: 1px solid #bbf7d0 !important; /* 優しく馴染む淡い緑の枠線 */
-  box-shadow: inset 0 0 4px rgba(34, 197, 94, 0.08) !important; /* 柔らかな質感の影 */
-  position: relative !important;
+  background-color: rgba(34, 197, 94, 0.04) !important;
+  border: 1px solid #bbf7d0 !important;
+  box-shadow: inset 0 0 4px rgba(34, 197, 94, 0.08) !important;
   cursor: pointer;
 }
+
 .at-calendar-day-box.is-paid-leave:hover {
-  background-color: rgba(34, 197, 94, 0.1) !important; /* ホバーで少し濃く */
+  background-color: rgba(34, 197, 94, 0.1) !important;
 }
 
-/* ⑤ 欠勤：背景（グレー） */
 .at-calendar-day-box.is-absent {
-  background-color: rgba(148, 163, 184, 0.05) !important; /* ほんのり透明感のあるニュアンスグレー */
-  border: 1px solid #cbd5e1 !important; /* 周囲を邪魔しない淡いグレーの枠線 */
-  box-shadow: inset 0 0 4px rgba(148, 163, 184, 0.08) !important; /* 柔らかな質感の影 */
-  position: relative !important;
+  background-color: rgba(148, 163, 184, 0.05) !important;
+  border: 1px solid #cbd5e1 !important;
+  box-shadow: inset 0 0 4px rgba(148, 163, 184, 0.08) !important;
   cursor: pointer;
 }
+
 .at-calendar-day-box.is-absent:hover {
-  background-color: rgba(148, 163, 184, 0.12) !important; /* ホバーで少し濃く */
+  background-color: rgba(148, 163, 184, 0.12) !important;
 }
 
-/* --- センターラベル中央配置設定 (Pseudo-elements) --- */
-/* 有給・欠勤共通：形を整えて野暮ったさを消す */
+/* センターラベル（有給・欠勤） */
 .at-calendar-day-box.is-paid-leave::after,
 .at-calendar-day-box.is-absent::after {
   position: absolute !important;
   top: 50% !important;
   left: 50% !important;
   transform: translate(-50%, -50%) !important;
-  font-size: 0.65rem !important; /* 文字サイズを少しだけ見やすく調整 */
-  padding: 3px 8px !important; /* 上下左右の余白を黄金比に微調整 */
-  border-radius: 999px !important; /* カプセル型（完全な丸角）にして今風のクリーンな印象に */
-  font-weight: 600 !important; /* 太すぎず細すぎない、上品な文字の太さ */
+  font-size: 0.65rem !important;
+  padding: 3px 8px !important;
+  border-radius: 999px !important;
+  font-weight: 600 !important;
   white-space: nowrap !important;
 }
 
-/* 💚 有給ラベル（カレンダー内） */
 .at-calendar-day-box.is-paid-leave::after {
   content: "有給" !important;
-  background-color: #e8f5e9 !important; /* 背景に溶け込む極淡いセージグリーン */
-  color: #166534 !important; /* 深みのある上品な緑 */
-  border: 1px solid #c8e6c9 !important; /* 主張しない繊細な緑の枠線 */
+  background-color: #e8f5e9 !important;
+  color: #166534 !important;
+  border: 1px solid #c8e6c9 !important;
 }
 
-/* 🖤 欠勤ラベル（カレンダー内） */
 .at-calendar-day-box.is-absent::after {
   content: "欠勤" !important;
-  background-color: #f1f5f9 !important; /* 透明感のあるライトグレー */
-  color: #475569 !important; /* 落ち着いたスレートグレー */
-  border: 1px solid #e2e8f0 !important; /* 馴染む薄い境界線 */
+  background-color: #f1f5f9 !important;
+  color: #475569 !important;
+  border: 1px solid #e2e8f0 !important;
 }
 
-/* 🔵 勤怠中（青系にリニューアル）⇒ ホバーで少し濃い青 */
+/* 🔵 勤怠中 */
 .at-calendar-day-box.is-working-now {
-  /* 背景をほんのり透明感のある水色にしてプロっぽく */
   background-color: rgba(59, 130, 246, 0.04) !important;
-
-  /* 左辺だけアクセントカラーの青、他は優しく馴染む淡い境界線に */
   border-left: 3px solid #3b82f6 !important;
   border-top: 1px solid #d1e2ff !important;
   border-right: 1px solid #d1e2ff !important;
   border-bottom: 1px solid #d1e2ff !important;
-
-  /* 少しだけ内側に影を入れて質感を柔らかく */
   box-shadow: inset 0 0 4px rgba(59, 130, 246, 0.1);
 }
 
-/* --- 曜日・祝日の文字色設定 --- */
+/* 曜日・祝日文字色 */
 .at-calendar-day-box.is-saturday .at-calendar-day-num {
   color: #0d6efd !important;
 }
+
 .at-calendar-day-box.is-sunday .at-calendar-day-num,
 .at-calendar-day-box.is-holiday .at-calendar-day-num {
   color: #dc3545 !important;
 }
+
 .at-calendar-day-box.out-of-month .at-calendar-day-num {
   color: #94a3b8 !important;
 }
 
+
 /* ==========================================================================
-   🔵 7. 打刻中アニメーション ＆ 青ドット
+   🔵 7. 打刻中アニメーション ＆ 特殊ドット
    ========================================================================== */
-/* 水色で静かに呼吸するドット（既存の緑ドットとサイズ感を統一） */
+
 .pulsing-blue-dot {
   width: 7px;
   height: 7px;
   border-radius: 50%;
-  background-color: #3b82f6; /* 「出勤中」バッジに近い青 */
+  background-color: #3b82f6;
   box-shadow: 0 0 6px rgba(59, 130, 246, 0.5);
   animation: gentle-glow 3s ease-in-out infinite;
   display: inline-block;
@@ -764,19 +839,76 @@
 }
 
 @keyframes gentle-glow {
+
   0%,
   100% {
     opacity: 0.4;
     transform: scale(0.95);
   }
+
   50% {
     opacity: 1;
     transform: scale(1.05);
   }
 }
 
-/* リスト形式（テーブル内）の時は、打刻中の青ドットを非表示にする */
 #attendance_table .pulsing-blue-dot {
   display: none !important;
 }
 
+/* ==========================================================================
+   経費登録モーダル：991px以下（ボタン左側並び ＋ 合計金額を下段右寄せ）
+   ========================================================================== */
+@media (max-width: 991px) {
+
+  /* フッター全体を上下2段レイアウトにする */
+  .expense-memo-footer {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 4px !important;
+    /* ボタンと合計金額の間隔 */
+    padding-top: 8px !important;
+    margin-top: auto !important;
+    border-top: 1px dashed #c4c6db !important;
+  }
+
+  /* 1段目：ボタン2つを左側でコンパクトに横並び */
+  .expense-memo-footer>div:first-child {
+    display: flex !important;
+    justify-content: flex-start !important;
+    /* 左寄せ */
+    align-items: center !important;
+    gap: 6px !important;
+    /* ボタン同士の間隔 */
+    width: 100% !important;
+  }
+
+  /* ボタンサイズと余白の微調整 */
+  #btn_add_expense_entry_row,
+  #btn_clear_all_expenses {
+    font-size: 0.78rem !important;
+    padding: 4px 10px !important;
+    height: 30px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    white-space: nowrap !important;
+  }
+
+  /* 2段目：合計金額（2枚目の位置：下段右寄せ） */
+  .expense-total-text {
+    width: 100% !important;
+    text-align: right !important;
+    /* 右寄せで独立配置 */
+    font-size: 0.8rem !important;
+    color: #4a4b5a !important;
+    margin: 0 !important;
+    line-height: 1.2 !important;
+  }
+
+  .expense-total-text span {
+    font-size: 1.15rem !important;
+    font-weight: 700 !important;
+    color: #888dc5 !important;
+  }
+}
