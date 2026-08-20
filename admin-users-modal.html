@@ -1,5 +1,6 @@
-<div class="modal fade" id="userModal" data-bs-backdrop="static" tabindex="-1" aria-labelledby="userModalLabel" aria-hidden="true">
-  <div class="modal-dialog modal-dialog-centered modal-md">
+<div class="modal fade" id="userModal" data-bs-backdrop="static" tabindex="-1" aria-labelledby="userModalLabel"
+  aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-md modal-dialog-scrollable">
     <div class="modal-content">
       <div class="modal-header">
         <h5 class="modal-title fw-bold text-dark" id="userModalLabel">ユーザー情報を登録</h5>
@@ -43,26 +44,16 @@
             </div>
 
             <div class="col-12">
-              <label for="password" class="form-label" id="password_label">パスワード <span class="text-danger">*</span></label>
+              <label for="password" class="form-label" id="password_label">パスワード <span
+                  class="text-danger">*</span></label>
 
-              <div id="password_group" class="input-group" style="border-radius: 10px; overflow: hidden; transition: all 0.2s ease">
-                <input
-                  type="password"
-                  id="password"
-                  class="form-control py-2"
-                  placeholder="6〜20文字の半角英数字"
-                  pattern="[a-zA-Z0-9]{6,20}"
-                  minlength="6"
-                  maxlength="20"
-                  required
-                  style="font-size: 0.95rem; border: none !important; background-color: transparent !important; box-shadow: none !important"
-                />
-                <button
-                  class="btn px-3 bg-transparent"
-                  type="button"
-                  id="toggle_password_btn"
-                  style="border: none !important; color: #6c757d !important; box-shadow: none !important"
-                >
+              <div id="password_group" class="input-group"
+                style="border-radius: 10px; overflow: hidden; transition: all 0.2s ease">
+                <input type="password" id="password" class="form-control py-2" placeholder="6〜20文字の半角英数字"
+                  pattern="[a-zA-Z0-9]{6,20}" minlength="6" maxlength="20" required
+                  style="font-size: 0.95rem; border: none !important; background-color: transparent !important; box-shadow: none !important" />
+                <button class="btn px-3 bg-transparent" type="button" id="toggle_password_btn"
+                  style="border: none !important; color: #6c757d !important; box-shadow: none !important">
                   <i class="bi bi-eye" id="toggle_password_icon"></i>
                 </button>
               </div>

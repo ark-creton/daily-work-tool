@@ -978,9 +978,9 @@
   /* --- 3. カレンダー日付マスの基本構造 ＆ 動的更新対応の極細枠線 --- */
   #calendar-days>div.calendar-day-cell,
   #calendar-days>div {
-    height: 48px !important;
-    min-height: 48px !important;
-    max-height: 48px !important;
+    height: 56px !important;
+    min-height: 56px !important;
+    max-height: 56px !important;
     padding: 3px 4px !important;
     box-sizing: border-box !important;
     position: relative !important;
@@ -988,15 +988,12 @@
     flex-direction: column !important;
     justify-content: space-between !important;
     overflow: hidden !important;
-
-    /* 💡 枠線の色をPCカレンダーに合わせて少し濃く（#f1f5f9 → #e2e8f0） */
     border: none !important;
     outline: none !important;
     box-shadow: inset -1px -1px 0 0 #e2e8f0 !important;
     background-color: #ffffff !important;
   }
 
-  /* カレンダー全体を囲む外枠 */
   #calendar-days {
     display: grid !important;
     grid-template-columns: repeat(7, 1fr) !important;
@@ -1066,18 +1063,23 @@
     border-radius: 50% !important;
   }
 
-  /* 💡 チェックマーク（退勤済みインジケーター） */
+  /* チェックマーク（退勤済みインジケーター） */
   .cal-completed-indicator,
   #calendar-days .cal-completed-indicator {
     display: inline-block !important;
-    position: static !important;
-    font-size: 11px !important;
+    position: absolute !important;
+    top: 2px !important;
+    left: -2px !important;
+    right: auto !important;
+    bottom: auto !important;
+    font-size: 8.5px !important;
     line-height: 1 !important;
     margin: 0 !important;
     padding: 0 !important;
     color: #cbd5e1 !important;
     visibility: visible !important;
     opacity: 1 !important;
+    z-index: 10 !important;
   }
 
   /* --- 5. 【下段】レポートアイコン群（横並び配置） --- */
@@ -1121,31 +1123,7 @@
     line-height: 10px !important;
   }
 
-  /* --- 6. 「過去のレポート」ヘッダー ＆ 新規作成ボタンのスマホ最適化 --- */
-  .grid-card .d-flex.justify-content-between {
-    display: flex !important;
-    align-items: center !important;
-    justify-content: space-between !important;
-    flex-wrap: nowrap !important;
-    height: 36px !important;
-    min-height: 36px !important;
-    gap: 6px !important;
-  }
-
-  .grid-card .section-title {
-    font-size: 0.85rem !important;
-    line-height: 1 !important;
-    margin: 0 !important;
-    white-space: nowrap !important;
-  }
-
-  .grid-card .ms-auto {
-    display: flex !important;
-    align-items: center !important;
-    margin-left: auto !important;
-    gap: 6px !important;
-  }
-
+  /* --- 6. 新規作成ボタンの共通デザイン --- */
   #open-report-modal-btn {
     width: auto !important;
     min-width: 0 !important;
@@ -1176,7 +1154,7 @@
     white-space: nowrap !important;
   }
 
-  /* --- 7. データなし（Empty State）の中央寄せ ＆ はみ出し防止 --- */
+  /* --- 7. データなし（Empty State） --- */
   #past_report_list,
   .main-report-scroll-box {
     overflow-x: hidden !important;
@@ -1215,7 +1193,7 @@
     font-size: 0.75rem !important;
   }
 
-  /* --- 8. 【案1】年月・種類プルダウンのデザイン統一＆右端余白の同期 --- */
+  /* --- 8. プルダウンの基本デザイン（共通） --- */
   #calendar-year-month-select,
   #target_user_id,
   .custom-calendar select,
@@ -1234,8 +1212,6 @@
     box-shadow: none !important;
     outline: none !important;
     cursor: pointer;
-
-    /* デフォルト矢印の削除とSVG小型矢印の追加 */
     -webkit-appearance: none !important;
     -moz-appearance: none !important;
     appearance: none !important;
@@ -1245,27 +1221,7 @@
     background-size: 10px 10px !important;
   }
 
-  /* 💡 「全てのレポート」プルダウンの横幅を自動調整し、右端にカレンダーと同じスキマを作る */
-  #target_user_id {
-    width: auto !important;
-    max-width: 125px !important;
-    margin-right: 2px !important;
-  }
-
-  /* 過去のレポートのヘッダー右側グループの余白微調整 */
-  .grid-card .d-flex.justify-content-between .ms-auto {
-    padding-right: 2px !important;
-  }
-
-  /* フォーカス時の標準枠線制御 */
-  #calendar-year-month-select:focus,
-  #target_user_id:focus,
-  .grid-card select.form-select:focus {
-    border-color: #94a3b8 !important;
-    box-shadow: 0 0 0 2px rgba(148, 163, 184, 0.2) !important;
-  }
-
-  /* --- 9. 過去レポートのステータスバッジ（日付を除外しバッジのみ最適化） --- */
+  /* --- 9. ステータスバッジ ＆ ログエリア --- */
   #past_report_list span[style*="background-color"] {
     font-size: 0.62rem !important;
     font-weight: 600 !important;
@@ -1277,7 +1233,6 @@
     margin-left: 4px !important;
   }
 
-  /* --- 10. 勤怠ログ（#recent_logs_area）のスマホ文字サイズ・余白最適化 --- */
   #recent_logs_area,
   textarea#recent_logs_area,
   .logs-textarea {
@@ -1287,12 +1242,11 @@
     height: auto !important;
   }
 
-  /* --- 11. 時計カード・時刻表示のスマホサイズ最適化（サイズ微調整版） --- */
+  /* --- 10. 時計カード ＆ その他 --- */
   .clock-card {
     padding: 12px 14px !important;
   }
 
-  /* 時刻数字（13:07:37）の絶妙なバランスサイズ（2.2rem） */
   #current_time_display,
   .time-display {
     font-size: 2.2rem !important;
@@ -1322,15 +1276,98 @@
     display: none !important;
   }
 
-  /* スマホ時：右側ヘッダー全体の隙間をリセットして右寄せにする */
   .header-right {
     gap: 4px !important;
-    /* 要素同士の間隔をキュッと詰める */
   }
 
-  /* ベルマーク外枠クラスの me-2 (マージン) を上書き */
   .notification-dropdown {
     margin-right: 0 !important;
+  }
+
+  #btn_cancel_expense_entry {
+    display: none !important;
+  }
+
+  /* ==========================================================================
+     メイン画面「過去のレポート」枠のみ限定上書き（カレンダー干渉防止版）
+     ========================================================================== */
+  .grid-card .d-flex.justify-content-between:has(#open-report-modal-btn),
+  .grid-card .d-flex.justify-content-between:has(#target_user_id) {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: flex-start !important;
+    width: 100% !important;
+    gap: 4px !important;
+    box-sizing: border-box !important;
+  }
+
+  /* 「過去のレポート」タイトルサイズ調整 */
+  .grid-card:has(#open-report-modal-btn) .section-title,
+  .grid-card:has(#open-report-modal-btn) h5,
+  .grid-card:has(#open-report-modal-btn) h6 {
+    font-size: 0.7rem !important;
+    font-weight: bold !important;
+    white-space: nowrap !important;
+    flex-shrink: 0 !important;
+    margin: 0 !important;
+  }
+
+  /* 過去のレポート側の右側グループのみ左（タイトルの直後）に寄せる */
+  .grid-card:has(#open-report-modal-btn) .ms-auto,
+  .grid-card:has(#open-report-modal-btn) .d-flex.align-items-center.gap-2 {
+    display: flex !important;
+    align-items: center !important;
+    flex-grow: 1 !important;
+    min-width: 0 !important;
+    margin-left: 0 !important;
+    /* カレンダー側に影響しないよう限定 */
+    gap: 4px !important;
+  }
+
+  /* 「+新規」ボタン */
+  .grid-card #open-report-modal-btn {
+    flex-shrink: 0 !important;
+  }
+
+  /* 過去のレポート側のプルダウン */
+  .grid-card #target_user_id {
+    flex-grow: 1 !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 110px !important;
+    font-size: 0.68rem !important;
+    padding: 2px 16px 2px 4px !important;
+    margin: 0 !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+  }
+
+  /* ==========================================================================
+     カレンダー 有給・欠勤バッジをマスの「完全中央」へ絶対配置
+     ========================================================================== */
+  /* マス全体を配置の基準にする */
+  #calendar-days>div.calendar-day-cell,
+  #calendar-days>div {
+    position: relative !important;
+  }
+
+  /* 有給・欠勤バッジ：親要素を無視してマスの真ん中に配置 */
+  #calendar-days .label-paid,
+  #calendar-days .label-absent {
+    position: absolute !important;
+    top: 46% !important;
+    left: 50% !important;
+    transform: translate(-50%, -50%) !important;
+    font-size: 0.58rem !important;
+    padding: 0 3px !important;
+    line-height: 1.1 !important;
+    border-radius: 3px !important;
+    white-space: nowrap !important;
+    z-index: 5 !important;
+    margin: 0 !important;
+    max-width: 90% !important;
+    box-sizing: border-box !important;
   }
 }
 
@@ -1338,7 +1375,6 @@
 /* ==========================================================================
    過去レポート一覧
    ========================================================================== */
-
 a.past-report-item,
 a.past-report-item:visited,
 a.past-report-item:focus,

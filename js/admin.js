@@ -10,7 +10,11 @@ async function initializeAdminPage() {
   console.log("管理者専用画面の初期化を開始します...");
 
   const modalContainer = document.getElementById("modal_container");
-  const newButton = document.getElementById("user_new_button");
+
+  // ▼ 💡【修正】PC用とスマホ用の両方のボタンを取得
+  const newButtonPc = document.getElementById("user_new_button_pc");
+  const newButtonSp = document.getElementById("user_new_button_sp");
+  const newButtons = [newButtonPc, newButtonSp].filter(Boolean); // 存在するボタンのみ抽出
 
   if (!modalContainer) return;
 
@@ -22,13 +26,12 @@ async function initializeAdminPage() {
 
     const userModalElement = document.getElementById("userModal");
 
-    // 💡 【修正】userModalの初期化を安全なチェック付きに変更
     let userModal = null;
     if (userModalElement) {
       userModal = bootstrap.Modal.getInstance(userModalElement) || new bootstrap.Modal(userModalElement, { backdrop: "static" });
     }
 
-    // ここで先にフォーム要素をしっかり取得します
+    // フォーム要素を取得
     const form = document.getElementById("user_form");
 
     // ==========================================
@@ -54,23 +57,27 @@ async function initializeAdminPage() {
       console.log("会社マスタの連携が完了しました！");
     }
 
-    // 2. 新規ユーザー登録ボタンのイベント
-    if (newButton && userModal) {
-      newButton.addEventListener("click", () => {
-        setupModalForNew(userModalElement);
-        userModal.show();
+    // ==========================================
+    // ▼ 💡【修正】PC用・スマホ用どちらの新規登録ボタンを押してもモーダルを開く
+    // ==========================================
+    if (userModal) {
+      newButtons.forEach((btn) => {
+        btn.addEventListener("click", () => {
+          setupModalForNew(userModalElement);
+          userModal.show();
 
-        // モーダルが完全に開ききったタイミングでフォーカスを当てる
-        userModalElement.addEventListener(
-          "shown.bs.modal",
-          () => {
-            const lastNameInput = document.getElementById("last_name");
-            if (lastNameInput) {
-              lastNameInput.focus();
-            }
-          },
-          { once: true },
-        );
+          // モーダルが完全に開ききったタイミングでフォーカスを当てる
+          userModalElement.addEventListener(
+            "shown.bs.modal",
+            () => {
+              const lastNameInput = document.getElementById("last_name");
+              if (lastNameInput) {
+                lastNameInput.focus();
+              }
+            },
+            { once: true }
+          );
+        });
       });
     }
 
@@ -159,14 +166,15 @@ async function initializeAdminPage() {
       });
     }
 
-    if (newButton) {
-      newButton.addEventListener("click", () => {
+    // ▼ 💡【修正】新規ボタン押下時にフォーム変更フラグをクリア
+    newButtons.forEach((btn) => {
+      btn.addEventListener("click", () => {
         isFormDirty = false;
       });
-    }
+    });
 
     // ==========================================
-    // 💡 【重要修正】確認用ミニモーダルの初期化を完全安全化
+    // 確認用ミニモーダルの初期化
     // ==========================================
     const confirmDiscardModalElement = document.getElementById("confirmDiscardModal");
     let confirmDiscardModal = null;
@@ -180,7 +188,7 @@ async function initializeAdminPage() {
         });
     }
 
-    // メインモーダルの右上×ボタンとキャンセルボタンを狙い撃ち
+    // メインモーダルの右上×ボタンとキャンセルボタン
     if (userModalElement) {
       const mainCloseButtons = userModalElement.querySelectorAll("#cancel_button, .modal-header .btn-close");
 
@@ -385,7 +393,7 @@ function setupFormSubmit(userModal) {
           email: loginEmail,
           password: password,
           options: {
-            persistSession: false, // 👈「ログインを切り替えないでね」というお守り
+            persistSession: false,
           },
         });
 
@@ -591,7 +599,6 @@ function setupEditButtonEvents() {
 
       const userModalElement = document.getElementById("userModal");
 
-      // 💡 【修正】ここも直接 new bootstrap.Modal せず、安全に既存インスタンスを取得
       let userModal = null;
       if (userModalElement) {
         userModal = bootstrap.Modal.getInstance(userModalElement) || new bootstrap.Modal(userModalElement, { backdrop: "static" });

@@ -1,8 +1,14 @@
-<div class="container-fluid p-4 d-flex flex-column" style="min-height: 100%">
+<div class="container-fluid p-3 p-md-4 d-flex flex-column" style="min-height: 100%">
   <div class="d-flex justify-content-between align-items-end mb-4 flex-shrink-0">
     <div>
-      <h2 class="h4 mb-1 fw-bold page-title">レポート管理</h2>
-      <p class="text-muted small mb-0">日々の業務レポートの新規作成、編集、および過去のレポートの確認を行えます。</p>
+      <h2 class="h4 mb-1 fw-bold page-title d-flex align-items-center">
+        レポート管理
+        <span class="ms-2 help-icon d-md-none" tabindex="0" data-bs-toggle="popover" data-bs-trigger="focus"
+          data-bs-content="日々の業務レポートの新規作成、編集、および過去のレポートの確認を行えます。">
+          <i class="bi bi-question-circle"></i>
+        </span>
+      </h2>
+      <p class="text-muted small mb-0 d-none d-md-block">日々の業務レポートの新規作成、編集、および過去のレポートの確認を行えます。</p>
     </div>
 
     <div class="d-flex gap-2">
@@ -19,37 +25,55 @@
           </div>
 
           <div class="d-flex gap-2">
-            <button type="button" id="report_new_button" class="btn btn-sm btn-pastel-mint-rounded"><i class="bi bi-plus-lg"></i>新規作成</button>
+            <button type="button" id="report_new_button" class="btn btn-sm btn-pastel-mint-rounded"><i
+                class="bi bi-plus-lg"></i>新規作成</button>
             <button id="report_edit_button" class="btn btn-sm btn-outline-secondary d-none">編集</button>
           </div>
         </div>
 
         <div class="report-content-body border-top py-3">
-          <div id="report_detail_empty" class="text-muted py-5 px-2 h-100 d-flex flex-column align-items-center justify-content-center">
-            <i class="bi bi-file-earmark-text d-block fs-2 mb-2 text-black-50"></i>
-            <p class="mb-1 fw-bold text-value">提出されたレポートがありません</p>
-            <p class="small mb-0 text-black-50 text-wrap">右側の過去の提出一覧、またはカレンダーからレポートを選択してください。</p>
+          <!-- 提出されたレポートがないとき（未選択時）のエレメント -->
+          <div id="report_detail_empty"
+            class="text-muted py-5 px-2 h-100 d-flex flex-column align-items-center justify-content-center">
+            <i class="bi bi-file-earmark-text d-block fs-3 mb-2 text-black-50"></i>
+            <p class="mb-1 fw-bold text-value empty-title">提出されたレポートがありません</p>
+            <p class="small mb-0 text-black-50 text-wrap empty-subtext">右側の過去の提出一覧、またはカレンダーからレポートを選択してください。</p>
           </div>
 
           <div id="report_detail_view" class="d-none animate__animated animate__fadeIn" style="overflow-x: hidden">
-            <div class="d-flex justify-content-between align-items-center border-bottom pb-3 mb-4">
-              <div>
-                <h3 id="view_report_title_header" class="fw-bold mb-0 d-flex align-items-center fs-5 text-secondary">
+            <div class="border-bottom pb-3 mb-4">
+              <!-- タイトル ＆ 右端トグルボタン（点線なし） -->
+              <div class="d-flex justify-content-between align-items-center w-100 mb-2">
+                <h3 id="view_report_title_header"
+                  class="fw-bold mb-0 d-inline-flex align-items-center fs-5 text-secondary">
                   <span id="view_report_type">ー</span>
                   <span>：<span id="view_reporter_name">ー</span></span>
                   <span id="view_report_status_badge" class="ms-2"></span>
                 </h3>
+
+                <!-- 右端固定ボタン -->
+                <button type="button"
+                  class="btn btn-sm btn-light border d-lg-none ms-auto flex-shrink-0 report-meta-toggle-btn p-1 px-2"
+                  data-bs-toggle="collapse" data-bs-target="#report_meta_collapse" aria-expanded="false"
+                  aria-controls="report_meta_collapse" aria-label="詳細を開閉">
+                  <i class="bi bi-chevron-down meta-toggle-icon"></i>
+                </button>
               </div>
 
-              <div class="text-end text-muted small d-flex flex-column align-items-end">
-                <div id="read_status_wrapper" class="mb-1 d-none" style="font-size: 0.75rem">
-                  <div id="btn_read_status" class="text-secondary fw-normal d-flex align-items-center" style="font-size: 0.75rem">
-                    <i class="bi bi-eye me-1" style="opacity: 0.5 !important"></i>既読状況を確認
+              <!-- 既読状況＆提出日エリア（アコーディオン） -->
+              <div class="collapse d-lg-block" id="report_meta_collapse">
+                <div
+                  class="text-start text-lg-end text-muted small d-flex flex-column align-items-start align-items-lg-end pt-1">
+                  <div id="read_status_wrapper" class="mb-1 d-none" style="font-size: 0.75rem">
+                    <div id="btn_read_status" class="text-secondary fw-normal d-flex align-items-center"
+                      style="font-size: 0.75rem">
+                      <i class="bi bi-eye me-1" style="opacity: 0.5 !important"></i>既読状況を確認
+                    </div>
                   </div>
-                </div>
-                <div class="d-flex align-items-center gap-2">
-                  <span class="text-secondary">提出日:</span>
-                  <span id="view_report_date" class="small text-muted">ー</span>
+                  <div class="d-flex align-items-center gap-2">
+                    <span class="text-secondary">提出日:</span>
+                    <span id="view_report_date" class="small text-muted">ー</span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -88,86 +112,116 @@
             <div class="mb-5">
               <div class="fw-bold text-dark mb-2 small text-muted">【作業内容】</div>
 
-              <div id="view_work_content" class="p-3 bg-light rounded lh-base" style="white-space: pre-wrap; word-break: break-all">ー</div>
+              <div id="view_work_content" class="p-3 bg-light rounded lh-base"
+                style="white-space: pre-wrap; word-break: break-all">ー</div>
 
               <div id="view_work_content_weekly" class="d-none bg-light rounded p-3 small">
                 <div class="row g-2">
                   <div class="col-12 border-bottom pb-1 mb-1">
-                    <span class="fw-bold text-muted me-2">月曜日:</span> <span id="view_work_mon" class="text-dark">ー</span>
+                    <span class="fw-bold text-muted me-2">月曜日:</span> <span id="view_work_mon"
+                      class="text-dark">ー</span>
                   </div>
                   <div class="col-12 border-bottom pb-1 mb-1">
-                    <span class="fw-bold text-muted me-2">火曜日:</span> <span id="view_work_tue" class="text-dark">ー</span>
+                    <span class="fw-bold text-muted me-2">火曜日:</span> <span id="view_work_tue"
+                      class="text-dark">ー</span>
                   </div>
                   <div class="col-12 border-bottom pb-1 mb-1">
-                    <span class="fw-bold text-muted me-2">水曜日:</span> <span id="view_work_wed" class="text-dark">ー</span>
+                    <span class="fw-bold text-muted me-2">水曜日:</span> <span id="view_work_wed"
+                      class="text-dark">ー</span>
                   </div>
                   <div class="col-12 border-bottom pb-1 mb-1">
-                    <span class="fw-bold text-muted me-2">木曜日:</span> <span id="view_work_thu" class="text-dark">ー</span>
+                    <span class="fw-bold text-muted me-2">木曜日:</span> <span id="view_work_thu"
+                      class="text-dark">ー</span>
                   </div>
                   <div class="col-12 border-bottom pb-1 mb-1">
-                    <span class="fw-bold text-muted me-2">金曜日:</span> <span id="view_work_fri" class="text-dark">ー</span>
+                    <span class="fw-bold text-muted me-2">金曜日:</span> <span id="view_work_fri"
+                      class="text-dark">ー</span>
                   </div>
                   <div class="col-12 border-bottom pb-1 mb-1">
-                    <span class="fw-bold text-muted me-2">土曜日:</span> <span id="view_work_sat" class="text-dark">ー</span>
+                    <span class="fw-bold text-muted me-2">土曜日:</span> <span id="view_work_sat"
+                      class="text-dark">ー</span>
                   </div>
-                  <div class="col-12"><span class="fw-bold text-muted me-2">日曜日:</span> <span id="view_work_sun" class="text-dark">ー</span></div>
+                  <div class="col-12"><span class="fw-bold text-muted me-2">日曜日:</span> <span id="view_work_sun"
+                      class="text-dark">ー</span></div>
                 </div>
               </div>
             </div>
 
             <div class="mb-5">
-              <h5 class="fw-bold text-secondary border-bottom pb-2 mb-4">■ 共通記入事項</h5>
+              <!-- 見出し ＋ スマホ用トグルボタン（アイコンのみ） -->
+              <div class="d-flex justify-content-between align-items-center border-bottom pb-2 mb-4">
+                <h5 class="fw-bold text-secondary m-0">■ 共通記入事項</h5>
 
-              <div class="row g-4">
-                <div class="col-12">
-                  <div class="fw-bold text-dark mb-2 small text-muted">【所感】（今週の作業を行い、心に感じた事・感想）</div>
-                  <div id="view_content_impression" class="p-3 bg-light rounded lh-base" style="white-space: pre-wrap; word-break: break-all">ー</div>
-                </div>
+                <!-- シンプルなアイコンボタン（文字なし） -->
+                <button type="button"
+                  class="btn btn-sm btn-light border d-lg-none ms-auto flex-shrink-0 common-items-toggle-btn p-1 px-2"
+                  data-bs-toggle="collapse" data-bs-target="#common_items_collapse" aria-expanded="false"
+                  aria-controls="common_items_collapse" aria-label="共通記入事項を開閉">
+                  <i class="bi bi-chevron-down common-toggle-icon"></i>
+                </button>
+              </div>
 
-                <div class="col-md-6">
-                  <div class="fw-bold text-dark mb-2 small text-muted">【残作業】（作業・見積等）</div>
-                  <div id="view_content_remaining_work" class="p-3 bg-light rounded lh-base" style="white-space: pre-wrap; word-break: break-all">
-                    ー
+              <!-- アコーディオン対象エリア -->
+              <div class="collapse d-lg-block" id="common_items_collapse">
+                <div class="row g-4">
+                  <div class="col-12">
+                    <div class="fw-bold text-dark mb-2 small text-muted">【所感】（今週の作業を行い、心に感じた事・感想）</div>
+                    <div id="view_content_impression" class="p-3 bg-light rounded lh-base"
+                      style="white-space: pre-wrap; word-break: break-all">ー</div>
                   </div>
-                </div>
 
-                <div class="col-md-6">
-                  <div class="fw-bold text-dark mb-2 small text-muted">【近々の目標】（1〜3か月以内）</div>
-                  <div id="view_content_near_goal" class="p-3 bg-light rounded lh-base" style="white-space: pre-wrap; word-break: break-all">ー</div>
-                </div>
-
-                <div class="col-md-6">
-                  <div class="fw-bold text-dark mb-2 small text-muted">【課題等】（自分が成長する為の課題）</div>
-                  <div id="view_content_issue" class="p-3 bg-light rounded lh-base" style="white-space: pre-wrap; word-break: break-all">ー</div>
-                </div>
-
-                <div class="col-md-6">
-                  <div class="fw-bold text-dark mb-2 small text-muted">【目標・課題を達成するための行動】</div>
-                  <div id="view_content_action_plan" class="p-3 bg-light rounded lh-base" style="white-space: pre-wrap; word-break: break-all">
-                    ー
+                  <div class="col-md-6">
+                    <div class="fw-bold text-dark mb-2 small text-muted">【残作業】（作業・見積等）</div>
+                    <div id="view_content_remaining_work" class="p-3 bg-light rounded lh-base"
+                      style="white-space: pre-wrap; word-break: break-all">
+                      ー
+                    </div>
                   </div>
-                </div>
 
-                <div class="col-md-6">
-                  <div class="fw-bold text-dark mb-2 small text-muted">【次回作業予定】</div>
-                  <div id="view_next_schedule" class="p-3 bg-light rounded lh-base" style="white-space: pre-wrap; word-break: break-all">ー</div>
-                </div>
+                  <div class="col-md-6">
+                    <div class="fw-bold text-dark mb-2 small text-muted">【近々の目標】（1〜3か月以内）</div>
+                    <div id="view_content_near_goal" class="p-3 bg-light rounded lh-base"
+                      style="white-space: pre-wrap; word-break: break-all">ー</div>
+                  </div>
 
-                <div class="col-md-6">
-                  <div class="fw-bold text-dark mb-2 small text-muted">【連絡事項】</div>
-                  <div id="view_content_notice" class="p-3 bg-light rounded lh-base" style="white-space: pre-wrap; word-break: break-all">ー</div>
-                </div>
+                  <div class="col-md-6">
+                    <div class="fw-bold text-dark mb-2 small text-muted">【課題等】（自分が成長する為の課題）</div>
+                    <div id="view_content_issue" class="p-3 bg-light rounded lh-base"
+                      style="white-space: pre-wrap; word-break: break-all">ー</div>
+                  </div>
 
-                <div class="col-12 border-top pt-3 mt-3">
-                  <div class="fw-bold text-dark mb-2 small text-muted">【共有先（提出先）】</div>
-                  <div id="view_shared_with" class="d-flex flex-wrap gap-2 align-items-center">
-                    <span class="text-muted">ー</span>
+                  <div class="col-md-6">
+                    <div class="fw-bold text-dark mb-2 small text-muted">【目標・課題を達成するための行動】</div>
+                    <div id="view_content_action_plan" class="p-3 bg-light rounded lh-base"
+                      style="white-space: pre-wrap; word-break: break-all">
+                      ー
+                    </div>
+                  </div>
+
+                  <div class="col-md-6">
+                    <div class="fw-bold text-dark mb-2 small text-muted">【次回作業予定】</div>
+                    <div id="view_next_schedule" class="p-3 bg-light rounded lh-base"
+                      style="white-space: pre-wrap; word-break: break-all">ー</div>
+                  </div>
+
+                  <div class="col-md-6">
+                    <div class="fw-bold text-dark mb-2 small text-muted">【連絡事項】</div>
+                    <div id="view_content_notice" class="p-3 bg-light rounded lh-base"
+                      style="white-space: pre-wrap; word-break: break-all">ー</div>
+                  </div>
+
+                  <div class="col-12 border-top pt-3 mt-3">
+                    <div class="fw-bold text-dark mb-2 small text-muted">【共有先（提出先）】</div>
+                    <div id="view_shared_with" class="d-flex flex-wrap gap-2 align-items-center">
+                      <span class="text-muted">ー</span>
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
 
-            <div id="view_updated_at_wrapper" class="text-end text-muted small mt-4 pt-2 border-top d-none" style="font-size: 0.8rem">
+            <div id="view_updated_at_wrapper" class="text-end text-muted small mt-4 pt-2 border-top d-none"
+              style="font-size: 0.8rem">
               <i class="bi bi-pencil-square me-1"></i>最終更新日時：<span id="view_updated_at">ー</span>
             </div>
           </div>
@@ -183,22 +237,14 @@
         </div>
       </div>
 
-      <div class="card border-0 shadow-sm p-4 table-card report-list-card d-flex flex-column" style="height: 350px">
-        <div class="d-flex justify-content-between align-items-center mb-3 flex-shrink-0 flex-nowrap">
+      <!-- 過去のレポートカード -->
+      <div class="card border-0 shadow-sm p-3 p-md-4 table-card report-list-card d-flex flex-column"
+        style="height: 350px">
+
+        <div class="d-flex justify-content-between align-items-center mb-3 flex-shrink-0 w-100 gap-2">
           <h4 class="fs-6 fw-bold m-0 text-value flex-shrink-0">過去のレポート</h4>
 
-          <select
-            id="target_user_id"
-            class="form-select fw-normal text-secondary border-light-subtle ms-2"
-            style="
-              width: 145px;
-              max-width: 145px;
-              font-size: 0.75rem;
-              padding: 0.15rem 1.6rem 0.15rem 0.5rem;
-              height: 1.8rem;
-              background-size: 8px 10px;
-            "
-          >
+          <select id="target_user_id" class="form-select fw-normal text-secondary border-light-subtle ms-auto">
           </select>
         </div>
 

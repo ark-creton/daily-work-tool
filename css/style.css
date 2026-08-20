@@ -943,6 +943,31 @@ body {
     height: 34px !important;
     white-space: nowrap !important;
   }
+
+  /* ==========================================
+     📱 スマホ用：レポートモーダル上部ヘッダーのスリム化
+     ========================================== */
+/* 📱 スマホ用：レポートモーダル上部ヘッダーの上下余白を少し広げて下部と統一 */
+  #modal_report_entry .modal-header {
+    padding: 12px 16px !important; 
+  }
+
+  /* タイトルの文字サイズとアイコン配置の微調整 */
+  #modal_report_entry .modal-header .modal-title {
+    font-size: 1.05rem !important;
+    line-height: 1.2 !important;
+  }
+
+  /* 閉じるボタン（✕）の余白調整 */
+  #modal_report_entry .modal-header .btn-close {
+    padding: 4px !important;
+    margin: 0 !important;
+  }
+
+  /* スマホ時のみ、フッターの「閉じる」ボタンを非表示 */
+  #modal_report_entry .modal-footer #cancel_button {
+    display: none !important;
+  }
 }
 
 /* ==========================================================================

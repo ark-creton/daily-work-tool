@@ -462,13 +462,54 @@ window.initAttendanceCalendar = async () => {
         editButtonHtml = `<button class="btn btn-sm btn-table-edit btn-table-view-only" style="pointer-events: none;">閲覧</button>`;
       }
 
-      // 有給・欠勤のクラス判定
+      // -------------------------------------------------------------------------
+      // クラス付与の判定（有給・欠勤・出勤中/退勤未打刻・未入力）
+      // -------------------------------------------------------------------------
+
+      // ① 有給・欠勤のクラス判定
       if (record?.work_type === "paid") {
         finalRowClass += " at-row-paid";
       } else if (record?.work_type === "absent") {
         finalRowClass += " at-row-absent";
       }
-      // Step5: 組み立てたデータを行（tr）テンプレートHTMLにバインド
+
+      // ② 出勤のみ（退勤未入力）の日のクラス判定
+      if (record && record.clock_in && !record.clock_out && record.work_type !== "paid" && record.work_type !== "absent") {
+        if (isToday) {
+          if (!finalRowClass.includes("at-row-working-now")) {
+            finalRowClass += " at-row-working-now";
+          }
+        } else {
+          // 過去日の退勤漏れは at-row-no-clockout を付与（「打刻中」ボタンを出さないため）
+          if (!finalRowClass.includes("at-row-no-clockout")) {
+            finalRowClass += " at-row-no-clockout";
+          }
+        }
+      }
+
+      // -------------------------------------------------------------------------
+      // 未入力日（打刻なし・有給/欠勤なし・有効な経費なし・メモなし）の判定
+      // -------------------------------------------------------------------------
+      const hasActiveExpense = record?.expense_records && Array.isArray(record.expense_records) && record.expense_records.some(e => e.is_active);
+      const isEmptyDay = !record || (!record.clock_in && record.work_type !== "paid" && record.work_type !== "absent" && !hasActiveExpense && !record.memo);
+
+      if (isEmptyDay) {
+        finalRowClass += " at-row-empty";
+      }
+
+      // ★経費：データがある時だけdivを作成
+      const expenseInner = expenseText ? `<div class="cell-expense-clamp">${expenseText}</div>` : '';
+
+      // ★備考：テキストがあるか判定し、ある時だけ span.memo-text-body で囲む
+      const hasMemoText = Boolean(memoText && memoText.trim());
+      const memoTextHtml = hasMemoText ? `<span class="memo-text-body">${memoText}</span>` : '';
+
+      // バッジ、または備考テキストの「どちらか」があれば要素を作成（どちらも無ければ完全な空文字）
+      const memoInner = (statusBadge || hasMemoText)
+        ? `<div class="cell-memo-clamp">${statusBadge}${memoTextHtml}</div>`
+        : '';
+
+      // Step5: テンプレートHTMLへの流し込み（8番目と9番目のtd）
       htmlRows += `
         <tr class="${finalRowClass}">
           <td class="text-center">${editButtonHtml}</td> 
@@ -478,28 +519,13 @@ window.initAttendanceCalendar = async () => {
           <td class="text-center">${overtimeStr}</td>
           <td class="text-center">${breakTimeDisplay}</td>
           <td class="text-center">${outingStr}</td>
-          
-          <td class="text-start small cell-expense" 
-            style="max-width: 180px; cursor: help; padding-top: 4px; padding-bottom: 4px;" 
-            data-bs-toggle="tooltip" 
-            data-bs-placement="top" 
-            title="${expenseText}">
-            <div class="cell-expense-clamp">${expenseText}</div>
-          </td>
-          
-          <td class="small cell-memo" 
-            style="max-width: 150px; cursor: help; padding-top: 4px; padding-bottom: 4px;" 
-            data-bs-toggle="tooltip" 
-            data-bs-placement="top" 
-            title="${memoText}">
-            <div class="cell-memo-clamp">${statusBadge}${memoText}</div>
-          </td>
+          <td class="text-start small cell-expense" style="max-width: 180px; cursor: help; padding-top: 4px; padding-bottom: 4px;" data-bs-toggle="tooltip" data-bs-placement="top" title="${expenseText}">${expenseInner}</td>
+          <td class="small cell-memo" style="max-width: 150px; cursor: help; padding-top: 4px; padding-bottom: 4px;" data-bs-toggle="tooltip" data-bs-placement="top" title="${memoText}">${memoInner}</td>
         </tr>`;
     }
 
     // テーブル本体のHTMLを差し替え
     attendanceTbody.innerHTML = htmlRows;
-
     try {
       await renderCalendarGrid(year, month, holidays, recordMap, targetUser, loginUser);
     } catch (error) {
@@ -756,7 +782,6 @@ window.initAttendanceCalendar = async () => {
     // 【補助関数】日付切り替え時のモーダル内データ再読込
     // モーダルを開いたまま「前日」や「翌日」へ移動した際、中身のデータを次の日のものに差し替える
     const updateModalDate = async (offset) => {
-      // ✨ 非同期チェックをするため async を追加
       if (!currentModalDate || !displayPeriodInput.value) return;
 
       const [targetYear, targetMonth] = displayPeriodInput.value.split("-").map(Number);

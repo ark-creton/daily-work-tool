@@ -54,18 +54,21 @@ document.addEventListener("DOMContentLoaded", async () => {
   };
 
   // ==========================================
-  // ポップオーバーの共通初期化関数（PC・スマホ自動判別）
+  // ポップオーバーの共通初期化関数（再生成・更新対応版）
   // ==========================================
   function initGlobalPopovers() {
-    // サイドバーのメニュー（.nav-item）以外にある、通常のdata-bs-toggle要素だけを初期化する
     const popoverTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="popover"]:not(.nav-item)'));
-    popoverTriggerList.map(function (popoverTriggerEl) {
-      if (bootstrap.Popover.getInstance(popoverTriggerEl)) return;
+    popoverTriggerList.forEach(function (popoverTriggerEl) {
+      // 既存のインスタンスを破棄して再生成（イベントの重複やバグを予防）
+      const existingPopover = bootstrap.Popover.getInstance(popoverTriggerEl);
+      if (existingPopover) {
+        existingPopover.dispose();
+      }
 
       const isMobile = window.innerWidth < 768;
       const triggerMode = isMobile ? "focus" : "hover focus";
 
-      return new bootstrap.Popover(popoverTriggerEl, {
+      new bootstrap.Popover(popoverTriggerEl, {
         trigger: triggerMode,
         delay: { show: 50, hide: 100 },
       });

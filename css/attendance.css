@@ -18,7 +18,7 @@
 
 /* ◆ 期間選択フィルター */
 .filter-control {
-  width: 180px !important;
+  height: 38px !important;
 }
 
 /* ◆ ベースカード（外枠） */
@@ -124,6 +124,14 @@
   line-height: 1 !important;
 }
 
+/* デフォルト（PC）ではアイコンを隠し、テキストを表示 */
+.help-icon {
+  display: none !important;
+}
+
+.page-description {
+  display: block;
+}
 
 /* ==========================================================================
    📊 2. 【リスト形式】テーブルレイアウト
@@ -183,45 +191,45 @@
   width: 65px;
 }
 
-/* 1: 操作 */
+/* 操作 */
 #attendance_table th:nth-child(2),
 #attendance_table td:nth-child(2) {
   width: 130px;
 }
 
-/* 2: 日付 */
+/* 日付 */
 #attendance_table th:nth-child(3),
 #attendance_table td:nth-child(3) {
   width: 120px;
 }
 
-/* 3: 勤務時間 */
+/* 勤務時間 */
 #attendance_table th:nth-child(4),
 #attendance_table td:nth-child(4) {
   width: 80px;
 }
 
-/* 4: 総勤務 */
+/* 総勤務 */
 #attendance_table th:nth-child(5),
 #attendance_table td:nth-child(5) {
   width: 80px;
 }
 
-/* 5: 時間外 */
+/* 時間外 */
 #attendance_table th:nth-child(6),
 #attendance_table td:nth-child(6) {
   width: 90px;
 }
 
-/* 6: 休憩 */
+/* 休憩 */
 #attendance_table th:nth-child(7),
 #attendance_table td:nth-child(7) {
   width: 65px;
 }
 
-/* 7: 外出 */
+/* 外出 */
 
-/* 8: 経費明細 */
+/* 経費明細 */
 #attendance_table th:nth-child(8),
 #attendance_table td:nth-child(8) {
   width: 500px !important;
@@ -232,7 +240,7 @@
   padding-left: 12px !important;
 }
 
-/* 9: 備考 */
+/* 備考 */
 #attendance_table th:nth-child(9),
 #attendance_table td:nth-child(9) {
   overflow: hidden;
@@ -254,50 +262,57 @@
   max-height: 2.6em;
 }
 
-/* ◆ 休日・祝日の背景透過 */
-#attendance_table tbody tr.row-holiday td,
-#attendance_table tbody tr.row-saturday td {
-  background-color: transparent !important;
-}
+/* ==========================================================================
+   💻 PC表示時（992px以上）のみ適用する行背景色・ホバー設定
+   ========================================================================== */
+@media (min-width: 992px) {
 
-/* 💚 有給行 */
-#attendance_table tbody tr.at-row-paid td,
-.table tr.at-row-paid td {
-  background-color: rgba(34, 197, 94, 0.04) !important;
-}
+  /* ◆ 休日・祝日の背景透過 */
+  #attendance_table tbody tr.row-holiday td,
+  #attendance_table tbody tr.row-saturday td {
+    background-color: transparent !important;
+  }
 
-#attendance_table tbody tr.at-row-paid:hover td,
-.table tr.at-row-paid:hover td {
-  background-color: rgba(34, 197, 94, 0.1) !important;
-}
+  /* 💚 有給行 */
+  #attendance_table tbody tr.at-row-paid td,
+  .table tr.at-row-paid td {
+    background-color: rgba(34, 197, 94, 0.04) !important;
+  }
 
-/* 🖤 欠勤行 */
-#attendance_table tbody tr.at-row-absent td,
-.table tr.at-row-absent td {
-  background-color: rgba(148, 163, 184, 0.05) !important;
-}
+  #attendance_table tbody tr.at-row-paid:hover td,
+  .table tr.at-row-paid:hover td {
+    background-color: rgba(34, 197, 94, 0.1) !important;
+  }
 
-#attendance_table tbody tr.at-row-absent:hover td,
-.table tr.at-row-absent:hover td {
-  background-color: rgba(148, 163, 184, 0.12) !important;
-}
+  /* 🖤 欠勤行 */
+  #attendance_table tbody tr.at-row-absent td,
+  .table tr.at-row-absent td {
+    background-color: rgba(148, 163, 184, 0.05) !important;
+  }
 
-/* 🔵 打刻中行 */
-#attendance_table tbody tr.at-row-working-now td,
-.table tr.at-row-working-now td {
-  background-color: rgba(59, 130, 246, 0.04) !important;
-  color: #334155 !important;
-}
+  #attendance_table tbody tr.at-row-absent:hover td,
+  .table tr.at-row-absent:hover td {
+    background-color: rgba(148, 163, 184, 0.12) !important;
+  }
 
-#attendance_table tbody tr.at-row-working-now:hover td,
-.table tr.at-row-working-now:hover td {
-  background-color: rgba(59, 130, 246, 0.1) !important;
-}
+  /* 🔵 打刻中行 */
+  #attendance_table tbody tr.at-row-working-now td,
+  .table tr.at-row-working-now td {
+    background-color: rgba(59, 130, 246, 0.04) !important;
+    color: #334155 !important;
+  }
 
-/* 通常行ホバー */
-#attendance_table tbody tr:not(.at-row-paid):not(.at-row-absent):not(.at-row-working-now):hover td {
-  background-color: var(--row-hover-color) !important;
-  cursor: pointer;
+  #attendance_table tbody tr.at-row-working-now:hover td,
+  .table tr.at-row-working-now:hover td {
+    background-color: rgba(59, 130, 246, 0.1) !important;
+  }
+
+  /* 通常行ホバー */
+  #attendance_table tbody tr:not(.at-row-paid):not(.at-row-absent):not(.at-row-working-now):hover td {
+    background-color: var(--row-hover-color) !important;
+    cursor: pointer;
+  }
+
 }
 
 /* --- テーブル内状態バッジ --- */
@@ -371,7 +386,6 @@
   padding: 10px 16px !important;
   border-radius: 10px !important;
   white-space: nowrap !important;
-  flex-shrink: 1 !important;
   transition: all 0.2s ease !important;
 }
 
@@ -586,7 +600,6 @@
 /* カレンダー専用の外側コンテナ */
 .at-calendar-scroll-container {
   min-height: 480px;
-  /* 固定高さをやめ、最小高さに変更 */
   height: auto !important;
   overflow: hidden !important;
   border: 1px solid #dee2e6;
@@ -694,40 +707,40 @@
   font-size: 0.85rem !important;
 }
 
-/* フッター：アイコン */
-.at-calendar-day-footer {
-  width: 100% !important;
-  display: flex !important;
-  justify-content: center !important;
-  gap: 4px !important;
-}
-
-/* 経費・備考アイコンの共通調整 */
+/* 経費・備考アイコンコンテナのサイズ・余白リセット */
 .badge-mini {
   display: inline-flex !important;
   align-items: center !important;
   justify-content: center !important;
-  width: 18px !important;
+  width: auto !important;
+  /* 固定幅を解除して余白の詰まりを回避 */
   height: 18px !important;
-  margin: 0 4px !important;
+  margin: 0 !important;
+  padding: 0 !important;
   vertical-align: middle !important;
   line-height: 1 !important;
 }
 
-/* アイコン自体のサイズ調整 */
-.badge-mini i {
+/* 各アイコンの表示（サイズ設定 ＆ 予期せぬ余白のクリア） */
+.badge-mini .bi-cash-stack::before,
+.badge-mini .bi-chat-left-text::before {
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+.badge-mini .bi-cash-stack::before {
+  content: "¥" !important;
+  font-family: inherit !important;
+  font-weight: 700 !important;
+  color: #2563eb !important;
   font-size: 0.85rem !important;
-  font-style: normal !important;
 }
 
-/* 経費アイコン（現金）の色 */
-.badge-mini .bi-cash-stack {
-  color: #ca8a04 !important;
-}
-
-/* 備考アイコン（コメント）の色 */
-.badge-mini .bi-chat-left-text {
+.badge-mini .bi-chat-left-text::before {
+  content: "\F268" !important;
+  font-family: "bootstrap-icons" !important;
   color: #94a3b8 !important;
+  font-size: 0.8rem !important;
 }
 
 /* 背景色ルール */
@@ -769,11 +782,12 @@
   background-color: rgba(148, 163, 184, 0.12) !important;
 }
 
-/* センターラベル（有給・欠勤） */
+/* センターラベル（有給・欠勤）の位置調整 */
 .at-calendar-day-box.is-paid-leave::after,
 .at-calendar-day-box.is-absent::after {
   position: absolute !important;
-  top: 50% !important;
+  top: 40% !important;
+  /* ← 50% から 40% に変更して少し上に引き上げる */
   left: 50% !important;
   transform: translate(-50%, -50%) !important;
   font-size: 0.65rem !important;
@@ -781,6 +795,50 @@
   border-radius: 999px !important;
   font-weight: 600 !important;
   white-space: nowrap !important;
+  z-index: 1 !important;
+}
+
+/* フッター：アイコン同士の間隔を8pxに拡張 */
+.at-calendar-day-footer {
+  width: 100% !important;
+  display: flex !important;
+  justify-content: center !important;
+  align-items: center !important;
+  gap: 8px !important;
+  /* ← 6px から 8px に広げてしっかり離す */
+  margin-top: auto !important;
+  position: relative !important;
+  z-index: 2 !important;
+}
+
+/* ほんの少しだけキュッと詰める黄金バランス調整 */
+.at-calendar-day-footer {
+  display: flex !important;
+  justify-content: center !important;
+  align-items: center !important;
+  gap: 6px !important;
+  /* ← 12px から 6px に変更 */
+}
+
+.at-calendar-day-footer .badge-mini+.badge-mini {
+  margin-left: 5px !important;
+  /* ← 10px から 5px に変更 */
+}
+
+.badge-mini i+i,
+.badge-mini [class*="bi-"]+[class*="bi-"] {
+  margin-left: 5px !important;
+  /* ← 10px から 5px に変更 */
+}
+
+.badge-mini .bi-cash-stack {
+  margin-right: 3px !important;
+  /* ← 6px から 3px に変更 */
+}
+
+.badge-mini .bi-chat-left-text {
+  margin-left: 3px !important;
+  /* ← 6px から 3px に変更 */
 }
 
 .at-calendar-day-box.is-paid-leave::after {
@@ -822,6 +880,7 @@
 }
 
 
+
 /* ==========================================================================
    🔵 7. 打刻中アニメーション ＆ 特殊ドット
    ========================================================================== */
@@ -857,33 +916,131 @@
 }
 
 /* ==========================================================================
-   経費登録モーダル：991px以下（ボタン左側並び ＋ 合計金額を下段右寄せ）
+   📱 8. スマホ・モバイル専用レスポンシブ調整（991px以下）
    ========================================================================== */
 @media (max-width: 991px) {
 
-  /* フッター全体を上下2段レイアウトにする */
+  /* --- 基本表示切り替え --- */
+  .help-icon {
+    display: inline-block !important;
+  }
+
+  .page-description {
+    display: none !important;
+  }
+
+  /* --- 1. ヘッダーエリア --- */
+  .row.align-items-center.gy-2 {
+    display: flex !important;
+    flex-wrap: wrap !important;
+  }
+
+  .row.align-items-center.gy-2>div:first-child {
+    flex: 0 0 100% !important;
+    max-width: 100% !important;
+    width: 100% !important;
+    order: 1 !important;
+    margin-bottom: 2px !important;
+  }
+
+  div:has(> #target_user_id) {
+    flex: 0 0 50% !important;
+    max-width: 50% !important;
+    width: 50% !important;
+    order: 2 !important;
+    margin-left: 0 !important;
+    padding-right: 4px !important;
+  }
+
+  div:has(> #display_period) {
+    flex: 0 0 50% !important;
+    max-width: 50% !important;
+    width: 50% !important;
+    order: 3 !important;
+    padding-left: 4px !important;
+  }
+
+  #target_user_id,
+  #display_period {
+    width: 100% !important;
+    max-width: 100% !important;
+    height: 38px !important;
+    font-size: 0.82rem !important;
+    padding: 0 6px !important;
+    box-sizing: border-box !important;
+  }
+
+  /* --- 2. サマリーエリア --- */
+  .summary-wrapper {
+    padding: 8px 10px !important;
+    margin-bottom: 0.85rem !important;
+  }
+
+  .summary-wrapper .row {
+    display: flex !important;
+    flex-wrap: nowrap !important;
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    padding-bottom: 4px !important;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+  }
+
+  .summary-wrapper .row::-webkit-scrollbar {
+    height: 3px;
+  }
+
+  .summary-wrapper .row::-webkit-scrollbar-thumb {
+    background-color: rgba(0, 0, 0, 0.15);
+    border-radius: 4px;
+  }
+
+  .summary-wrapper .row>[class*="col-"] {
+    flex: 0 0 125px !important;
+    max-width: 125px !important;
+    width: 125px !important;
+  }
+
+  .summary-wrapper .row>.col-12 {
+    flex: 0 0 145px !important;
+    max-width: 145px !important;
+    width: 145px !important;
+  }
+
+  .summary-box {
+    padding: 6px 8px !important;
+  }
+
+  .summary-label {
+    font-size: 0.68rem !important;
+  }
+
+  .summary-value .num {
+    font-size: 1.1rem !important;
+  }
+
+  .summary-value .unit {
+    font-size: 0.65rem !important;
+  }
+
+  /* --- 3. 経費モーダルフッター --- */
   .expense-memo-footer {
     display: flex !important;
     flex-direction: column !important;
     gap: 4px !important;
-    /* ボタンと合計金額の間隔 */
     padding-top: 8px !important;
     margin-top: auto !important;
     border-top: 1px dashed #c4c6db !important;
   }
 
-  /* 1段目：ボタン2つを左側でコンパクトに横並び */
   .expense-memo-footer>div:first-child {
     display: flex !important;
     justify-content: flex-start !important;
-    /* 左寄せ */
     align-items: center !important;
     gap: 6px !important;
-    /* ボタン同士の間隔 */
     width: 100% !important;
   }
 
-  /* ボタンサイズと余白の微調整 */
   #btn_add_expense_entry_row,
   #btn_clear_all_expenses {
     font-size: 0.78rem !important;
@@ -895,11 +1052,9 @@
     white-space: nowrap !important;
   }
 
-  /* 2段目：合計金額（2枚目の位置：下段右寄せ） */
   .expense-total-text {
     width: 100% !important;
     text-align: right !important;
-    /* 右寄せで独立配置 */
     font-size: 0.8rem !important;
     color: #4a4b5a !important;
     margin: 0 !important;
@@ -910,5 +1065,831 @@
     font-size: 1.15rem !important;
     font-weight: 700 !important;
     color: #888dc5 !important;
+  }
+
+  /* --- 4. カレンダービュー --- */
+  .at-calendar-scroll-container {
+    min-height: auto !important;
+  }
+
+  .at-calendar-week-header {
+    height: 32px !important;
+  }
+
+  .at-calendar-week-header>div {
+    font-size: 0.75rem !important;
+    line-height: 32px !important;
+  }
+
+  .at-calendar-day-box {
+    padding: 2px !important;
+    min-height: 55px !important;
+  }
+
+  .at-calendar-day-num {
+    font-size: 0.75rem !important;
+  }
+
+  .at-calendar-time-log {
+    font-size: 0.7rem !important;
+  }
+
+  .badge-mini {
+    width: 14px !important;
+    height: 14px !important;
+    margin: 0 1px !important;
+  }
+
+  .badge-mini i {
+    font-size: 0.7rem !important;
+  }
+
+  /* --- 5. 勤怠一覧リスト：カード構造の解体と再構築 --- */
+  .table-scroll-container {
+    max-height: none !important;
+    border: none !important;
+    overflow: visible !important;
+  }
+
+  /* テーブル構造の完全解除 */
+  html body #attendance_table,
+  html body #attendance_table tbody,
+  html body #attendance_tbody {
+    display: block !important;
+    width: 100% !important;
+  }
+
+  html body #attendance_table thead {
+    display: none !important;
+  }
+
+  /* カード基本枠組み：下パディングをさらに削る（8px -> 4px） */
+  html body #attendance_table tbody tr,
+  html body #attendance_tbody tr {
+    display: block !important;
+    width: 100% !important;
+    height: auto !important;
+    background-color: #ffffff !important;
+    border: 1px solid #e2e8f0 !important;
+    border-radius: 14px !important;
+    margin-bottom: 10px !important;
+    padding: 10px 14px 4px 14px !important;
+    /* ← 下パディングを 4px に縮小 */
+    position: relative !important;
+    box-sizing: border-box !important;
+    box-shadow: 0 2px 8px rgba(15, 23, 42, 0.03) !important;
+  }
+
+  /* ③ 日付ヘッダー：line-heightを極限まで締めて下部余白を排除 */
+  html body #attendance_table tbody td:nth-child(2),
+  html body #attendance_tbody td:nth-child(2) {
+    display: block !important;
+    width: calc(100% - 110px) !important;
+    font-size: 1.05rem !important;
+    font-weight: 700 !important;
+    line-height: 1.0 !important;
+    /* ← 1.2 から 1.0 に変更して文字下の余白をカット */
+    height: auto !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    white-space: nowrap !important;
+  }
+
+  /* 行ステータスごとのカード背景色 */
+  html body #attendance_table tbody tr.at-row-working-now,
+  html body #attendance_tbody tr.at-row-working-now {
+    background-color: #eff6ff !important;
+    border-color: #bfdbfe !important;
+  }
+
+  html body #attendance_table tbody tr.at-row-paid,
+  html body #attendance_tbody tr.at-row-paid {
+    background-color: #f0fdf4 !important;
+    border-color: #bbf7d0 !important;
+  }
+
+  html body #attendance_table tbody tr.at-row-absent,
+  html body #attendance_tbody tr.at-row-absent {
+    background-color: #f8fafc !important;
+    border-color: #e2e8f0 !important;
+  }
+
+  /* セル（td）のテーブル属性を全てリセット */
+  html body #attendance_table tbody td,
+  html body #attendance_tbody td {
+    display: block !important;
+    width: 100% !important;
+    max-width: none !important;
+    min-width: 0 !important;
+    height: auto !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    border: none !important;
+    white-space: normal !important;
+    box-shadow: none !important;
+    text-align: left !important;
+  }
+
+  /* ① 右上操作ボタン (＞ アイコン)：上から10px位置に固定 */
+  html body #attendance_table tbody td:nth-child(1),
+  html body #attendance_tbody td:nth-child(1) {
+    position: absolute !important;
+    top: 10px !important;
+    right: 14px !important;
+    width: auto !important;
+    z-index: 2 !important;
+    display: flex !important;
+    align-items: center !important;
+    height: 22px !important;
+  }
+
+  html body #attendance_table tbody td:nth-child(1) .btn-table-edit,
+  html body #attendance_tbody td:nth-child(1) .btn-table-edit {
+    width: 22px !important;
+    height: 22px !important;
+    padding: 0 !important;
+    border: none !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    font-size: 0 !important;
+  }
+
+  html body #attendance_table tbody td:nth-child(1) .btn-table-edit::before,
+  html body #attendance_tbody td:nth-child(1) .btn-table-edit::before {
+    content: "\F285" !important;
+    font-family: "bootstrap-icons" !important;
+    font-size: 1rem !important;
+    color: #cbd5e1 !important;
+  }
+
+  /* ② バッジ（有給・欠勤など）：上から10px位置に固定 */
+  html body #attendance_table tbody tr .at-status-badge,
+  html body #attendance_tbody tr .at-status-badge,
+  html body #attendance_table tbody tr [class*="badge"],
+  html body #attendance_tbody tr [class*="badge"] {
+    position: absolute !important;
+    top: 10px !important;
+    right: 38px !important;
+    left: auto !important;
+    margin: 0 !important;
+    z-index: 5 !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    font-size: 0.68rem !important;
+    padding: 2px 7px !important;
+    height: 22px !important;
+    line-height: 1 !important;
+  }
+
+  /* ③ 日付ヘッダー：上パディング直下（上から10px相当）に配置 */
+  html body #attendance_table tbody td:nth-child(2),
+  html body #attendance_tbody td:nth-child(2) {
+    display: block !important;
+    width: calc(100% - 110px) !important;
+    font-size: 1.05rem !important;
+    font-weight: 700 !important;
+    line-height: 1.2 !important;
+    margin-bottom: 0 !important;
+    /* 基本は下マージンなし */
+    white-space: nowrap !important;
+  }
+
+  /* ④ 時間帯（3番目）：文字色・サイズのメリハリ＋時計アイコンの表示 */
+  html body #attendance_table tbody td:nth-child(3),
+  html body #attendance_tbody td:nth-child(3) {
+    display: flex !important;
+    align-items: center !important;
+    width: 100% !important;
+    font-size: 0.92rem !important;
+    /* 日付(1.05rem)より一回り小さく */
+    font-weight: 600 !important;
+    /* 太すぎず読みやすい太さに */
+    color: #334155 !important;
+    /* 落ち着いたダークスレート */
+    margin-top: 4px !important;
+    /* 日付との間の余白 */
+    margin-bottom: 6px !important;
+  }
+
+  /* CSSのみで時計アイコンを先頭に付与 */
+  html body #attendance_table tbody td:nth-child(3)::before,
+  html body #attendance_tbody td:nth-child(3)::before {
+    content: "\F293" !important;
+    /* Bootstrap Icons の clock (時計アイコン) */
+    font-family: "bootstrap-icons" !important;
+    font-size: 0.82rem !important;
+    color: #64748b !important;
+    /* アイコンは主張しすぎないグレー */
+    margin-right: 5px !important;
+    /* 文字との隙間 */
+  }
+
+  /* ⑤〜⑦ 時間詳細項目 */
+  html body #attendance_table tbody td:nth-child(4),
+  html body #attendance_tbody td:nth-child(4),
+  html body #attendance_table tbody td:nth-child(5),
+  html body #attendance_tbody td:nth-child(5),
+  html body #attendance_table tbody td:nth-child(6),
+  html body #attendance_tbody td:nth-child(6),
+  html body #attendance_table tbody td:nth-child(7),
+  html body #attendance_tbody td:nth-child(7) {
+    display: inline-flex !important;
+    align-items: center !important;
+    width: 48% !important;
+    font-size: 0.82rem !important;
+    color: #475569 !important;
+    margin-bottom: 4px !important;
+  }
+
+  html body #attendance_table tbody td:nth-child(4)::before {
+    content: "総勤務: ";
+    font-weight: 600;
+    color: #64748b;
+    margin-right: 4px;
+  }
+
+  html body #attendance_table tbody td:nth-child(5)::before {
+    content: "時間外: ";
+    font-weight: 600;
+    color: #64748b;
+    margin-right: 4px;
+  }
+
+  html body #attendance_table tbody td:nth-child(6)::before {
+    content: "休憩: ";
+    font-weight: 600;
+    color: #64748b;
+    margin-right: 4px;
+  }
+
+  html body #attendance_table tbody td:nth-child(7)::before {
+    content: "外出: ";
+    font-weight: 600;
+    color: #64748b;
+    margin-right: 4px;
+  }
+
+  /* ⑧ 経費明細 ＆ ⑨ 備考（デフォルト非表示） ← ※ここはそのまま残す */
+  html body #attendance_table tbody td:nth-child(8),
+  html body #attendance_tbody td:nth-child(8),
+  html body #attendance_table tbody td:nth-child(9),
+  html body #attendance_tbody td:nth-child(9) {
+    display: none !important;
+    border: none !important;
+  }
+
+  /* 経費明細（テキストが存在する場合）：ズレ解消 ＋ 🧾 レシートアイコン */
+  html body #attendance_table tbody td:nth-child(8):not(:empty),
+  html body #attendance_tbody td:nth-child(8):not(:empty) {
+    display: flex !important;
+    align-items: flex-start !important;
+    width: 100% !important;
+    margin-top: 6px !important;
+    padding: 0 !important;
+    font-size: 0.78rem !important;
+    font-weight: 600 !important;
+    color: #1e293b !important;
+    line-height: 1.4 !important;
+    text-align: left !important;
+  }
+
+  /* 経費アイコン（右マージンを詰めて【 の隙間を相殺） */
+  html body #attendance_table tbody td:nth-child(8):not(:empty)::before,
+  html body #attendance_tbody td:nth-child(8):not(:empty)::before {
+    content: "￥" !important;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
+    font-size: 0.75rem !important;
+    font-weight: 800 !important;
+    color: #2563eb !important;
+    margin-right: 1px !important;
+    flex-shrink: 0 !important;
+    line-height: 1.4 !important;
+  }
+
+  /* ⑨ 備考・ステータス（バッジまたはテキストが存在する場合に表示） */
+  html body #attendance_table tbody td:nth-child(9):not(:empty),
+  html body #attendance_tbody td:nth-child(9):not(:empty) {
+    display: flex !important;
+    align-items: flex-start !important;
+    /* 中央揃えから上揃えに変更 */
+    flex-wrap: wrap !important;
+    width: 100% !important;
+    margin-top: 4px !important;
+    padding: 0 !important;
+    font-size: 0.76rem !important;
+    color: #64748b !important;
+    line-height: 1.4 !important;
+    text-align: left !important;
+  }
+
+  /* 備考テキスト（.memo-text-body）の左余白・位置ズレを完全に排除 */
+  .memo-text-body {
+    display: inline-flex !important;
+    align-items: center !important;
+    margin-left: 0 !important;
+    /* 左の余白をリセットして経費(￥)と縦ラインを統一 */
+    padding-left: 0 !important;
+  }
+
+  .memo-text-body::before {
+    content: "\F268" !important;
+    /* 💬 吹き出しアイコン */
+    font-family: "bootstrap-icons" !important;
+    font-size: 0.72rem !important;
+    /* ← ここを調整（例: 0.75rem や 0.7rem など） */
+    color: #94a3b8 !important;
+    margin-right: 4px !important;
+    margin-left: 0 !important;
+    flex-shrink: 0 !important;
+  }
+
+  /* 内部要素にボーダーが付与されている場合の消去 */
+  html body #attendance_table tbody td:nth-child(8) *,
+  html body #attendance_tbody td:nth-child(8) *,
+  html body #attendance_table tbody td:nth-child(9) *,
+  html body #attendance_tbody td:nth-child(9) * {
+    white-space: normal !important;
+    word-break: break-word !important;
+    border: none !important;
+  }
+
+  /* --- 不要なセルの完全消去（未入力・有給・欠勤・退勤未打刻） --- */
+  /* ① 未入力・有給・欠勤の日は時間帯（3番目）〜時間詳細（7番目）を非表示 */
+  #attendance_table tbody tr.at-row-empty td:nth-child(n+3):nth-child(-n+7),
+  #attendance_tbody tr.at-row-empty td:nth-child(n+3):nth-child(-n+7),
+  #attendance_table tbody tr.at-row-paid td:nth-child(n+3):nth-child(-n+7),
+  #attendance_tbody tr.at-row-paid td:nth-child(n+3):nth-child(-n+7),
+  #attendance_table tbody tr.at-row-absent td:nth-child(n+3):nth-child(-n+7),
+  #attendance_tbody tr.at-row-absent td:nth-child(n+3):nth-child(-n+7) {
+    display: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    height: 0 !important;
+  }
+
+  /* ② 「打刻中（本日）」および「退勤未入力（過去日）」は 4〜7番目（総勤務・時間外・休憩・外出）を非表示 */
+  #attendance_table tbody tr.at-row-working-now td:nth-child(n+4):nth-child(-n+7),
+  #attendance_tbody tr.at-row-working-now td:nth-child(n+4):nth-child(-n+7),
+  #attendance_table tbody tr.at-row-no-clockout td:nth-child(n+4):nth-child(-n+7),
+  #attendance_tbody tr.at-row-no-clockout td:nth-child(n+4):nth-child(-n+7) {
+    display: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    height: 0 !important;
+  }
+
+  /* 打刻中ボタン */
+  #attendance_table tbody tr.at-row-working-now td:nth-child(1) .btn-table-edit,
+  #attendance_tbody tr.at-row-working-now td:nth-child(1) .btn-table-edit {
+    width: auto !important;
+    height: auto !important;
+    padding: 3px 7px !important;
+    background-color: #dbeafe !important;
+    border: 1px solid #bfdbfe !important;
+    border-radius: 4px !important;
+  }
+
+  #attendance_table tbody tr.at-row-working-now td:nth-child(1) .btn-table-edit::before,
+  #attendance_tbody tr.at-row-working-now td:nth-child(1) .btn-table-edit::before {
+    content: "打刻中" !important;
+    font-size: 0.7rem !important;
+    font-weight: 700 !important;
+    color: #1d4ed8 !important;
+  }
+
+  /* 見出し・トグル */
+  .table-card {
+    padding: 12px 14px !important;
+  }
+
+  .table-card h3 {
+    font-size: 1.05rem !important;
+    white-space: nowrap !important;
+  }
+
+  .table-card .btn-group {
+    flex-shrink: 0 !important;
+  }
+
+  .table-card .btn-group .btn {
+    font-size: 0.75rem !important;
+    padding: 4px 8px !important;
+    white-space: nowrap !important;
+  }
+
+  /* 🚫 タップ・背景色リセット */
+  html body #attendance_table tbody tr td,
+  html body #attendance_tbody tr td {
+    background: transparent !important;
+    box-shadow: none !important;
+    -webkit-tap-highlight-color: transparent !important;
+  }
+
+  /* カード全体の上下厚みを固定（未入力日でも潰れないようにする） */
+  html body #attendance_table tbody tr,
+  html body #attendance_tbody tr {
+    padding: 12px 14px !important;
+    /* 上下12pxの厚みを確保 */
+    min-height: 48px !important;
+    /* 最低限のカードの高さを保持 */
+  }
+
+  /* 2番目のセル（日付）のマージン調整 */
+  html body #attendance_table tbody td:nth-child(2),
+  html body #attendance_tbody td:nth-child(2) {
+    margin-bottom: 0 !important;
+    line-height: 1.2 !important;
+  }
+
+  /* --- カレンダー表示(スマホ） --- */
+  /* --- カレンダー表示時のみ外枠を全幅（100vw）化 --- */
+  .at-calendar-scroll-container {
+    width: 100vw !important;
+    margin-left: calc(-50vw + 50%) !important;
+    margin-right: calc(-50vw + 50%) !important;
+    padding-left: 4px !important;
+    padding-right: 4px !important;
+    box-sizing: border-box !important;
+  }
+
+  /* 親のカード枠自体の背景・境界線リセットはカレンダーアクティブ時限定に特定 */
+  .table-card:has(.at-calendar-scroll-container:not([style*="display: none"])) {
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+  }
+
+  /* 曜日ヘッダーの高さとフォント調整 */
+  .at-calendar-week-header {
+    height: 28px !important;
+  }
+
+  .at-calendar-week-header>div {
+    font-size: 0.75rem !important;
+    line-height: 28px !important;
+    font-weight: 700 !important;
+  }
+
+  /* マス（1日）の高さを一律固定して伸び縮みを防止 */
+  .at-calendar-day-box {
+    height: 68px !important;
+    min-height: 68px !important;
+    max-height: 68px !important;
+    padding: 2px !important;
+    overflow: hidden !important;
+    box-sizing: border-box !important;
+  }
+
+  /* 日付数字の表示位置調整 */
+  .at-calendar-day-num {
+    font-size: 0.72rem !important;
+    line-height: 1 !important;
+    margin-bottom: 2px !important;
+  }
+
+  /* 時間表示（打刻時間）の軽量・最小化 */
+  .at-calendar-time-log {
+    font-size: 0.62rem !important;
+    line-height: 1.1 !important;
+    color: #334155 !important;
+    letter-spacing: -0.5px !important;
+    transform: scale(0.95);
+    transform-origin: top center;
+  }
+
+  /* バッジ（有給・欠勤）をマスの中にコンパクトに収める */
+  .at-calendar-day-box .badge,
+  .at-calendar-day-box [class*="badge"] {
+    font-size: 0.6rem !important;
+    padding: 1px 3px !important;
+    line-height: 1 !important;
+    margin-top: 2px !important;
+  }
+
+  /* スマホ表示時のみ祝日名称テキスト（「山の日」等）を非表示化 */
+  .at-calendar-day-box .holiday-name,
+  .at-calendar-day-box .at-holiday-label,
+  .at-calendar-day-box [class*="holiday"] {
+    display: none !important;
+  }
+
+  /* --- スマホ用：経費・備考アイコンエリアのコンパクト化 ＆ 隙間調整 --- */
+
+  /* アイコン設置フッターの間隔と位置調整 */
+  .at-calendar-day-footer {
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+    gap: 5px !important;
+    /* ← 3px から 5px に広げて適度な隙間を確保 */
+    margin-top: auto !important;
+    padding-bottom: 2px !important;
+  }
+
+  /* コンテナ枠のサイズ縮小 */
+  .at-calendar-day-footer .badge-mini {
+    width: auto !important;
+    height: 14px !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  /* 要素構造に応じたフォールバック（直接間隔を空ける） */
+  .at-calendar-day-footer .badge-mini+.badge-mini,
+  .badge-mini i+i,
+  .badge-mini [class*="bi-"]+[class*="bi-"] {
+    margin-left: 4px !important;
+  }
+
+  .badge-mini .bi-cash-stack {
+    margin-right: 2px !important;
+  }
+
+  .badge-mini .bi-chat-left-text {
+    margin-left: 2px !important;
+  }
+
+  /* 経費アイコン（青色の￥マーク） */
+  .badge-mini .bi-cash-stack::before {
+    content: "¥" !important;
+    font-family: inherit !important;
+    font-weight: 700 !important;
+    color: #2563eb !important;
+    font-size: 0.65rem !important;
+    line-height: 1 !important;
+  }
+
+  /* 備考アイコン（グレーの吹き出し） */
+  .badge-mini .bi-chat-left-text::before {
+    content: "\F268" !important;
+    font-family: "bootstrap-icons" !important;
+    color: #94a3b8 !important;
+    font-size: 0.6rem !important;
+    line-height: 1 !important;
+  }
+
+  /* --- 出勤中青丸バッジの右上配置＆サイズ調整 --- */
+  /* 1. マス目を基準位置にする */
+  .at-calendar-day,
+  .at-calendar-day-header {
+    position: relative !important;
+  }
+
+  /* --- スマホ用：打刻中青丸ドットの右上固定＆微細化 --- */
+  /* カレンダーの1マスを絶対配置の基準にする */
+  .at-calendar-day-box {
+    position: relative !important;
+  }
+
+  .pulsing-blue-dot {
+    position: absolute !important;
+    top: 3px !important;
+    right: 3px !important;
+    width: 5px !important;
+    height: 5px !important;
+    border-radius: 50% !important;
+    background-color: #3b82f6 !important;
+    box-shadow: 0 0 4px rgba(59, 130, 246, 0.6) !important;
+    animation: gentle-glow 3s ease-in-out infinite !important;
+    z-index: 2 !important;
+  }
+
+  /* カレンダー内「有給」「欠勤」擬似要素バッジ（::after）のスマホ最適化 */
+  /* 1. カレンダーマスの擬似要素バッジの位置・サイズ調整 */
+  .at-calendar-day-box.is-paid-leave::after,
+  .at-calendar-day-box.is-absent::after {
+    position: absolute !important;
+    top: 50% !important;
+    left: 50% !important;
+    transform: translate(-50%, -50%) !important;
+    font-size: 0.58rem !important;
+    padding: 1px 5px !important;
+    border-radius: 4px !important;
+    line-height: 1.1 !important;
+    white-space: nowrap !important;
+    z-index: 3 !important;
+  }
+
+  /* ==========================================================================
+   📱 モーダルヘッダー：右上「＜＞」 ＋ 下段「日付」レイアウト
+   ========================================================================== */
+  #attendanceEditModal .modal-dialog {
+    margin: 10px !important;
+  }
+
+  /* ヘッダー全体を折り返し可能（flex-wrap）にする */
+  #attendanceEditModal .modal-header {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    padding: 14px 16px 10px 16px !important;
+    gap: 10px 0 !important;
+  }
+
+  /* 1段目左：タイトル領域のラッパー解除 */
+  #attendanceEditModal .modal-header>div:first-child {
+    display: contents !important;
+  }
+
+  /* 1段目左：タイトル */
+  #attendanceEditModalLabel {
+    order: 1 !important;
+    font-size: 1.05rem !important;
+    white-space: nowrap !important;
+  }
+
+  /* 1段目右：「＜＞」ボタンエリア */
+  #attendanceEditModal .modal-header>div:last-child {
+    order: 2 !important;
+    margin-left: auto !important;
+  }
+
+  #btn_prev_day,
+  #btn_next_day {
+    width: 34px !important;
+    height: 34px !important;
+    padding: 0 !important;
+  }
+
+  /* 2段目：日付バッジ（下段いっぱいに配置） */
+  #display_edit_date {
+    order: 3 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    height: 38px !important;
+    margin-top: 2px !important;
+    font-size: 0.95rem !important;
+  }
+
+  /* ==========================================================================
+   📱 モーダルフッターのスマホ最適化
+   ========================================================================== */
+  #attendanceEditModal .modal-footer {
+    padding: 12px 16px !important;
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    gap: 8px !important;
+  }
+
+  /* 左側（リセットボタン）エリア */
+  #attendanceEditModal .modal-footer>div:first-child {
+    flex-shrink: 0 !important;
+  }
+
+  /* 右側（閉じる・保存）エリア */
+  #attendanceEditModal .modal-footer>div:last-child {
+    display: flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+    margin-left: auto !important;
+  }
+
+  /* フッター全ボタン共通設定（改行防止 ＆ サイズ調整） */
+  #attendance_reset_btn,
+  #attendance_cancel_btn,
+  #attendance_save_btn {
+    white-space: nowrap !important;
+    font-size: 0.8rem !important;
+    height: 38px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+  }
+
+  /* リセットボタン：枠を少しコンパクトに */
+  #attendance_reset_btn {
+    padding: 0 10px !important;
+  }
+
+  /* 閉じるボタン */
+  #attendance_cancel_btn {
+    padding: 0 8px !important;
+  }
+
+  /* 保存ボタン：しっかり目立たせる */
+  #attendance_save_btn {
+    padding: 0 16px !important;
+  }
+
+  /* ==========================================================================
+   📱 モーダル内部の文字サイズ・余白の最適化
+   ========================================================================== */
+  /* 各項目のラベル文字 */
+  #attendanceEditModal .form-label {
+    font-size: 0.78rem !important;
+    margin-bottom: 4px !important;
+    color: #475569 !important;
+  }
+
+  /* 入力フォーム（Select / Input）のコンパクト化 */
+  #attendanceEditModal .form-control,
+  #attendanceEditModal .form-select {
+    font-size: 0.88rem !important;
+    padding: 6px 10px !important;
+    height: 38px !important;
+  }
+
+  /* 備考テキストエリアのみ高さ自動調整 */
+  #attendanceEditModal textarea.form-control {
+    height: auto !important;
+  }
+
+  /* 打刻時間のグレーバッジ */
+  #attendanceEditModal .badge {
+    font-size: 0.6rem !important;
+    padding: 2px 6px !important;
+  }
+
+  /* 総勤務・時間外の集計カード */
+  #attendanceEditModal .bg-light.p-3 {
+    padding: 8px 12px !important;
+  }
+
+  #calc_total_work,
+  #calc_overtime {
+    font-size: 1rem !important;
+    /* 数値を一回り小さく調整 */
+  }
+
+  /* モーダル本文全体の上下ギャップ調整 */
+  #attendanceEditModal .modal-body {
+    padding-top: 8px !important;
+    padding-bottom: 8px !important;
+  }
+
+  #attendanceEditModal .row.g-4 {
+    --bs-gutter-y: 0.8rem !important;
+    /* 縦の項目間隔を詰める */
+  }
+
+  /* ==========================================================================
+   📱 経費明細カード ＆ 備考エリアのコンパクト化
+   ========================================================================== */
+  /* カード自体の最小高さを解除 ＆ 内側余白を削減 */
+  #attendanceEditModal .expense-memo-card {
+    min-height: auto !important;
+    padding: 10px 12px !important;
+  }
+
+  /* 経費リストコンテナの上下余白カット */
+  #attendanceEditModal .expense-memo-card .pt-3 {
+    padding-top: 6px !important;
+  }
+
+  /* 経費入力行（カテゴリ・金額・入力欄）の高さ・余白カット */
+  #attendanceEditModal #expense_list {
+    margin-bottom: 8px !important;
+    gap: 6px !important;
+  }
+
+  #attendanceEditModal #expense_list .form-select,
+  #attendanceEditModal #expense_list .form-control {
+    height: 34px !important;
+    font-size: 0.82rem !important;
+    padding: 4px 8px !important;
+  }
+
+  /* 経費追加ボタン ＆ 合計金額フッター */
+  #attendanceEditModal .expense-memo-footer {
+    padding-top: 4px !important;
+  }
+
+  #attendanceEditModal .expense-add-btn {
+    font-size: 0.75rem !important;
+    padding: 4px 10px !important;
+  }
+
+  #attendanceEditModal .expense-total-text {
+    font-size: 0.8rem !important;
+  }
+
+  #attendanceEditModal #total_expense {
+    font-size: 1.1rem !important;
+  }
+
+  /* 備考・最終更新日の間隔調整 */
+  #attendanceEditModal .mt-auto.d-flex.flex-column {
+    gap: 8px !important;
+  }
+
+  /* 経費追加ボタン ＆ 合計金額エリアの配置固定 */
+  #attendanceEditModal .expense-memo-footer {
+    display: flex !important;
+    justify-content: space-between !important;
+    /* ボタンを左、合計を右に配置 */
+    align-items: center !important;
+    width: 100% !important;
+  }
+
+  #attendanceEditModal .expense-add-btn {
+    margin-right: auto !important;
+    /* 確実に左側に寄せる */
   }
 }

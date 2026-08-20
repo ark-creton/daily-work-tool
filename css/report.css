@@ -29,6 +29,20 @@
   min-height: 0;
 }
 
+/* PC用プルダウン：幅140pxで右端に寄せる */
+.report-list-card #target_user_id {
+  width: 140px !important;
+  min-width: 140px !important;
+  max-width: 140px !important;
+  height: 1.8rem !important;
+  font-size: 0.75rem !important;
+  padding: 0.15rem 1.2rem 0.15rem 0.4rem !important;
+  background-position: right 0.25rem center !important;
+  background-size: 8px 10px !important;
+  flex-shrink: 0 !important;
+  margin-left: auto !important;
+}
+
 /* 過去ログ一覧スクロールコンテナ */
 .report-list-scroll-container {
   flex-grow: 1;
@@ -39,14 +53,12 @@
 .report-list-scroll-container a {
   color: #8ea3c2;
   text-decoration: none !important;
-  /* 初期状態の下線を排除 */
 }
 
 /* 過去ログ一覧内のホバー時に、中の文字と日付にだけ綺麗な1本線を引く（統一仕様） */
 .report-list-scroll-container a:hover {
   color: #2b2c3a;
   text-decoration: none !important;
-  /* aタグ自体の下線は引かない */
 }
 
 /* タイトルと日付だけにスマートに下線を適用 */
@@ -149,7 +161,6 @@ select:disabled {
   color: #6c757d !important;
   cursor: not-allowed !important;
   pointer-events: none !important;
-  /* 👈 これでクリックや展開を完全にブロックします */
 }
 
 /* ==========================================================================
@@ -239,7 +250,7 @@ select:disabled {
   transition: background-color 0.15s ease;
 }
 
-/* 💡 当月の日付にマウスを乗せた時のみ、共通のホバー色を適用 */
+/* 当月の日付にマウスを乗せた時のみ、共通のホバー色を適用 */
 .report-cal-day:not(.other-month):hover {
   background-color: var(--row-hover-color) !important;
 }
@@ -289,11 +300,10 @@ select:disabled {
   position: relative;
 }
 
-/* 数字の下線（1pxで細く、落ち着いた色に変更） */
+/* 数字の下線 */
 .report-cal-day.today .day-num {
   padding-bottom: 1px;
   border-bottom: 1px solid #475569;
-  /* 細いダークグレーの下線 */
   font-weight: 600;
 }
 
@@ -322,7 +332,6 @@ select:disabled {
   align-items: center !important;
   justify-content: center !important;
   margin-right: 5px !important;
-  /* バッジのはみ出し防止用余白 */
   vertical-align: middle !important;
 }
 
@@ -367,30 +376,322 @@ select:disabled {
 #past_report_list a.past-report-item.active-report,
 #past_report_list .past-report-item.active-report {
   background-color: #f1f5f9 !important;
-  /* 薄いグレー/ブルー */
 }
 
 /* ==========================================================================
-   📱 スマホ用（991px以下）：ホバーがない端末向けに最初からボタン背景色を適用
+   📱 スマホ用（991px以下）：レイアウト・文字サイズ・重なり防止の完全対応版
    ========================================================================== */
 @media (max-width: 991px) {
 
-  /* 1. キャンセル（閉じる）ボタン：最初からPCホバー時のしっかりめのグレーにする */
+  /* --- 1. カード全体の余白調整 --- */
+  .report-detail-card {
+    padding: 1rem !important;
+  }
+
+  /* --- 2. PC固定高さの解除（縦長スクロールを許可） --- */
+  .report-detail-card,
+  .report-list-card {
+    height: auto !important;
+    min-height: auto !important;
+    overflow: visible !important;
+  }
+
+  .report-content-body {
+    overflow-y: visible !important;
+    max-height: none !important;
+  }
+
+  /* --- 3. ヘッダータイトル・トグルボタン周り --- */
+
+  /* ① 縦線と右側コンテンツを入れる親枠（上揃え） */
+  #view_report_title_header>div {
+    display: flex !important;
+    align-items: flex-start !important;
+  }
+
+  /* ②黄色の縦線要素 */
+  #view_report_title_header>div>div[style*="background-color"] {
+    width: 3px !important;
+    min-width: 3px !important;
+    height: 20px !important;
+    margin-top: 0.15rem !important;
+    flex-shrink: 0 !important;
+  }
+
+  /* ③ タイトル＋バッジを囲む右側の div をテキストフロー化 */
+  #view_report_title_header .gap-2 {
+    display: inline !important;
+    white-space: normal !important;
+    word-break: break-all !important;
+  }
+
+  /* ④ 文字・鉛筆アイコンを標準テキストとして流し込む */
+  #view_report_title_header span:not(.report-status-badge),
+  #view_report_title_header i {
+    display: inline !important;
+    font-size: 1rem !important;
+    float: none !important;
+    white-space: normal !important;
+  }
+
+  /* ⑤ スマホ用「下書き」バッジ */
+  #view_report_title_header span.report-status-badge {
+    display: inline-block !important;
+    font-size: 0.75rem !important;
+    padding: 0.15rem 0.4rem !important;
+    line-height: 1.2 !important;
+    vertical-align: 0.1em !important;
+    margin-left: 0.35rem !important;
+    white-space: nowrap !important;
+    width: auto !important;
+  }
+
+  /* --- 4. メタ情報（作業期間・件名等）の2列化＆フォント調整 --- */
+  .report-detail-card .row.g-3>[class*="col-"] {
+    width: 50% !important;
+    margin-bottom: 0.25rem;
+  }
+
+  .report-detail-card .row.g-3 .text-muted {
+    font-size: 0.7rem !important;
+  }
+
+  .report-detail-card .row.g-3 .fw-bold {
+    font-size: 0.8rem !important;
+  }
+
+
+  /* --- 5. 本文・項目タイトルの文字サイズ調整 --- */
+  .fw-bold.text-dark.small.text-muted {
+    font-size: 0.75rem !important;
+  }
+
+  #view_work_content,
+  #view_content_impression,
+  #view_content_remaining_work,
+  #view_content_near_goal,
+  #view_content_issue,
+  #view_content_action_plan,
+  #view_next_schedule,
+  #view_content_notice {
+    font-size: 0.85rem !important;
+    padding: 0.55rem 0.75rem !important;
+  }
+
+  /* --- 未選択状態（Empty表示）のフォント・アイコンサイズ調整 --- */
+  #report_detail_empty .empty-title {
+    font-size: 0.9rem !important;
+  }
+
+  #report_detail_empty .empty-subtext {
+    font-size: 0.75rem !important;
+  }
+
+  #report_detail_empty i {
+    font-size: 1.75rem !important;
+  }
+
+  /* --- 6. トグルアイコンのアニメーション回転（ヘッダー ＆ 共通記入事項 共通） --- */
+  .meta-toggle-icon,
+  .common-toggle-icon {
+    display: inline-block;
+    transition: transform 0.2s ease;
+  }
+
+  /* 上部ヘッダーのトグル回転 */
+  .report-meta-toggle-btn[aria-expanded="true"] .meta-toggle-icon {
+    transform: rotate(180deg);
+  }
+
+  /* 共通記入事項のトグル回転 */
+  .common-items-toggle-btn[aria-expanded="true"] .common-toggle-icon {
+    transform: rotate(180deg);
+  }
+
+  /* --- 7. ボタン類・過去ログ一覧のスタイル ＆ タップフィードバック --- */
   #cancel_button {
     background-color: #e9ecef !important;
   }
 
-  /* 3. 過去ログ一覧：文字色を少し濃くして視認性をアップ */
   .report-list-scroll-container a {
     color: #4b5563 !important;
   }
 
-  /* タップした瞬間（指で押した時）の視覚フィードバック（全ボタン共通） */
   #cancel_button:active,
   .btn-temporary:active,
   .btn-pastel-red-rounded:active,
   .report-list-scroll-container a:active {
     opacity: 0.7 !important;
     transform: scale(0.98) !important;
+  }
+
+  /* ==========================================================================
+     📌 レポート画面限定：年月プルダウンの位置・サイズ調整
+     ========================================================================== */
+
+  /* 1. タイトルの改行防止 ＆ 上下中央揃え */
+  .container-fluid:has(.report-detail-card) .page-title {
+    white-space: nowrap !important;
+  }
+
+  .container-fluid:has(.report-detail-card)>.d-flex {
+    align-items: center !important;
+  }
+
+  /* 2. プルダウンの位置・サイズ調整 */
+  .container-fluid:has(.report-detail-card) #display_period {
+    margin-left: auto !important;
+    margin-right: 0.5rem !important;
+    max-width: 125px !important;
+    height: 2rem !important;
+    font-size: 0.75rem !important;
+    padding: 0.2rem 0.4rem !important;
+  }
+
+  /* ==========================================================================
+     🔘 レポート詳細の「新規作成」「編集」ボタンサイズ調整
+     ========================================================================== */
+  .report-detail-card .btn {
+    padding: 0.2rem 0.55rem !important;
+    font-size: 0.75rem !important;
+    height: auto !important;
+  }
+
+  /* ==========================================================================
+     🔤 フォントサイズの統一（「詳細内容」「日報」「共通記入事項」を同サイズ化）
+     ========================================================================== */
+
+  /* 1. 「詳細内容」の見出しサイズを調整 */
+  .report-detail-card .fs-5 {
+    font-size: 1rem !important;
+  }
+
+  /* バッジ以外の文字・アイコンだけを 1rem に設定 */
+  #view_report_title_header span:not(.report-status-badge),
+  #view_report_title_header i {
+    font-size: 1rem !important;
+  }
+
+  /* スマホ用「下書き」バッジのサイズ */
+  #view_report_title_header .report-status-badge {
+    font-size: 0.55rem !important;
+    padding: 0.05rem 0.25rem !important;
+    line-height: 1.2 !important;
+  }
+
+  /* 3. 「■ 共通記入事項」部分のサイズ調整 */
+  .report-detail-card h5 {
+    font-size: 1rem !important;
+  }
+
+  /* スマホ用「下書き」バッジ */
+  #view_report_title_header span.report-status-badge {
+    display: inline-block !important;
+    font-size: 0.75rem !important;
+    padding: 0.15rem 0.4rem !important;
+    line-height: 1.2 !important;
+    vertical-align: 0.1em !important;
+    margin-left: 0.35rem !important;
+  }
+
+  /* ==========================================================================
+     📅 スマホ用ミニカレンダー：アイコンサイズ・位置の最適化
+     ========================================================================== */
+
+  /* 1. アイコン自体のフォントサイズを縮小 */
+  .report-cal-day .report-icon {
+    font-size: 0.75rem !important;
+  }
+
+  /* 2. アイコンを包む枠の余白と幅を微調整 */
+  .report-cal-day .icon-wrapper {
+    margin-right: 3px !important;
+  }
+
+  /* 3. 件数バッジのサイズと位置をアイコンに合わせて縮小・調整 */
+  .report-cal-day .icon-count-badge {
+    top: -4px !important;
+    right: -4px !important;
+    font-size: 0.5rem !important;
+    padding: 0 2px !important;
+    min-width: 10px !important;
+    height: 10px !important;
+  }
+
+  /* 4. マス目（セル）右下の配置位置を微調整 */
+  .report-cal-day .calendar-report-bottom {
+    bottom: 2px !important;
+    right: 2px !important;
+    gap: 1px !important;
+  }
+
+  /* ==========================================================================
+     📜 スマホ用：過去のレポート（親枠100%強制広げ＆右端移動・決定版）
+     ========================================================================== */
+
+  /* 1. 外枠カラムの幅拡張 */
+  .col-lg-4 {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  /* 2. カード本体 */
+  .report-list-card {
+    display: flex !important;
+    flex-direction: column !important;
+    width: 100% !important;
+    height: auto !important;
+    min-height: auto !important;
+    padding: 1rem 0.75rem !important;
+    overflow: hidden !important;
+    position: relative !important;
+  }
+
+  /* 3. 見出しとプルダウンを囲む「親枠」を強制的に全幅(100%)のFlexboxにする */
+  .report-list-card>div:first-child,
+  .report-list-card div:has(#target_user_id) {
+    order: 1 !important;
+    display: flex !important;
+    flex-direction: row !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    margin-bottom: 0.75rem !important;
+    box-sizing: border-box !important;
+  }
+
+  /* 4. 見出しテキスト（左側に固定） */
+  .report-list-card h4,
+  .report-list-card .card-title,
+  .report-list-card div:has(#target_user_id)>*:first-child {
+    font-size: 0.85rem !important;
+    white-space: nowrap !important;
+    flex-shrink: 0 !important;
+    margin: 0 !important;
+  }
+
+  /* 5. プルダウン（親枠の中で右端へ移動） */
+  #target_user_id {
+    display: block !important;
+    width: 135px !important;
+    min-width: 135px !important;
+    max-width: 135px !important;
+    flex-shrink: 0 !important;
+    margin-left: auto !important;
+    margin-right: 0 !important;
+    height: 2rem !important;
+    font-size: 0.75rem !important;
+    padding: 0.2rem 0.4rem !important;
+  }
+
+  /* 6. レポートリスト枠（見出しの下） */
+  .report-list-card>div:has(#past_report_list),
+  .report-list-scroll-container,
+  #past_report_list {
+    order: 2 !important;
+    width: 100% !important;
+    max-height: 250px !important;
+    overflow-y: auto !important;
   }
 }

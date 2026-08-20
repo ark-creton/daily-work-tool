@@ -873,17 +873,17 @@ function mapReportToDisplay(report) {
     if (isDraft) {
       // 下書きの場合
       alternativeHeaderEl.innerHTML = `
-        <div class="d-flex align-items-center" style="font-size: 1.1rem;">
-          <div style="width: 3px; height: 20px; background-color: #eab308; border-radius: 2px; margin-right: 10px;"></div>
-          <div class="d-flex align-items-center gap-2">
-            <i class="bi bi-pencil" style="color: #ca8a04; font-size: 1rem;"></i>
-            <span class="fw-semibold text-dark">
-              ${displayReportType}：${currentReporterName}
-            </span>
-            <span class="ms-2" style="font-size: 0.65rem; background-color: #fef9c3; color: #713f12; padding: 0.1rem 0.4rem; border-radius: 4px; font-weight: 500;">下書き</span>
-          </div>
+      <div class="d-flex align-items-center" style="font-size: 1.1rem;">
+        <div style="width: 3px; height: 20px; background-color: #eab308; border-radius: 2px; margin-right: 10px;"></div>
+        <div class="d-flex align-items-center gap-2">
+          <i class="bi bi-pencil" style="color: #ca8a04; font-size: 1rem;"></i>
+          <span class="fw-semibold text-dark">
+            ${displayReportType}：${currentReporterName}
+          </span>
+          <span class="ms-2 report-status-badge" style="font-size: 0.65rem; background-color: #fef9c3; color: #713f12; padding: 0.1rem 0.4rem; border-radius: 4px; font-weight: 500;">下書き</span>
         </div>
-      `;
+      </div>
+    `;
     } else {
       // 提出済みの場合（さらに「自分」か「他人」かで分岐）
       if (isMyReport) {

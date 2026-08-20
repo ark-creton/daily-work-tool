@@ -15,16 +15,18 @@
     box-shadow 0.15s ease-in-out;
   border: 1px solid #dee2e6;
 }
+
 .input-group .input-group-text,
-.input-group .form-control {
+.input-group #user_search_input {
   border: none !important;
-  color: #2b2c3a !important; /* 入力した文字色 */
+  color: #2b2c3a !important;
 }
+
 .input-group .input-group-text {
   border-right: none !important;
 }
 
-/* 💡 検索窓のプレースホルダーのカラー */
+/* 検索窓のプレースホルダーのカラー */
 .input-group .form-control::placeholder {
   color: rgba(43, 44, 58, 0.5) !important;
 }
@@ -33,7 +35,8 @@
 .input-group:has(#user_search_input:focus) {
   border-color: #86b7fe;
   box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.15);
-  border-radius: 6px; /* 影が丸みに綺麗に沿うように設定 */
+  border-radius: 6px;
+  /* 影が丸みに綺麗に沿うように設定 */
 }
 
 /* 枠線の色がぶつかり合わないように調整 */
@@ -49,7 +52,7 @@
 }
 
 /* ◆ 新規ユーザー登録ボタン（備考保存ボタンと共通のHover仕様） */
-#user_new_button {
+.btn-primary-custom {
   background-color: #8ea3c2 !important;
   color: #ffffff !important;
   border: none !important;
@@ -59,12 +62,14 @@
   box-shadow: 0 4px 10px -2px rgba(142, 163, 194, 0.25) !important;
   transition: all 0.2s ease !important;
 }
-#user_new_button:hover:not(:disabled) {
+
+.btn-primary-custom:hover:not(:disabled) {
   background-color: #7a99c5 !important;
   box-shadow: 0 6px 12px -2px rgba(122, 153, 197, 0.35) !important;
 }
-#user_new_button i,
-#user_new_button svg {
+
+.btn-primary-custom i,
+.btn-primary-custom svg {
   color: #ffffff !important;
 }
 
@@ -77,7 +82,8 @@
 #list_user_name td {
   color: #2b2c3a !important;
 }
-/* No.や氏名などの太字（fw-bold）も確実にこの色にする */
+
+/* No.や氏名などの太字 */
 #list_user_name .fw-bold {
   color: #2b2c3a !important;
 }
@@ -118,6 +124,7 @@
 .is-disabled {
   opacity: 0.55;
 }
+
 /* 無効ユーザーの氏名に打ち消し線を入れる */
 .is-disabled .fw-bold {
   text-decoration: line-through;
@@ -140,12 +147,13 @@
   border-bottom: 1px solid #f0f0f0 !important;
   padding: 1.5rem 2rem !important;
 }
+
 .modal-title {
   font-size: 1.25rem;
   letter-spacing: -0.02em;
 }
 
-/* ◆ 入力フィールド（input, select）の初期デザイン */
+/* ◆ 入力フィールドのデザイン */
 .modal-body .form-control,
 .modal-body .form-select {
   border: 1.5px solid #e9ecef !important;
@@ -180,7 +188,7 @@
   color: #e63946 !important;
 }
 
-/* ◆ フッターのボタン配置（絶対に縦折り返しをさせない横並び） */
+/* ◆ フッターのボタン配置 */
 .modal-footer {
   border-top: 1px solid #f0f0f0 !important;
   padding: 1.25rem 2rem 1.75rem !important;
@@ -203,6 +211,7 @@
   white-space: nowrap !important;
   flex-shrink: 1 !important;
 }
+
 #cancel_button:hover {
   background-color: #e9ecef !important;
 }
@@ -220,10 +229,12 @@
   flex-shrink: 1 !important;
   transition: all 0.2s ease !important;
 }
+
 #submit_button:hover:not(:disabled) {
   background-color: #7a99c5 !important;
   box-shadow: 0 6px 12px -2px rgba(122, 153, 197, 0.35) !important;
 }
+
 #submit_button i,
 #submit_button svg {
   color: #ffffff !important;
@@ -244,7 +255,7 @@
 #userModal .form-select.is-invalid,
 #userModal .was-validated .form-select:invalid {
   background-image: none !important;
-  padding-right: 1rem !important; /* 右側の余白を通常時と完全に統一 */
+  padding-right: 1rem !important;
 }
 
 /* --- ▼ 入力OK（成功時）のスタイル --- */
@@ -261,7 +272,7 @@
 #userModal .form-control.is-valid:focus,
 #userModal .was-validated .form-control:valid:focus,
 #userModal .form-select.is-valid:focus,
-#userModal .was-validated .form-select:valid:focus {
+#userModal .was-validated .form-select:focus {
   background-color: #fff;
   border-color: #10b981 !important;
   box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.15) !important;
@@ -291,7 +302,6 @@
    🔒 5. パスワード専用入力グループ（#password_group） ＆ エラーメッセージ救出
    ========================================================================== */
 
-/* 💡 通常時の外枠の見た目を、他の一般の入力欄と寸分違わず完全に統一 */
 #userModal #password_group {
   border: 1.5px solid #e9ecef !important;
   background-color: #fcfcfc !important;
@@ -311,6 +321,7 @@
 #userModal .was-validated #password_group:has(#password:valid) {
   border-color: #10b981 !important;
 }
+
 #userModal .was-validated #password_group:has(#password:invalid) {
   border-color: #e63946 !important;
 }
@@ -327,77 +338,130 @@
   border-color: #10b981 !important;
   box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.15) !important;
 }
+
 #userModal .was-validated #password_group:has(#password:invalid:focus) {
   border-color: #e63946 !important;
   box-shadow: 0 0 0 4px rgba(230, 57, 70, 0.15) !important;
 }
 
 /* ◆ パスワードエラーメッセージの強制配置・表示不具合解消 */
-#userModal .was-validated #password_group ~ .invalid-feedback {
+#userModal .was-validated #password_group~.invalid-feedback {
   display: block !important;
-  color: #e63946 !important; /* エラー赤色に統一 */
+  color: #e63946 !important;
+  /* エラー赤色に統一 */
 }
 
 /* ==========================================================================
-   💻 6. PC表示専用：テーブルエリア内スクロール・見出し（thead）位置固定
+   📱 6. スマホ・タブレット表示（991px以下）：カード表示 ＆ ボタン配置切り替え
    ========================================================================== */
 
-@media (min-width: 768px) {
-  /* ① デスクトップ表示でのみテーブル行のホバー色を適用 */
+@media (max-width: 991px) {
+
+  /* PC用テーブルを非表示、スマホ用カード領域を表示 */
+  .admin-table-container {
+    display: none !important;
+  }
+
+  #user_list_mobile {
+    display: block !important;
+  }
+
+  /* ヘルプアイコン・注釈テキストの切り替え */
+  .help-icon {
+    display: inline-block !important;
+  }
+
+  p.text-muted.small {
+    display: none !important;
+  }
+
+  /* ◆ スマホ表示時：検索窓と新規ボタンの上下反転＋配置調整 */
+  .admin-action-row {
+    display: flex !important;
+    flex-direction: column-reverse !important;
+  }
+
+  /* 「+ 新規ユーザー登録」ボタン：スマホでは右寄せでコンパクトに */
+  .button-col {
+    width: 100% !important;
+    display: flex !important;
+    justify-content: flex-end !important;
+    margin-bottom: 0.5rem !important;
+  }
+
+  #user_new_button_sp {
+    width: auto !important;
+    padding: 6px 12px !important;
+    font-size: 0.85rem !important;
+  }
+
+  /* 検索窓エリア：スマホでは全幅 */
+  .search-col {
+    width: 100% !important;
+  }
+
+  /* ◆ スマホ用ユーザーカードへの「押せる感」 */
+  #user_list_mobile .card {
+    cursor: pointer;
+    transition: background-color 0.15s ease, transform 0.1s ease;
+  }
+
+  #user_list_mobile .card:active {
+    background-color: #f1f5f9 !important;
+    transform: scale(0.98);
+  }
+
+  /* ◆ スマホ表示時：モーダル内の閉じるボタンを非表示 */
+  #cancel_button {
+    display: none !important;
+  }
+}
+
+/* ==========================================================================
+   💻 7. PC表示専用（992px以上）：テーブル表示 ＆ 検索窓・ボタン同一行配置
+   ========================================================================== */
+
+@media (min-width: 992px) {
+  .admin-table-container {
+    display: block !important;
+  }
+
+  #user_list_mobile {
+    display: none !important;
+  }
+
+  /* PCでは元の検索窓とボタンの同列横並びを維持 */
+  .admin-action-row {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+  }
+
+  #user_new_button_pc {
+    padding: 10px 20px !important;
+    font-size: 1rem !important;
+  }
+
+  /* デスクトップ用ホバー・スクロール設定 */
   #list_user_name tbody tr:hover td {
     background-color: var(--row-hover-color) !important;
     transition: background-color 0.15s ease;
   }
 
-  /* ② テーブルの親要素高さをウィンドウ基準で完全固定し、内側スクロールを有効化 */
   .admin-table-container {
     height: calc(100vh - 300px) !important;
     overflow-y: auto !important;
     position: relative;
   }
 
-  /* ③ スクロールしても見出し（thead）が最上部に張り付くように固定 */
   .admin-table-container #list_user_name thead {
     position: sticky;
     top: 0;
     z-index: 10;
   }
 
-  /* ④ スクロール時に下の行のデータ文字が見出しの裏側に透けないよう、背景色を不透過に固定 */
   .admin-table-container #list_user_name thead th {
     background-color: #f8f9fa !important;
     border-bottom: 2px solid #dee2e6 !important;
-  }
-}
-
-/* ==========================================================================
-   📱 7. スマホ表示専用：カード形式リスト ＆ 特殊インタラクション
-   ========================================================================== */
-
-@media (max-width: 767.98px) {
-  /* ◆ 要素を完全中央寄せにするための汎用クラス */
-  .flex-center {
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-  }
-
-  /* ◆ 無効ユーザーのスマホカード背景 */
-  .card.is-disabled {
-    background-color: #f8f9fa !important;
-  }
-
-  /* ◆ スマホ用ユーザーカードへの「押せる感（フィードバック）」の付与 */
-  #user_list_mobile .card {
-    cursor: pointer;
-    transition:
-      background-color 0.15s ease,
-      transform 0.1s ease;
-  }
-
-  /* タップ中（アクティブ状態）に背景を少し暗くし、キュッと1回り縮小させる */
-  #user_list_mobile .card:active {
-    background-color: #f1f5f9 !important;
-    transform: scale(0.98);
   }
 }
