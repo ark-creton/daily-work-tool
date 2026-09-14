@@ -70,12 +70,9 @@ document.addEventListener("DOMContentLoaded", () => {
         if (error) {
           console.error("ログインエラー:", error.message);
 
-          // --- ここを追加して修正 ---
           loginBtn.disabled = false;
           loginBtn.innerText = "ログイン";
-          // ------------------------
 
-          // ユーザー向けの優しいメッセージ
           showError("メールアドレスまたはパスワードが正しくありません", emailInput);
           return;
         }
@@ -85,21 +82,48 @@ document.addEventListener("DOMContentLoaded", () => {
           console.log("ログイン成功！ユーザー情報:", data.user);
 
           try {
-            // 💡 ログイン画面（ログイン中...）のままで、ユーザー名と権限を先読みする
-            const { data: masterData } = await supabaseClient.from("user_master").select("user_name, role").eq("id", data.user.id).single();
+            // 💡 user_master から user_name, role に加えて is_active も取得する
+            const { data: masterData, error: masterError } = await supabaseClient
+              .from("user_master")
+              .select("user_name, role, is_active")
+              .eq("id", data.user.id)
+              .single();
 
-            if (masterData) {
-              console.log("ユーザーデータをログイン画面側で先取りしました:", masterData);
-              // index.htmlへ引き継ぐためにLocalStorageに一時保存
-              localStorage.setItem("cached_user_name", masterData.user_name);
-              localStorage.setItem("cached_user_role", masterData.role);
+            if (masterError) {
+              throw masterError;
             }
-          } catch (e) {
-            console.warn("データ先読みに失敗しましたが、遷移を続行します:", e.message);
-          }
 
-          // 🚀 すべての裏方準備がログイン画面のままで完了したので、満を持してジャンプ！
-          window.location.href = "index.html";
+            // ⛔ アカウントが無効化（is_active: false）されている場合の判定
+            if (!masterData || masterData.is_active !== true) {
+              console.warn("アカウントが無効化されています");
+
+              // 発行されたセッションを破棄（ログアウト）
+              await supabaseClient.auth.signOut();
+
+              loginBtn.disabled = false;
+              loginBtn.innerText = "ログイン";
+
+              showError("このアカウントは無効化されています。管理者に問い合わせてください。", emailInput);
+              return;
+            }
+
+            // ⭕ 有効なユーザーのみ後続処理へ進む
+            console.log("ユーザーデータをログイン画面側で先取りしました:", masterData);
+            localStorage.setItem("cached_user_name", masterData.user_name);
+            localStorage.setItem("cached_user_role", masterData.role);
+
+            // 🚀 すべてのチェックを通過したので遷移！
+            window.location.href = "index.html";
+
+          } catch (e) {
+            console.error("ユーザー情報の確認に失敗しました:", e.message);
+
+            await supabaseClient.auth.signOut();
+
+            loginBtn.disabled = false;
+            loginBtn.innerText = "ログイン";
+            showError("アカウント情報の確認に失敗しました。時間を置いて再度お試しください。", emailInput);
+          }
         }
       } catch (err) {
         console.error("予期せぬ例外が発生しました:", err);

@@ -91,6 +91,21 @@ async function initializeMainPage() {
           breakToggleBtn.disabled = true; // 外出ボタン：押せない
           breakToggleBtn.textContent = "外出開始";
           break;
+        // 有給・欠勤などの特別ステータス時
+        case "有給":
+          statusLabel.textContent = "有給休暇";
+          statusLabel.className = "status-badge status-paid";
+          clockInBtn.disabled = true;  // 出勤ボタン：ロック
+          clockOutBtn.disabled = true; // 退勤ボタン：ロック
+          breakToggleBtn.disabled = true; // 外出ボタン：ロック
+          break;
+        case "欠勤":
+          statusLabel.textContent = "欠勤";
+          statusLabel.className = "status-badge status-absent";
+          clockInBtn.disabled = true;  // 出勤ボタン：ロック
+          clockOutBtn.disabled = true; // 退勤ボタン：ロック
+          breakToggleBtn.disabled = true; // 外出ボタン：ロック
+          break;
         case "出勤中":
           statusLabel.textContent = "出勤中";
           statusLabel.className = "status-badge status-working";
@@ -117,6 +132,93 @@ async function initializeMainPage() {
       }
     };
 
+    // ◆ 過去日の退勤押し忘れ（打刻漏れ）をチェック・通知の生成＆解消を行う関数　
+    window.checkForgottenClockOut = async (userId) => {
+      try {
+        const today = new Date().toISOString().split("T")[0];
+
+        // 1. 今日より前の日付で、出勤はあるのに退勤が入っていないレコードを検索
+        const { data: forgottenRecords, error } = await supabase
+          .from("attendance_data")
+          .select("id, work_date, clock_in")
+          .eq("user_id", userId)
+          .eq("is_active", true)
+          .lt("work_date", today)
+          .not("clock_in", "is", null)
+          .is("clock_out", null)
+          .order("work_date", { ascending: false });
+
+        if (error) throw error;
+
+        // 押し忘れがある日付のリスト
+        const forgottenDates = (forgottenRecords || []).map((r) => r.work_date);
+
+        // ----------------------------------------------------
+        // A. 退勤が入力されて【解消された】通知を DB から削除する
+        // ----------------------------------------------------
+        // 現在登録されている「打刻忘れ通知」を取得
+        const { data: currentAlertNotifs } = await supabase
+          .from("notifications")
+          .select("id, message")
+          .eq("user_id", userId)
+          .eq("type", "attendance_alert");
+
+        if (currentAlertNotifs && currentAlertNotifs.length > 0) {
+          for (const notif of currentAlertNotifs) {
+            // メッセージ例: "2026-08-31 の退勤打刻が完了していません。"
+            // メッセージに含まれる日付が、現在の押し忘れリスト（forgottenDates）に無ければ削除
+            const isStillForgotten = forgottenDates.some((d) => notif.message && notif.message.includes(d));
+            if (!isStillForgotten) {
+              await supabase.from("notifications").delete().eq("id", notif.id);
+              console.log(`🧹 解消済みの通知を削除しました: ${notif.message}`);
+            }
+          }
+        }
+
+        // ----------------------------------------------------
+        // B. まだ登録されていない押し忘れ日の【通知を作成する】
+        // ----------------------------------------------------
+        if (forgottenRecords && forgottenRecords.length > 0) {
+          console.warn("⚠️ 退勤押し忘れが検知されました:", forgottenRecords);
+
+          for (const record of forgottenRecords) {
+            const targetDate = record.work_date;
+            const alertTitle = "退勤の打刻漏れがあります";
+            const alertMessage = `${targetDate} の退勤打刻が完了していません。`;
+
+            // 既存チェック
+            const { data: existingNotif } = await supabase
+              .from("notifications")
+              .select("id")
+              .eq("user_id", userId)
+              .eq("type", "attendance_alert")
+              .eq("message", alertMessage)
+              .maybeSingle();
+
+            if (!existingNotif) {
+              await supabase.from("notifications").insert({
+                user_id: userId,
+                type: "attendance_alert",
+                title: alertTitle,
+                message: alertMessage,
+                link_id: null,
+                is_read: false,
+                created_at: new Date().toISOString(),
+                updated_at: new Date().toISOString(),
+              });
+            }
+          }
+        }
+
+        // C. ベルマークのバッジと通知ドロップダウンを最新化
+        if (typeof window.fetchNotifications === "function") {
+          await window.fetchNotifications(userId);
+        }
+      } catch (err) {
+        console.error("退勤押し忘れチェックに失敗しました:", err);
+      }
+    };
+
     // ◆ データベース（DB）同期とステータス復元処理
     // 【目的】ページを開いた（あるいはリロードした）際、今日の打刻データをDBから取得し、現在のユーザーの状態を画面に正しく復元する
     const restoreStateFromDB = async () => {
@@ -126,6 +228,9 @@ async function initializeMainPage() {
           data: { user },
         } = await supabase.auth.getUser();
         if (!user) return;
+
+        // 過去の退勤押し忘れをチェック
+        await checkForgottenClockOut(user.id);
 
         // 今日の日付文字列（YYYY-MM-DD形式）を作成
         const today = new Date().toISOString().split("T")[0];
@@ -156,9 +261,27 @@ async function initializeMainPage() {
           }
 
           // ========================================================
-          // パターンA：勤怠画面側の「編集モーダル」から手動登録されたデータの場合
+          // 有給（paid）または 欠勤（absent）が登録されている場合
           // ========================================================
-          if (record.registration_mode === "modal" && record.status === "working") {
+          if (record.work_type === "paid" || record.work_type === "absent") {
+            const isPaid = record.work_type === "paid";
+            const workTypeName = isPaid ? "有給休暇" : "欠勤";
+
+            // 1. ステータスラベルを有給/欠勤に変更（🌟クラス名を条件に応じて指定）
+            statusLabel.textContent = workTypeName;
+            statusLabel.className = `status-badge ${isPaid ? "status-paid" : "status-absent"}`;
+
+            // 2. メイン画面の打刻ボタンをすべてロック（非活性化）
+            clockInBtn.disabled = true;
+            clockInBtn.textContent = "打刻不可";
+            clockOutBtn.disabled = true;
+            breakToggleBtn.disabled = true;
+            breakToggleBtn.textContent = "外出開始";
+
+            // ========================================================
+            // パターンA：勤怠画面側の「編集モーダル」から手動登録されたデータの場合
+            // ========================================================
+          } else if (record.registration_mode === "modal" && record.status === "working") {
             // 1. ステータスラベルを「出勤中」に変更
             statusLabel.textContent = "出勤中";
             statusLabel.className = "status-badge status-working";
@@ -813,8 +936,57 @@ async function initializeMainPage() {
           selectEl.style.setProperty("padding", "0px 24px 0px 8px", "important");
         }
 
-        // 金額フィールドの数値変更を検知して、合計金額を即座に再計算するイベントを設定
-        div.querySelector(".expense-notebook-amount-field").addEventListener("input", calculateTotalExpense);
+        // 金額入力時のリアルタイム制御・サニタイズ・合計計算
+        const amountInput = div.querySelector(".expense-notebook-amount-field");
+        if (amountInput) {
+          // サニタイズ処理関数
+          const cleanAndLimitValue = (val) => {
+            // 1. 全角数字を半角数字に変換し、数字以外の文字（日本語・記号等）を完全に除去
+            let cleanVal = val
+              .replace(/[０-９]/g, (s) => String.fromCharCode(s.charCodeAt(0) - 0xfee0))
+              .replace(/[^0-9]/g, "");
+
+            // 2. 先頭の無駄な「0」を除去（例: "050" -> "50"）
+            if (cleanVal.length > 1 && cleanVal.startsWith("0")) {
+              cleanVal = String(parseInt(cleanVal, 10));
+            }
+
+            // 3. 7桁制限
+            if (cleanVal.length > 7) {
+              cleanVal = cleanVal.slice(0, 7);
+            }
+
+            // 4. 最大9,999,999円の上限チェック
+            if (parseInt(cleanVal, 10) > 9999999) {
+              cleanVal = "9999999";
+            }
+
+            return cleanVal;
+          };
+
+          // リアルタイム入力（IME変換中も強制サニタイズ）
+          amountInput.addEventListener("input", (e) => {
+            const cleanVal = cleanAndLimitValue(e.target.value);
+
+            // 値が変わっている場合のみ書き換え（無限ループ防止）
+            if (e.target.value !== cleanVal) {
+              e.target.value = cleanVal;
+            }
+            calculateTotalExpense();
+          });
+
+          // IME確定時（Enterキーやスペースキーで文字確定した瞬間）の補正
+          amountInput.addEventListener("compositionend", (e) => {
+            e.target.value = cleanAndLimitValue(e.target.value);
+            calculateTotalExpense();
+          });
+
+          // フォーカス離脱時（カーソルを外したとき）の最終補正
+          amountInput.addEventListener("blur", (e) => {
+            e.target.value = cleanAndLimitValue(e.target.value);
+            calculateTotalExpense();
+          });
+        }
 
         // 明細行の削除ボタンイベント（この時点ではDBからは削除されず、登録ボタン押下で確定）
         div.querySelector(".btn-delete-expense").addEventListener("click", () => {
@@ -985,6 +1157,15 @@ async function initializeMainPage() {
               expenseItems.push({ category, amount, memo });
             }
           });
+
+          if (expenseItems.length === 0 && !hasExistingExpenses) {
+            if (window.showToast) {
+              window.showToast("金額が入力されていないため保存されませんでした。", "info");
+            }
+            const modalInstance = bootstrap.Modal.getOrCreateInstance(modalElement);
+            modalInstance.hide();
+            return;
+          }
 
           try {
             const {
@@ -1608,32 +1789,15 @@ async function updateMainPageReportList() {
       allUsers.forEach((u) => userMap.set(String(u.id), u));
     }
 
-    // Step3: 対象ユーザー選択プルダウン（target_user_id）の初期選択肢（全体・自分）を安全に動生成
+    // Step3: 対象ユーザー選択プルダウン（target_user_id）の初期選択肢および動的選択肢の更新
     const userSelect = document.getElementById("target_user_id");
     if (userSelect) {
       userSelect.disabled = false;
-      if (userSelect.options.length === 0) {
-        const allOption = document.createElement("option");
-        allOption.value = "all";
-        allOption.textContent = "全てのレポート";
-        allOption.selected = true;
-        userSelect.appendChild(allOption);
 
-        const mineOption = document.createElement("option");
-        mineOption.value = "mine";
-        mineOption.textContent = "自分のレポート";
-        userSelect.appendChild(mineOption);
-      }
+      // 現在の選択値を保持
+      const savedSelectedValue = userSelect.value || "all";
 
-      const savedSelectedValue = userSelect.value;
-
-      // 前回の動的追加分（インデックス2以降）を一旦クリア
-      while (userSelect.options.length > 2) {
-        userSelect.remove(2);
-      }
-
-      // 存在するレポートの作成者一覧を走査し、自分以外の実在するユーザーをプルダウンに動的追加
-      // 【セキュリティ強化】自分が作成したレポート & 自分に共有されたレポートを並行取得して結合
+      // 存在するレポートの作成者一覧を走査し、自分以外の実在するユーザーを並行取得
       const [resMy, resShared] = await Promise.all([
         // 1. 自分が作成したレポート
         supabaseClient
@@ -1661,19 +1825,20 @@ async function updateMainPageReportList() {
       (resShared.data || []).forEach((r) => allReportsMap.set(r.id, r));
       const allReports = Array.from(allReportsMap.values());
 
+      // 新しく構築する option 要素群を作成（DOM操作を非同期処理の後に一括で行うことでチラつきを防止）
+      const newOptions = [
+        { value: "all", text: "全てのレポート" },
+        { value: "mine", text: "自分のレポート" },
+      ];
+
       if (allReports.length > 0) {
         const seenUserIds = new Set();
         allReports.forEach((r) => {
-          const authorId = r.user_id; // 作成者はuser_id
+          const authorId = r.user_id;
           const isMyReport = String(authorId) === String(loginUser.id);
-          const currentStatus = String(r.status || "")
-            .trim()
-            .toLowerCase();
+          const currentStatus = String(r.status || "").trim().toLowerCase();
 
-          // 他人の下書きレポート（status: draft）は、プルダウン構築の対象からも完全に除外
-          if (!isMyReport && currentStatus === "draft") {
-            return;
-          }
+          if (!isMyReport && currentStatus === "draft") return;
 
           if (authorId != loginUser.id && !seenUserIds.has(authorId) && r.is_active !== false) {
             seenUserIds.add(authorId);
@@ -1684,19 +1849,25 @@ async function updateMainPageReportList() {
               fullName = `${master.last_name || ""} ${master.first_name || ""}`.trim() || master.user_name || "他ユーザー";
             }
 
-            const exists = Array.from(userSelect.options).some((opt) => opt.value == authorId);
-            if (!exists) {
-              const opt = document.createElement("option");
-              opt.value = authorId;
-              opt.textContent = fullName;
-              userSelect.appendChild(opt);
-            }
+            newOptions.push({ value: String(authorId), text: fullName });
           }
         });
+      }
 
-        if (savedSelectedValue && Array.from(userSelect.options).some((opt) => opt.value === savedSelectedValue)) {
-          userSelect.value = savedSelectedValue;
-        }
+      // データ取得後に DOM を安全に一括更新
+      userSelect.innerHTML = "";
+      newOptions.forEach((optData) => {
+        const opt = document.createElement("option");
+        opt.value = optData.value;
+        opt.textContent = optData.text;
+        userSelect.appendChild(opt);
+      });
+
+      // 選択状態の復元
+      if (Array.from(userSelect.options).some((opt) => opt.value === savedSelectedValue)) {
+        userSelect.value = savedSelectedValue;
+      } else {
+        userSelect.value = "all";
       }
     }
 
@@ -1772,9 +1943,10 @@ async function updateMainPageReportList() {
     }
 
     // プルダウンによるユーザー絞り込みを適用
+    // 💡 値が空（""）の場合は "all" と同じ扱いにして、全件表示を維持する
     if (filterValue === "mine") {
       displayReports = displayReports.filter((r) => r.user_id == loginUser.id);
-    } else if (filterValue !== "all") {
+    } else if (filterValue !== "all" && filterValue !== "") {
       displayReports = displayReports.filter((r) => r.user_id == filterValue);
     }
 
@@ -1813,10 +1985,18 @@ async function updateMainPageReportList() {
       pastReportListEl.innerHTML = EMPTY_REPORT_PLACEHOLDER_HTML;
 
       if (userSelect) {
-        userSelect.value = "";     // 💡【追加】表示テキスト（「すべてのレポート」等）を消すために値を空にする
-        userSelect.disabled = true; // 💡非活性化
+        userSelect.value = "all";
+        userSelect.disabled = true; // 0件時は操作不可
       }
       return;
+    } else {
+      // 💡 データが1件以上存在する場合は、プルダウンを有効化し、未選択なら "all" にセット
+      if (userSelect) {
+        userSelect.disabled = false;
+        if (!userSelect.value || userSelect.value === "") {
+          userSelect.value = "all";
+        }
+      }
     }
 
     // Step8: ソート済み配列を元に、各レポートアイテムのHTML構造を生成して文字列結合

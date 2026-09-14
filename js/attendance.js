@@ -1,3 +1,30 @@
+// 全角数字を半角にし、数字以外を除去する関数
+function sanitizeToDigits(str) {
+  if (!str) return "";
+  // 全角数字（０-９）を半角（0-9）に変換
+  let half = str.replace(/[０-９]/g, (s) => String.fromCharCode(s.charCodeAt(0) - 0xfee0));
+  // 数字以外の文字（ひらがな、記号、アルファベット等）をすべて削除
+  return half.replace(/[^0-9]/g, "");
+}
+
+// 休憩時間入力欄へのイベント設定
+const breakInput = document.getElementById("total_break_m");
+
+if (breakInput) {
+  // 入力中（確定時）にリアルタイムで補正
+  breakInput.addEventListener("input", (e) => {
+    if (e.isComposing) return; // 日本語入力の変換中は邪魔しない
+    e.target.value = sanitizeToDigits(e.target.value);
+    calculateAttendance(); // 再計算
+  });
+
+  // フォーカスが外れたタイミングで未変換文字などを最終掃除
+  breakInput.addEventListener("blur", (e) => {
+    e.target.value = sanitizeToDigits(e.target.value);
+    calculateAttendance(); // 再計算
+  });
+}
+
 window.isUserWorking = async () => {
   try {
     const {
@@ -127,9 +154,7 @@ window.initAttendanceCalendar = async () => {
   const currentYear = now.getFullYear();
   const currentMonth = String(now.getMonth() + 1).padStart(2, "0");
 
-  if (!displayPeriodInput.value) {
-    displayPeriodInput.value = `${currentYear}-${currentMonth}`;
-  }
+  displayPeriodInput.value = `${currentYear}-${currentMonth}`;
 
   displayPeriodInput.removeEventListener("change", handlePeriodChange);
   displayPeriodInput.addEventListener("change", handlePeriodChange);
@@ -658,22 +683,31 @@ window.initAttendanceCalendar = async () => {
       const el = document.getElementById(id);
       if (el) el.value = val;
     };
-    const formatToTimeInput = (isoString) => {
+
+    const formatTimeToHHMM = (isoString) => {
       if (!isoString) return "";
       const date = new Date(isoString);
       return `${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`;
     };
 
-    // Step2: 取得データを各種時間インプット・メモ欄へ流し込み
-    setVal("edit_clock_in", record?.clock_in ? formatToTimeInput(record.clock_in) : "");
-    setVal("edit_clock_out", record?.clock_out ? formatToTimeInput(record.clock_out) : "");
+    // Step2: モーダルの各入力フィールドに値をセット
+    setVal("edit_work_type", record?.work_type || "normal");
+    setVal("edit_clock_in", record?.clock_in ? formatTimeToHHMM(record.clock_in) : "");
+    setVal("edit_clock_out", record?.clock_out ? formatTimeToHHMM(record.clock_out) : "");
+    setVal("edit_break_start", record?.break_start ? formatTimeToHHMM(record.break_start) : "");
+    setVal("edit_break_end", record?.break_end ? formatTimeToHHMM(record.break_end) : "");
     setVal("edit_memo", record?.memo || "");
-    setVal("edit_break_start", record?.break_start ? formatToTimeInput(record.break_start) : "");
-    setVal("edit_break_end", record?.break_end ? formatToTimeInput(record.break_end) : "");
+
+    // ★ 休憩時間の要素取得とサニタイズ処理（setValによる二重上書きを排除）
+    const totalBreakInput = document.getElementById("total_break_m");
+    if (totalBreakInput) {
+      totalBreakInput.setAttribute("type", "text");
+      totalBreakInput.setAttribute("inputmode", "numeric");
+      totalBreakInput.value = sanitizeToDigits(String(record?.total_break_m || ""));
+    }
 
     // 勤務区分に基づき時間入力項目の入力禁止（disabled）をスイッチ
     toggleModalInputsByWorkType(workTypeSelect?.value || "normal");
-    setVal("total_break_m", record?.total_break_m || "");
 
     // Step3: モーダル内の経費明細リストの生成
     const expenseList = document.getElementById("expense_list");
@@ -698,6 +732,7 @@ window.initAttendanceCalendar = async () => {
     } else {
       addExpenseRow({ id: null, category: "交通費", detail: "", amount: "" });
     }
+
     // 値を詰め終わった後に、労働時間等の表示値を最新値に再計算させる
     calculateAttendance();
   }
@@ -1028,6 +1063,16 @@ window.initAttendanceCalendar = async () => {
               const breakEnd = document.getElementById("edit_break_end").value;
               const workType = document.getElementById("edit_work_type").value;
 
+              // 通常勤務で「出勤」と「退勤」が両方未入力の場合を弾くガード ---
+              if ((workType === "normal" || workType === "regular") && !clockInTime && !clockOutTime) {
+                window.showToast("出勤時間と退勤時間が入力されていません。", "error");
+
+                // ボタンを元の状態に戻して保存処理を中断
+                newSaveButton.disabled = false;
+                newSaveButton.textContent = "保存";
+                return;
+              }
+
               // 退勤時間のみの入力を弾くバリデーション
               // 通常勤務やシフトなどで、出勤が空なのに退勤だけが入力されている場合
               if ((workType === "normal" || workType === "regular") && !clockInTime && clockOutTime) {
@@ -1036,7 +1081,6 @@ window.initAttendanceCalendar = async () => {
                 // ボタンを元の状態に戻して処理を中断
                 newSaveButton.disabled = false;
                 newSaveButton.textContent = "保存";
-
                 return;
               }
 
@@ -1095,8 +1139,8 @@ window.initAttendanceCalendar = async () => {
                 clock_out: isoClockOut,
                 status: calculatedStatus,
                 total_break_m: breakTimeM,
-                break_start: isoBreakStart,  // ← 追加
-                break_end: isoBreakEnd,      // ← 追加
+                break_start: isoBreakStart,
+                break_end: isoBreakEnd,
                 memo: memo,
                 original_clock_in: finalOriginalClockIn,
                 original_clock_out: finalOriginalClockOut,
@@ -1123,7 +1167,7 @@ window.initAttendanceCalendar = async () => {
               const parentAttendanceId = savedAttendance.id;
               const expenseRows = document.querySelectorAll("#expense_list .expense-notebook-row");
               const expenseRecordsToUpsert = [];
-              const activeRowDbIds = new Set(); // 💡 追加：画面に現在存在する経費IDを記録するセット
+              const activeRowDbIds = new Set();
 
               // 各経費の入力行をループしてデータを取り出す
               expenseRows.forEach((row) => {
@@ -1147,7 +1191,7 @@ window.initAttendanceCalendar = async () => {
 
                   const recordId = finalDbId || fallbackUUID;
                   if (finalDbId) {
-                    activeRowDbIds.add(finalDbId); // 画面上に残っている既存IDとしてキープ
+                    activeRowDbIds.add(finalDbId);
                   }
 
                   expenseRecordsToUpsert.push({
@@ -1214,11 +1258,25 @@ window.initAttendanceCalendar = async () => {
                 console.log("✅ 経費のUpsertが成功しました！");
               }
 
-              // Step3: モーダルのクローズと画面の再読込
+              // Step 3: モーダルのクローズと画面の再読込
               deletedExpenseIds = [];
               const bootstrapModal = bootstrap.Modal.getInstance(modalEl);
               if (bootstrapModal) bootstrapModal.hide();
+
+              // 1. 画面上のカレンダー・一覧テーブルを再読込
               await handlePeriodChange();
+
+              // 2. 🔔 打刻漏れデータの再チェックと通知バッジ更新を即座に実行
+              setTimeout(async () => {
+                const currentUserId = (typeof targetUser !== "undefined" && targetUser) ? targetUser.id : window.currentUserId;
+
+                if (typeof window.checkForgottenClockOut === "function") {
+                  // 再判定 -> notificationsテーブル更新 -> fetchNotifications まで自動で行われます
+                  await window.checkForgottenClockOut(currentUserId);
+                } else if (typeof window.fetchNotifications === "function") {
+                  await window.fetchNotifications(currentUserId);
+                }
+              }, 100);
             } catch (err) {
               console.error("❌ 保存処理でエラーが発生しました:", err);
               window.showToast("保存に失敗しました。時間をおいて再度お試しください。", "error");
@@ -1363,9 +1421,16 @@ window.initAttendanceCalendar = async () => {
             }
 
             // 少しだけ待ってから画面を同期的に再読込する
+            // 完全消去処理の末尾付近
             setTimeout(async () => {
               await handlePeriodChange();
-            }, 50);
+
+              // 🔔 消去完了後にベルマーク通知を最新化
+              if (typeof window.fetchNotifications === "function") {
+                const currentUserId = (typeof targetUser !== "undefined" && targetUser) ? targetUser.id : window.currentUserId;
+                await window.fetchNotifications(currentUserId);
+              }
+            }, 100);
           } catch (e) {
             console.error("❌ 完全消去処理でエラーが発生しました:", e);
             window.showToast("削除に失敗しました。", "error");
@@ -1383,12 +1448,51 @@ window.initAttendanceCalendar = async () => {
   // ==========================================
   // 計算・リスナー関連処理
   // ==========================================
+
+  // ★ 1. 休憩時間のフォーカス離脱時ハンドラー（未変換ひらがな等のクレンジング）
+  function handleBreakBlur(e) {
+    const cleanVal = sanitizeToDigits(e.target.value);
+    if (e.target.value !== cleanVal) {
+      e.target.value = cleanVal;
+    }
+    calculateAttendance();
+  }
+
+  // ★ 2. 入力時の共通ハンドラー関数（リアルタイム計算・確定後の文字クレンジング）
+  function handleAttendanceInput(e) {
+    // IME（日本語入力）の変換中は処理しない（確定後にサニタイズを実行）
+    if (e.isComposing) return;
+
+    // 合計休憩時間（total_break_m）に入力があった場合、リアルタイムサニタイズ（全角→半角・数字以外除去）を実施
+    if (e.target.id === "total_break_m") {
+      const cleanVal = sanitizeToDigits(e.target.value);
+      if (e.target.value !== cleanVal) {
+        e.target.value = cleanVal;
+      }
+    }
+
+    // 勤務時間の自動再計算を実行
+    calculateAttendance();
+  }
+
   // ◆ 各種入力項目に対するリアルタイム計算リスナーの登録
-  // 【目的】時間入力欄に変更があった際、自動で労働時間・残業時間の計算を走らせる
   function attachAttendanceCalculationListeners() {
-    ["edit_clock_in", "edit_clock_out", "total_break_m", "edit_break_start", "edit_break_end"].forEach((id) =>
-      document.getElementById(id)?.addEventListener("input", calculateAttendance),
-    );
+    const targetIds = ["edit_clock_in", "edit_clock_out", "total_break_m", "edit_break_start", "edit_break_end"];
+
+    targetIds.forEach((id) => {
+      const el = document.getElementById(id);
+      if (!el) return;
+
+      // 二重登録を防止するために一度イベントを削除してから再登録
+      el.removeEventListener("input", handleAttendanceInput);
+      el.addEventListener("input", handleAttendanceInput);
+
+      // 休憩時間（total_break_m）の場合はフォーカス離脱（blur）時もサニタイズを実施
+      if (id === "total_break_m") {
+        el.removeEventListener("blur", handleBreakBlur);
+        el.addEventListener("blur", handleBreakBlur);
+      }
+    });
   }
 
   // ◆ 労働時間および時間外（残業）時間の自動計算処理
@@ -1492,9 +1596,9 @@ window.initAttendanceCalendar = async () => {
           <option value="other" ${isOther}>その他</option>
         </select>
 
-        <div class="d-flex align-items-center bg-transparent border-bottom expense-notebook-amount-wrap">
+      <div class="d-flex align-items-center bg-transparent border-bottom expense-notebook-amount-wrap">
           <input type="number" class="form-control form-control-sm border-0 p-0 text-end bg-transparent fw-bold expense-notebook-amount-field" 
-                placeholder="0" min="0" value="${data.amount ?? ""}">
+                 placeholder="0" min="0" inputmode="numeric" pattern="[0-9]*" value="${data.amount ?? ""}">
           <span class="text-muted ms-1 text-yen">円</span>
         </div>
 
@@ -1516,8 +1620,51 @@ window.initAttendanceCalendar = async () => {
       selectEl.style.setProperty("padding", "0px 24px 0px 8px", "important");
     }
 
-    // 金額入力時の合計金額自動計算イベントを登録
-    div.querySelector(".expense-notebook-amount-field").addEventListener("input", calculateTotalExpense);
+    // 金額入力時のリアルタイムサニタイズと合計金額自動計算イベントを登録
+    const amountInput = div.querySelector(".expense-notebook-amount-field");
+    if (amountInput) {
+      // 全角入力（IME）の判定を確実にするため属性を調整
+      amountInput.setAttribute("type", "text");
+      amountInput.setAttribute("inputmode", "numeric");
+      amountInput.setAttribute("maxlength", "7"); // HTML側でも7桁制限を設定
+
+      // 金額制限（最大9,999,999円・7桁）を適用する関数
+      const applyAmountLimits = (inputEl) => {
+        let cleanVal = sanitizeToDigits(inputEl.value);
+
+        // 7桁を超えたらカット
+        if (cleanVal.length > 7) {
+          cleanVal = cleanVal.slice(0, 7);
+        }
+
+        // 9,999,999円を超えたら補正
+        if (parseInt(cleanVal, 10) > 9999999) {
+          cleanVal = "9999999";
+        }
+
+        return cleanVal;
+      };
+
+      // 入力中の処理（確定済みの値のみリアルタイム処理）
+      amountInput.addEventListener("input", (e) => {
+        if (e.isComposing) return;
+
+        const limitedVal = applyAmountLimits(e.target);
+        if (e.target.value !== limitedVal) {
+          e.target.value = limitedVal;
+        }
+        calculateTotalExpense();
+      });
+
+      // フォーカス離脱時（カーソルを離した時）に全角数字・未確定文字を半角数字へ正規化＋上限チェック
+      amountInput.addEventListener("blur", (e) => {
+        const limitedVal = applyAmountLimits(e.target);
+        if (e.target.value !== limitedVal) {
+          e.target.value = limitedVal;
+        }
+        calculateTotalExpense();
+      });
+    }
 
     // 行内の「×」ボタンクリック時の行削除、および論理削除リストへの退避処理
     div.querySelector(".btn-delete-expense").addEventListener("click", () => {
@@ -1704,7 +1851,7 @@ window.initAttendanceCalendar = async () => {
       const holidayDisplay = holidayName || "";
       const holidayHtml = holidayName ? `<span class="at-holiday-name-mini" title="${holidayName}">${holidayDisplay}</span>` : "";
 
-      // 【✨ここをアップデート】今日かつ現在勤務中なら、日付のすぐ右隣にドットを配置する
+      // 今日かつ現在勤務中なら、日付のすぐ右隣にドットを配置する
       const dotHtml = isStillWorkingToday ? `<span class="pulsing-blue-dot" style="margin-left: 6px;"></span>` : "";
 
       // HTMLの構成を更新
@@ -1728,8 +1875,8 @@ window.initAttendanceCalendar = async () => {
         const isNotFinishedYet = record && record.status !== "finished";
         const hasClockedButton = record && record.registration_mode === "button";
 
-        // 「現在進行形で出勤中」または「今日通常打刻をしていてまだ退勤していない」場合のみブロック
-        if (isStillWorkingToday || (hasClockedButton && isNotFinishedYet)) {
+        // ★ 修正ポイント: ブロック対象を「“本日” かつ 打刻中（未退勤）」のデータのみに限定する
+        if (isToday && (isStillWorkingToday || (hasClockedButton && isNotFinishedYet))) {
           if (typeof window.showToast === "function") {
             window.showToast("本日は現在打刻中のため、編集できません。\n退勤後に編集が可能になります。", "error");
           } else {
@@ -1766,4 +1913,4 @@ window.initAttendanceCalendar = async () => {
 
     setupViewModeSwitchEvents();
   }
-};
+}

@@ -76,6 +76,156 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 
   // ==========================================
+  // 🔔 共通通知機能（DOM構築を待たずに即時参照できるよう外側に定義）
+  // ==========================================
+
+  // ① 通知一覧の取得関数
+  window.fetchNotifications = async function (userId) {
+    const supabaseClient = window.supabase || supabase;
+
+    // 1. 引数 -> 2. グローバル変数 -> 3. Supabaseセッション の順でユーザーIDを取得
+    let targetUserId = userId || window.currentUserId;
+
+    if (!targetUserId && supabaseClient && supabaseClient.auth) {
+      try {
+        const { data } = await supabaseClient.auth.getUser();
+        if (data && data.user) {
+          targetUserId = data.user.id;
+          window.currentUserId = targetUserId; // 次回の呼び出し用に保持
+        }
+      } catch (e) {
+        console.warn("ユーザーID自動取得エラー:", e);
+      }
+    }
+
+    // クライアントまたはIDが取れない場合は安全に処理を抜ける
+    if (!supabaseClient || !targetUserId) {
+      console.warn("🔔 通知更新スキップ: 有効なユーザーIDが見つかりません。");
+      return;
+    }
+
+    try {
+      // 既読・未読問わず直近20件を取得
+      const { data: notifications, error } = await supabaseClient
+        .from("notifications")
+        .select("*")
+        .eq("user_id", String(targetUserId).trim())
+        .order("created_at", { ascending: false })
+        .limit(20);
+
+      if (error) throw error;
+
+      // 未読（is_read = false）の件数を計算し、バッジを即時更新
+      const unreadCount = notifications ? notifications.filter((n) => !n.is_read).length : 0;
+      const badgeEl = document.getElementById("notification_badge");
+      if (badgeEl) {
+        if (unreadCount > 0) {
+          badgeEl.textContent = unreadCount > 99 ? "99+" : unreadCount;
+          badgeEl.classList.remove("d-none");
+        } else {
+          badgeEl.classList.add("d-none");
+        }
+      }
+
+      // ドロップダウン一覧の描画
+      const container = document.getElementById("notification_list_container");
+      if (!container) return;
+
+      if (!notifications || notifications.length === 0) {
+        container.innerHTML = `
+        <li>
+          <div class="px-2 py-3 text-center text-muted" style="font-size: 0.75rem;">
+            通知はありません
+          </div>
+        </li>
+      `;
+        return;
+      }
+
+      let html = "";
+      notifications.forEach((notif) => {
+        let badgeClass = "bg-success-subtle text-success-emphasis";
+        let badgeLabel = "レポート";
+
+        if (notif.type === "attendance_alert" || notif.type === "attendance") {
+          badgeClass = "bg-danger-subtle text-danger-emphasis";
+          badgeLabel = "打刻忘れ";
+        }
+
+        const dateStr = new Date(notif.created_at).toLocaleDateString("ja-JP");
+        const bgClass = notif.is_read ? "bg-white opacity-75" : "bg-light";
+
+        html += `
+        <li>
+          <a class="dropdown-item p-2 rounded-2 text-wrap my-1 notif-item ${bgClass}" 
+             href="javascript:void(0);" 
+             data-notif-id="${notif.id}" 
+             data-report-id="${notif.link_id || ""}">
+            <div class="d-flex justify-content-between align-items-center mb-1">
+              <span class="badge ${badgeClass}" style="font-size: 0.6rem;">${badgeLabel}</span>
+              <small class="text-muted" style="font-size: 0.65rem;">${dateStr}</small>
+            </div>
+            <div class="text-dark fw-medium" style="font-size: 0.75rem;">${notif.title || notif.message || ""}</div>
+            ${notif.title && notif.message ? `<div class="text-muted small mt-1" style="font-size: 0.68rem;">${notif.message}</div>` : ""}
+          </a>
+        </li>
+      `;
+      });
+
+      container.innerHTML = html;
+
+      // クリックイベント設定
+      container.querySelectorAll(".notif-item").forEach((item) => {
+        item.addEventListener("click", (e) => {
+          const reportId = e.currentTarget.dataset.reportId;
+          if (reportId && typeof window.openEditReportModalById === "function") {
+            window.openEditReportModalById(reportId);
+          }
+        });
+      });
+    } catch (err) {
+      console.error("通知の取得に失敗しました:", err.message);
+    }
+  };
+
+  // ② イベント登録用関数
+  function setupNotificationEvents(userId) {
+    const notifBtn = document.getElementById("notificationDropdown");
+    if (notifBtn) {
+      notifBtn.addEventListener("show.bs.dropdown", async () => {
+        await window.fetchNotifications(userId);
+      });
+    }
+
+    const markAllBtn = document.getElementById("btn_mark_all_read");
+    if (markAllBtn) {
+      markAllBtn.addEventListener("click", async (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+
+        const supabaseClient = window.supabase || supabase;
+        const targetUserId = userId || window.currentUserId;
+
+        if (!supabaseClient || !targetUserId) return;
+
+        try {
+          const { error } = await supabaseClient
+            .from("notifications")
+            .update({ is_read: true, updated_at: new Date().toISOString() })
+            .eq("user_id", String(targetUserId).trim())
+            .eq("is_read", false);
+
+          if (error) throw error;
+
+          await window.fetchNotifications(targetUserId);
+        } catch (err) {
+          console.error("一括既読更新に失敗しました:", err.message);
+        }
+      });
+    }
+  }
+
+  // ==========================================
   // ログインユーザーのチェックとヘッダーへの名前反映
   // ==========================================
   async function checkAndDisplayUser() {
@@ -124,6 +274,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
       if (user) {
         console.log("ログイン中のAuthユーザーID:", user.id);
+        window.currentUserId = user.id; // グローバルにユーザーIDを保持
 
         /* user_name, role と一緒に company_id（会社ID）もマスタから直接引っ張る */
         const { data: masterData, error: dbError } = await supabaseClient
@@ -162,9 +313,7 @@ document.addEventListener("DOMContentLoaded", async () => {
           adminMenuItem.style.setProperty("display", userRole === "admin" ? "flex" : "none", "important");
         }
 
-        // ==========================================
-        // アークフォレスト用のレポートメニュー完全非表示化（修正箇所）
-        // ==========================================
+        // アークフォレスト用のレポートメニュー完全非表示化
         const reportMenuItem = document.getElementById("menu_report");
         if (reportMenuItem) {
           const isArcForest = userCompanyId === "c981e701-94d1-47a6-a23a-7d2b3b84a894";
@@ -179,9 +328,14 @@ document.addEventListener("DOMContentLoaded", async () => {
         // スマホメニュー内の表示も同時に書き換える
         const mobileUserNameSpan = document.querySelector(".sidebar-user-name");
         if (mobileUserNameSpan) mobileUserNameSpan.innerText = `${userName} さん`;
+
+        // 🔔 通知の初期化・取得実行
+        await window.fetchNotifications(user.id);
+        setupNotificationEvents(user.id);
+
       } else {
         console.warn("未ログイン状態です。ログイン画面へ遷移します。");
-        window.location.href = "login.html"; // 👈 必ず login.html へ
+        window.location.href = "login.html";
       }
     } catch (err) {
       console.error("ユーザー情報の取得中にエラーが発生しました:", err.message);
@@ -229,7 +383,6 @@ document.addEventListener("DOMContentLoaded", async () => {
   const menuToggle = document.getElementById("menu-toggle");
   const sidebar = document.querySelector(".sidebar-area");
 
-  // ✨【大転換】Popoverをやめて、より確実なTooltipで制御するロジック
   document.querySelectorAll(".sidebar-nav .nav-item").forEach((item) => {
     if (item.classList.contains("mobile-logout-item")) return;
 
@@ -237,17 +390,14 @@ document.addEventListener("DOMContentLoaded", async () => {
       const isCollapsed = sidebar && sidebar.classList.contains("collapsed");
 
       if (isCollapsed) {
-        // 既存のツールチップがあれば一度破棄
         const oldInstance = bootstrap.Tooltip.getInstance(item);
         if (oldInstance) {
           oldInstance.hide();
           oldInstance.dispose();
         }
 
-        // HTMLの data-title から直接「メイン」などの文字を取得
         const menuText = item.getAttribute("data-title") || "";
 
-        // 新しくツールチップを作成して強制表示
         const newInstance = new bootstrap.Tooltip(item, {
           trigger: "manual",
           placement: "right",
@@ -276,7 +426,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     menuToggle.addEventListener("click", () => {
       sidebar.classList.toggle("collapsed");
 
-      // サイドバーが切り替わった瞬間は、すべてのツールチップを完全消去
       document.querySelectorAll(".sidebar-nav .nav-item").forEach((el) => {
         const instance = bootstrap.Tooltip.getInstance(el);
         if (instance) {
@@ -291,11 +440,9 @@ document.addEventListener("DOMContentLoaded", async () => {
   // 📱 スマホ用サイドバー開閉・遷移時自動クローズ処理
   // ==========================================
   document.addEventListener("click", (event) => {
-    // 制御対象の親要素（サイドバー全体）
     const activeSidebar = document.querySelector(".sidebar-area");
     if (!activeSidebar) return;
 
-    // ① 三本線マーク（ハンバーガーボタン）がクリックされた場合
     const toggleBtn = event.target.closest("#mobile-menu-toggle");
     if (toggleBtn) {
       event.stopPropagation();
@@ -304,18 +451,15 @@ document.addEventListener("DOMContentLoaded", async () => {
       return;
     }
 
-    // ② メニューが開いている状態のときの処理
     if (activeSidebar.classList.contains("mobile-active")) {
       const isMenuItem = event.target.closest(".nav-item") || event.target.closest("a") || event.target.closest("button");
 
       if (isMenuItem) {
-        // メニュー項目をクリックした瞬間にメニューを閉じる！
         activeSidebar.classList.remove("mobile-active");
         console.log("📱メニュー項目がタップされたため、メニューを閉じて遷移処理を開始します");
         return;
       }
 
-      // ③ メニューの外側をクリックした時に閉じる処理
       if (!activeSidebar.contains(event.target)) {
         activeSidebar.classList.remove("mobile-active");
         console.log("📱メニュー外をタップしたため非表示にしました");
@@ -330,34 +474,27 @@ document.addEventListener("DOMContentLoaded", async () => {
   const navItems = document.querySelectorAll(".sidebar-nav .nav-item");
 
   async function loadPage(pageName, isInitial = false) {
-    // 1. 【ここを修正】画面切替が始まった瞬間に、コンテンツエリアを即座にフェードアウト（透明化）させる
     if (dynamicArea) {
       dynamicArea.style.transition = "opacity 0.15s ease-in-out";
       dynamicArea.style.opacity = "0";
       dynamicArea.classList.remove("is-ready");
     }
 
-    // 2. 【ここを修正】フェードアウトの開始と同時に、ローディング画面もフワッと表示する
     if (!isInitial && typeof showGlobalLoading === "function") {
       showGlobalLoading();
     }
 
-    // 画面が完全に消えてローディングが乗るまで、ほんの一瞬（0.1秒ほど）待ってから中身のフェッチに移る
     await new Promise((resolve) => setTimeout(resolve, 100));
 
     try {
-      // HTMLのフェッチ
       const response = await fetch(`./${pageName}.html`);
       if (!response.ok) throw new Error(`ページの読み込みに失敗しました: ${response.status}`);
       const htmlContent = await response.text();
 
-      // メモリ上の仮要素で組み立てる
       const tempWrapper = document.createElement("div");
       tempWrapper.innerHTML = htmlContent;
 
-      // モーダル合成
       if (pageName === "main") {
-        // 1. 経費モーダルの合成
         try {
           const modalResponse = await fetch("./modal-expense-entry.html");
           if (modalResponse.ok) {
@@ -367,9 +504,7 @@ document.addEventListener("DOMContentLoaded", async () => {
           console.error("経費モーダル読み込みエラー:", modalErr);
         }
 
-        // 2. 🌟【追加】レポートモーダルの合成
         try {
-          // ※お手元のレポートモーダルHTMLの正しいファイル名（例：report-modal.html等）に変更してください
           const reportModalResponse = await fetch("./modal-report-entry.html");
           if (reportModalResponse.ok) {
             tempWrapper.insertAdjacentHTML("beforeend", await reportModalResponse.text());
@@ -382,12 +517,10 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
       }
 
-      // 画面（dynamicArea）にHTMLを反映
       if (dynamicArea) {
         dynamicArea.innerHTML = tempWrapper.innerHTML;
       }
 
-      // 各画面の初期化処理を「安全に」実行（エラーが起きても全体を止めないよう個別で try-catch）
       try {
         if (pageName === "main" && typeof initializeMainPage === "function") {
           await initializeMainPage();
@@ -432,7 +565,6 @@ document.addEventListener("DOMContentLoaded", async () => {
         initGlobalPopovers();
       }
 
-      // 描画がブラウザに確定するのを待つ
       await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
     } catch (error) {
       console.error("画面切り替え中に致命的なエラーが発生しました:", error);
@@ -440,7 +572,6 @@ document.addEventListener("DOMContentLoaded", async () => {
         dynamicArea.innerHTML = `<div class="alert alert-danger m-4">画面の読み込み中にエラーが発生しました。</div>`;
       }
     } finally {
-      // ⚠️【超重要】エラーが発生しようが何が起きようが、最後は絶対に透明化を解除し、ローディングを消す
       if (dynamicArea) {
         dynamicArea.classList.add("is-ready");
         dynamicArea.style.opacity = "1";
@@ -457,13 +588,10 @@ document.addEventListener("DOMContentLoaded", async () => {
   // ==========================================
   async function initializeApp() {
     try {
-      // 1. ログイン画面が保存したキャッシュを使って、一瞬でヘッダーに名前を反映
       await checkAndDisplayUser();
 
-      // 2. 最初のタブ名を設定
       document.title = "メイン - 勤怠レポートツール";
 
-      // 3. 最初のメニュー（メイン）にアクティブ色をつける
       const homeItem = document.querySelector('.sidebar-nav .nav-item[data-page="home"]');
       if (homeItem) {
         homeItem.classList.add("active");
@@ -471,16 +599,13 @@ document.addEventListener("DOMContentLoaded", async () => {
 
       await loadPage("main", true);
 
-      // すべての準備が100%完了
       document.body.style.opacity = "1";
     } catch (initError) {
       console.error("アプリ初期化エラー:", initError);
-      // 万が一エラーが起きた場合は、画面が真っ白のまま固まらないように保険で表示させる
       document.body.style.opacity = "1";
     }
   }
 
-  // アプリの初期化処理を実行
   initializeApp();
 
   // サイドバーのメニュークリックイベントの監視
@@ -491,37 +616,32 @@ document.addEventListener("DOMContentLoaded", async () => {
 
       if (clickedItem.classList.contains("mobile-logout-item") || clickedItem.classList.contains("logout-btn")) return;
 
-      // 🌟【同一ページガードの追加】
       if (clickedItem.classList.contains("active")) {
         console.log("すでにアクティブなページが選択されたため、遷移処理をスキップします。");
-        // モバイル用に展開されたサイドバーメニューだけ閉じる（もし開いていれば）
         if (sidebarNav && sidebarNav.classList.contains("mobile-active")) {
           sidebarNav.classList.remove("mobile-active");
         }
         return;
       }
 
-      // 一旦すべてのメニューから active クラスを消す
       navItems.forEach((i) => i.classList.remove("active"));
       clickedItem.classList.add("active");
 
       const page = clickedItem.getAttribute("data-page");
       console.log("クリックされたページ:", page);
 
-      // クリックされたメニューの「data-title」から画面名を取得
       const pageTitle = clickedItem.getAttribute("data-title");
 
       if (page === "home") {
-        loadPage("main"); // メイン画面
+        loadPage("main");
       } else if (page === "attendance") {
-        loadPage("attendance"); // 勤怠画面
+        loadPage("attendance");
       } else if (page === "report") {
-        loadPage("report"); // レポート画面
+        loadPage("report");
       } else if (page === "admin") {
-        loadPage("admin"); // 管理者専用画面
+        loadPage("admin");
       }
 
-      // タブの文字を「画面名 - 勤怠レポートツール」に書き換え
       if (pageTitle) {
         document.title = `${pageTitle} - 勤怠レポートツール`;
       }

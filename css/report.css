@@ -361,7 +361,6 @@ select:disabled {
   justify-content: center !important;
   border: 1px solid #ffffff !important;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1) !important;
-  pointer-events: none;
 }
 
 /* 下書き用のバッジ色（アンバー系） */
@@ -379,7 +378,7 @@ select:disabled {
 }
 
 /* ==========================================================================
-   📱 スマホ用（991px以下）：レイアウト・文字サイズ・重なり防止の完全対応版
+   📱 スマホ用（991px以下）
    ========================================================================== */
 @media (max-width: 991px) {
 
@@ -437,7 +436,6 @@ select:disabled {
   /* ⑤ スマホ用「下書き」バッジ */
   #view_report_title_header span.report-status-badge {
     display: inline-block !important;
-    font-size: 0.75rem !important;
     padding: 0.15rem 0.4rem !important;
     line-height: 1.2 !important;
     vertical-align: 0.1em !important;
@@ -508,10 +506,6 @@ select:disabled {
     transform: rotate(180deg);
   }
 
-  /* --- 7. ボタン類・過去ログ一覧のスタイル ＆ タップフィードバック --- */
-  #cancel_button {
-    background-color: #e9ecef !important;
-  }
 
   .report-list-scroll-container a {
     color: #4b5563 !important;
@@ -538,14 +532,19 @@ select:disabled {
     align-items: center !important;
   }
 
-  /* 2. プルダウンの位置・サイズ調整 */
-  .container-fluid:has(.report-detail-card) #display_period {
+  /* 2. プルダウン（PC用・スマホ用両方）の位置・サイズ調整 */
+  .container-fluid:has(.report-detail-card) #display_period,
+  #display_period_sp {
     margin-left: auto !important;
-    margin-right: 0.5rem !important;
-    max-width: 125px !important;
-    height: 2rem !important;
-    font-size: 0.75rem !important;
-    padding: 0.2rem 0.4rem !important;
+    margin-right: 0 !important;
+    max-width: 130px !important;
+    /* 横幅を少し抑える */
+    height: 1.85rem !important;
+    /* 高さを「過去のレポート」のプルダウンと同等に縮小 */
+    font-size: 0.8rem !important;
+    /* フォントサイズをすっきり整える */
+    padding: 0.15rem 0.35rem !important;
+    /* 内側の余白を削減 */
   }
 
   /* ==========================================================================
@@ -566,12 +565,6 @@ select:disabled {
     font-size: 1rem !important;
   }
 
-  /* バッジ以外の文字・アイコンだけを 1rem に設定 */
-  #view_report_title_header span:not(.report-status-badge),
-  #view_report_title_header i {
-    font-size: 1rem !important;
-  }
-
   /* スマホ用「下書き」バッジのサイズ */
   #view_report_title_header .report-status-badge {
     font-size: 0.55rem !important;
@@ -584,18 +577,8 @@ select:disabled {
     font-size: 1rem !important;
   }
 
-  /* スマホ用「下書き」バッジ */
-  #view_report_title_header span.report-status-badge {
-    display: inline-block !important;
-    font-size: 0.75rem !important;
-    padding: 0.15rem 0.4rem !important;
-    line-height: 1.2 !important;
-    vertical-align: 0.1em !important;
-    margin-left: 0.35rem !important;
-  }
-
   /* ==========================================================================
-     📅 スマホ用ミニカレンダー：アイコンサイズ・位置の最適化
+     ミニカレンダー
      ========================================================================== */
 
   /* 1. アイコン自体のフォントサイズを縮小 */
@@ -626,72 +609,55 @@ select:disabled {
   }
 
   /* ==========================================================================
-     📜 スマホ用：過去のレポート（親枠100%強制広げ＆右端移動・決定版）
-     ========================================================================== */
-
-  /* 1. 外枠カラムの幅拡張 */
-  .col-lg-4 {
-    width: 100% !important;
-    max-width: 100% !important;
-  }
-
-  /* 2. カード本体 */
-  .report-list-card {
-    display: flex !important;
-    flex-direction: column !important;
-    width: 100% !important;
+ 過去のレポートカード 
+ ========================================================================== */
+  /* 1. 親colの高さ引き伸ばしを防止 */
+  .container-fluid:has(.report-detail-card) [class*="col-"] {
     height: auto !important;
-    min-height: auto !important;
-    padding: 1rem 0.75rem !important;
-    overflow: hidden !important;
-    position: relative !important;
+    min-height: 0 !important;
   }
 
-  /* 3. 見出しとプルダウンを囲む「親枠」を強制的に全幅(100%)のFlexboxにする */
-  .report-list-card>div:first-child,
-  .report-list-card div:has(#target_user_id) {
-    order: 1 !important;
+  /* 2. カード本体：Flexを解除し、中身の高さ（コンテンツ）にぴったりフィットさせる */
+  .report-list-card {
+    display: block !important;
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    padding: 1.25rem 1rem 1rem 1rem !important;
+    overflow: hidden !important;
+  }
+
+  /* 3. 見出し・プルダウン部分（Flexboxを明示して1行フル幅に広げる） */
+  .report-list-card>.d-flex:first-child,
+  .report-list-card>div:has(.past-report-select) {
     display: flex !important;
     flex-direction: row !important;
-    justify-content: space-between !important;
     align-items: center !important;
     width: 100% !important;
-    max-width: 100% !important;
+    margin-top: 0 !important;
     margin-bottom: 0.75rem !important;
-    box-sizing: border-box !important;
+    gap: 8px !important;
   }
 
-  /* 4. 見出しテキスト（左側に固定） */
-  .report-list-card h4,
-  .report-list-card .card-title,
-  .report-list-card div:has(#target_user_id)>*:first-child {
-    font-size: 0.85rem !important;
-    white-space: nowrap !important;
-    flex-shrink: 0 !important;
-    margin: 0 !important;
-  }
-
-  /* 5. プルダウン（親枠の中で右端へ移動） */
-  #target_user_id {
-    display: block !important;
-    width: 135px !important;
-    min-width: 135px !important;
-    max-width: 135px !important;
-    flex-shrink: 0 !important;
-    margin-left: auto !important;
-    margin-right: 0 !important;
-    height: 2rem !important;
-    font-size: 0.75rem !important;
-    padding: 0.2rem 0.4rem !important;
-  }
-
-  /* 6. レポートリスト枠（見出しの下） */
-  .report-list-card>div:has(#past_report_list),
-  .report-list-scroll-container,
-  #past_report_list {
-    order: 2 !important;
-    width: 100% !important;
-    max-height: 250px !important;
+  /* 4. リストエリア：スクロールが必要な場合のみ200px制限（そのまま維持） */
+  .report-list-scroll-container {
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: 200px !important;
     overflow-y: auto !important;
+    margin-bottom: 0 !important;
+  }
+
+  /* 5. プルダウン（タイトルの右側の余白をすべて使って右端まで伸ばす） */
+  .report-list-card select.past-report-select,
+  .report-list-card select[name="target_user_id"] {
+    flex: 1 1 0% !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    height: 28px !important;
+    margin: 0 !important;
+    transform: none !important;
+    box-sizing: border-box !important;
   }
 }

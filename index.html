@@ -105,12 +105,16 @@
         <div class="header-right d-flex align-items-center">
 
           <!-- 🔔 共通ベルマーク通知ドロップダウン -->
-          <div class="dropdown notification-dropdown position-relative me-2">
-            <button class="btn border-0 p-0 position-relative notif-btn shadow-none" type="button"
-              id="notificationDropdown" data-bs-toggle="dropdown" aria-expanded="false">
-              <i class="bi bi-bell fs-5"></i>
-              <!-- 未読バッジ（赤丸） -->
-              <span class="notif-badge"></span>
+          <div class="dropdown notification-dropdown position-relative me-3">
+            <button
+              class="btn border-0 p-1 notif-btn shadow-none position-relative d-flex align-items-center justify-content-center"
+              type="button" id="notificationDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+
+              <!-- ベルアイコン -->
+              <i class="bi bi-bell notif-icon"></i>
+
+              <!-- 未読バッジ（bg-dangerを削除し、専用CSSクラス notif-badge を指定） -->
+              <span id="notification_badge" class="notif-badge d-none">0</span>
             </button>
 
             <!-- ドロップダウンメニュー（通知・お知らせ一覧） -->
@@ -119,34 +123,39 @@
               <li>
                 <div class="d-flex justify-content-between align-items-center px-2 py-1">
                   <span class="fw-bold text-dark">お知らせ・通知</span>
-                  <span class="badge bg-primary-subtle text-primary" style="font-size: 0.65rem;">NEW</span>
+                  <button id="btn_mark_all_read" class="btn btn-link btn-sm p-0 text-decoration-none text-primary"
+                    style="font-size: 0.7rem;">すべて既読</button>
                 </div>
               </li>
               <li>
                 <hr class="dropdown-divider my-1">
               </li>
 
-              <!-- 通知アイテム1 -->
-              <li>
-                <a class="dropdown-item p-2 rounded-2 text-wrap my-1" href="javascript:void(0);">
-                  <div class="d-flex justify-content-between align-items-center mb-1">
-                    <span class="badge bg-info-subtle text-info-emphasis" style="font-size: 0.6rem;">お知らせ</span>
-                    <small class="text-muted" style="font-size: 0.65rem;">2026/07/10</small>
-                  </div>
-                  <div class="text-dark fw-medium" style="font-size: 0.75rem;">勤怠レポートシステムのレイアウトをリニューアルしました。</div>
-                </a>
-              </li>
+              <!-- 💡 JavaScriptで動的生成された通知が入るコンテナエリア -->
+              <div id="notification_list_container">
+                <!-- 初期表示（ダミーデータ） -->
+                <!-- 通知アイテム1: 打刻忘れ -->
+                <li>
+                  <a class="dropdown-item p-2 rounded-2 text-wrap my-1" href="javascript:void(0);">
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                      <span class="badge bg-danger-subtle text-danger-emphasis" style="font-size: 0.6rem;">打刻忘れ</span>
+                      <small class="text-muted" style="font-size: 0.65rem;">2026/07/10</small>
+                    </div>
+                    <div class="text-dark fw-medium" style="font-size: 0.75rem;">退勤打刻が記録されていません。確認してください。</div>
+                  </a>
+                </li>
 
-              <!-- 通知アイテム2 -->
-              <li>
-                <a class="dropdown-item p-2 rounded-2 text-wrap my-1" href="javascript:void(0);">
-                  <div class="d-flex justify-content-between align-items-center mb-1">
-                    <span class="badge bg-success-subtle text-success-emphasis" style="font-size: 0.6rem;">レポート</span>
-                    <small class="text-muted" style="font-size: 0.65rem;">2026/08/05</small>
-                  </div>
-                  <div class="text-dark fw-medium" style="font-size: 0.75rem;">山田太郎さんが「日報」を提出しました。</div>
-                </a>
-              </li>
+                <!-- 通知アイテム2: レポート提出 -->
+                <li>
+                  <a class="dropdown-item p-2 rounded-2 text-wrap my-1" href="javascript:void(0);">
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                      <span class="badge bg-success-subtle text-success-emphasis" style="font-size: 0.6rem;">レポート</span>
+                      <small class="text-muted" style="font-size: 0.65rem;">2026/08/05</small>
+                    </div>
+                    <div class="text-dark fw-medium" style="font-size: 0.75rem;">山田太郎さんが「日報」を提出しました。</div>
+                  </a>
+                </li>
+              </div>
             </ul>
           </div>
 
@@ -171,7 +180,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
-  <script type="module" src=" js/auth-guard.js"></script>
+  <script type="module" src="js/auth-guard.js"></script>
 
   <script src="config.js"></script>
 

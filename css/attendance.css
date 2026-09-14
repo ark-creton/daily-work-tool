@@ -420,6 +420,15 @@
   font-size: 0.875rem !important;
 }
 
+/* ◆ 氏名選択ドロップダウンの省略表示設定 (PC表示時) */
+#target_user_id {
+  max-width: 180px;
+  /* PC表示時の最大横幅 */
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
 .form-control::placeholder {
   font-size: 0.875rem !important;
 }
@@ -966,8 +975,12 @@
     max-width: 100% !important;
     height: 38px !important;
     font-size: 0.82rem !important;
-    padding: 0 6px !important;
+    padding-left: 8px !important;
+    padding-right: 24px !important;
     box-sizing: border-box !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
   }
 
   /* --- 2. サマリーエリア --- */
@@ -1891,5 +1904,51 @@
   #attendanceEditModal .expense-add-btn {
     margin-right: auto !important;
     /* 確実に左側に寄せる */
+  }
+
+  /* ==========================================================================
+     📱 勤怠モーダル専用：縦サイズ完全収容 ＆ フッター固定
+     ========================================================================== */
+  /* モーダル外枠：画面高さを上限にして中央配置 */
+  #attendanceEditModal .modal-dialog {
+    width: calc(100% - 20px) !important;
+    max-width: calc(100% - 20px) !important;
+    max-height: calc(100vh - 20px) !important;
+    margin: 10px !important;
+    display: flex !important;
+    align-items: center !important;
+  }
+
+  /* モーダルコンテンツ：高さの限界を設定しFlex管理 */
+  #attendanceEditModal .modal-content {
+    width: 100% !important;
+    max-height: calc(100vh - 20px) !important;
+    display: flex !important;
+    flex-direction: column !important;
+    overflow: hidden !important;
+    border-radius: 16px !important;
+  }
+
+  /* ヘッダー・フッター：絶対につぶさない・はみ出させない */
+  #attendanceEditModal .modal-header,
+  #attendanceEditModal .modal-footer {
+    flex-shrink: 0 !important;
+  }
+
+  /* モーダルボディ：ここだけを縮小・スクロール可能にする重要設定 */
+  #attendanceEditModal .modal-body {
+    flex: 1 1 auto !important;
+    min-height: 0 !important;
+    /* フレックス要素のはみ出しを防止する必須プロパティ */
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* スマホ時の休憩時間入力欄を押しやすく調整 */
+  @media (max-width: 991px) {
+    #total_break_m {
+      text-align: center !important;
+      font-size: 1.1rem !important;
+    }
   }
 }

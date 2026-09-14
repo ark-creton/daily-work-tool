@@ -491,7 +491,7 @@ function initializeReportModalLogic() {
         currentType === "日報"
           ? currentWorkPeriodSingle !== (currentDisplayReportData.work_period_start || "")
           : currentWorkPeriodStart !== (currentDisplayReportData.work_period_start || "") ||
-            currentWorkPeriodEnd !== (currentDisplayReportData.work_period_end || "");
+          currentWorkPeriodEnd !== (currentDisplayReportData.work_period_end || "");
 
       isChanged =
         currentTitle !== (currentDisplayReportData.subject_title || "") ||
@@ -977,8 +977,47 @@ async function openEditReportModal(rawReportData) {
   } finally {
     setupSharedWithList(savedCompanyIds, isMyReport);
 
+    // 🔔 レポート開了時の通知削除（既読連動）
+    // 自分以外のレポートを閲覧した（読んだ）タイミングで、ベルマーク内の該当通知を削除する
+    if (!isMyReport && reportData.id) {
+      clearNotificationOnReportRead(reportData.id);
+    }
+
     const reportModal = getModalInstance();
     if (reportModal) reportModal.show();
+  }
+}
+
+/**
+ * 🔔 閲覧されたレポートの通知（notifications）を物理削除（delete）し、ベルマーク表示を更新する関数
+ * @param {string} reportId - 閲覧したレポートのID (UUID)
+ */
+async function clearNotificationOnReportRead(reportId) {
+  const currentUserId = loginUser ? (loginUser.id || loginUser.user_id) : null;
+
+  if (!reportId || !currentUserId) return;
+
+  try {
+    const cleanReportId = String(reportId).trim();
+    const cleanUserId = String(currentUserId).trim();
+
+    // 該当するレポート通知を物理削除
+    const { error, count } = await supabase
+      .from("notifications")
+      .delete({ count: "exact" })
+      .eq("user_id", cleanUserId)
+      .eq("link_id", cleanReportId);
+
+    if (error) {
+      console.error("【通知連動】Supabase物理削除エラー:", error.message);
+    } else if (count > 0) {
+      // 削除が発生した場合のみベルマーク表示をリロード
+      if (typeof window.fetchNotifications === "function") {
+        await window.fetchNotifications(cleanUserId);
+      }
+    }
+  } catch (err) {
+    console.error("【通知連動】例外エラー:", err);
   }
 }
 
@@ -1369,6 +1408,74 @@ async function saveReport(status) {
           console.error("【モーダル保存】既読状況のリセットに失敗しました:", resetError);
         }
       }
+
+      // 🔔Step 9.5: レポート提出・更新時の通知INSERT処理
+      if (status === "published") {
+        try {
+          // ★ 修正ポイント: savedReportId が空の場合のバックアップ判定を追加
+          // (更新時は currentReportId、新規作成時は savedReportId または作成後のIDを使用)
+          const targetLinkId = currentReportId || savedReportId;
+
+          if (!targetLinkId) {
+            console.error("【モーダル保存】エラー: レポートID(link_id)が取得できていないため、通知を作成できませんでした。");
+          } else {
+
+            // 共有先会社にチェックが入っているか確認
+            const checkedBoxes = Array.from(document.querySelectorAll(".shared-company-checkbox:checked"))
+              .map((cb) => cb.value);
+
+            let targetUserIds = [];
+
+            if (checkedBoxes.length > 0) {
+              // 選択された会社に所属するアクティブユーザーを取得
+              const { data: sharedUsers } = await supabase
+                .from("user_master")
+                .select("id")
+                .in("company_id", checkedBoxes)
+                .eq("is_active", true);
+
+              if (sharedUsers) {
+                targetUserIds = sharedUsers.map((u) => u.id);
+              }
+            }
+
+            // 提出者本人以外の共有先ユーザーに対象を絞る
+            const noticeUserIds = [...new Set(targetUserIds)].filter((id) => id !== loginUser.id);
+
+            if (noticeUserIds.length > 0) {
+              const isUpdate = !!currentReportId;
+              const notifTitle = isUpdate ? "日報が更新されました" : "新しい日報が提出されました";
+              const notifMessage = `${loginUser.user_name || 'メンバー'}さんが「${updateData.subject_title || updateData.report_type}」を${isUpdate ? '更新' : '提出'}しました。`;
+
+              // レコード生成
+              const notificationRecords = noticeUserIds.map((targetId) => ({
+                user_id: targetId,
+                type: "report_share",
+                title: notifTitle,
+                message: notifMessage,
+                link_id: targetLinkId, // ★ 確実にレポートID(UUID)をセット
+                is_read: false
+              }));
+
+              console.log("【モーダル保存】作成する通知レコード:", notificationRecords);
+
+              // notifications テーブルへ保存
+              const { error: noticeInsertErr } = await supabase
+                .from("notifications")
+                .insert(notificationRecords);
+
+              if (noticeInsertErr) {
+                console.error("【モーダル保存】通知ログの保存に失敗しました:", noticeInsertErr.message);
+              } else {
+                console.log("【モーダル保存】通知ログを作成しました。対象人数:", noticeUserIds.length, "link_id:", targetLinkId);
+              }
+            }
+          }
+        } catch (noticeErr) {
+          // レポート本体の保存処理を優先するためエラーはログ出力のみ
+          console.error("【モーダル保存】通知作成処理でエラーが発生しました:", noticeErr);
+        }
+      }
     }
 
     // Step10: 操作内容に応じたトーストメッセージの分岐通知
@@ -1494,40 +1601,44 @@ async function saveReport(status) {
           }
           // 3. 🎯 【統一カラー版】メイン画面の過去レポート一覧（<a>タグ）へスクロール＆選択色ハイライト！
           if (savedReportId) {
+            // 💡 setTimeoutを二重にしてブラウザのDOM再計算・描画(Reflow/Repaint)を確実に待つ
             setTimeout(() => {
-              const targetItem =
-                document.querySelector(`#past_report_list a[data-id="${savedReportId}"]`) || document.querySelector(`[data-id="${savedReportId}"]`);
+              requestAnimationFrame(() => {
+                const targetItem =
+                  document.querySelector(`#past_report_list [data-id="${savedReportId}"]`) ||
+                  document.querySelector(`[data-id="${savedReportId}"]`);
 
-              if (targetItem) {
-                console.log("🎯 【メイン画面追尾成功】対象のレポート行へスクロール＆ハイライト:", targetItem);
+                if (targetItem) {
+                  console.log("🎯 【メイン画面追尾成功】対象のレポート行へスクロール＆ハイライト:", targetItem);
 
-                // ① 対象行へスムーズスクロール
-                targetItem.scrollIntoView({ behavior: "smooth", block: "center" });
+                  // ① 対象行へスムーズスクロール
+                  targetItem.scrollIntoView({ behavior: "smooth", block: "center" });
 
-                // 元の背景色を保持
-                const originalBg = targetItem.style.background || targetItem.style.backgroundColor;
+                  // 元の背景色を保持
+                  const originalBg = targetItem.style.background || targetItem.style.backgroundColor;
 
-                // ② 画像と同じ淡いブルーグレー (#f1f5f9) を適用
-                targetItem.style.setProperty("transition", "background-color 0.5s ease", "important");
-                targetItem.style.setProperty("background-color", "#f1f5f9", "important");
+                  // ② 画像と同じ淡いブルーグレー (#f1f5f9) を適用
+                  targetItem.style.setProperty("transition", "background-color 0.5s ease", "important");
+                  targetItem.style.setProperty("background-color", "#f1f5f9", "important");
 
-                // ③ 2.5秒後にふわっと元の透明（背景色）に戻す
-                setTimeout(() => {
-                  if (originalBg) {
-                    targetItem.style.setProperty("background-color", originalBg);
-                  } else {
-                    targetItem.style.removeProperty("background-color");
-                  }
-
-                  // アニメーションプロパティのクリア
+                  // ③ 2.5秒後にふわっと元の透明（背景色）に戻す
                   setTimeout(() => {
-                    targetItem.style.removeProperty("transition");
-                  }, 500);
-                }, 2500);
-              } else {
-                console.warn("⚠️ 【メイン画面追尾失敗】#past_report_list 内に対象IDが見つかりませんでした。ID:", savedReportId);
-              }
-            }, 200);
+                    if (originalBg) {
+                      targetItem.style.setProperty("background-color", originalBg);
+                    } else {
+                      targetItem.style.removeProperty("background-color");
+                    }
+
+                    // アニメーションプロパティのクリア
+                    setTimeout(() => {
+                      targetItem.style.removeProperty("transition");
+                    }, 500);
+                  }, 2500);
+                } else {
+                  console.warn("⚠️ 【メイン画面追尾失敗】#past_report_list 内に対象IDが見つかりませんでした。ID:", savedReportId);
+                }
+              });
+            }, 300); // 描画処理が重い場合を考慮し300ms待つ
           }
         } else {
           console.warn(`🛑 【メイン画面】${targetYear}年${targetMonth}月 は表示範囲外のため更新をスキップしました。`);

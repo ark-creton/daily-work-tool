@@ -1,41 +1,24 @@
-<div
-  class="modal fade"
-  id="attendanceEditModal"
-  data-bs-backdrop="static"
-  tabindex="-1"
-  aria-labelledby="attendanceEditModalLabel"
-  aria-hidden="true"
->
+<div class="modal fade" id="attendanceEditModal" data-bs-backdrop="static" tabindex="-1"
+  aria-labelledby="attendanceEditModalLabel" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered modal-xl">
     <div class="modal-content border-0 shadow">
       <div class="modal-header border-bottom-0 py-3 px-4 d-flex justify-content-between align-items-center">
         <div class="d-flex align-items-center gap-3">
           <h5 class="modal-title fw-bold text-dark fs-5 m-0 p-0" id="attendanceEditModalLabel">勤怠データの編集</h5>
-          <span
-            id="display_edit_date"
+          <span id="display_edit_date"
             class="fw-bold text-dark border rounded-pill d-inline-flex align-items-center justify-content-center bg-light"
-            style="width: 210px; height: 38px; line-height: 1; padding: 0; font-size: 0.95rem; letter-spacing: -0.06em; text-indent: 0.06em"
-            >-</span
-          >
+            style="width: 210px; height: 38px; line-height: 1; padding: 0; font-size: 0.95rem; letter-spacing: -0.06em; text-indent: 0.06em">-</span>
         </div>
 
         <div class="d-flex gap-1">
-          <button
-            type="button"
-            id="btn_prev_day"
+          <button type="button" id="btn_prev_day"
             class="btn btn-sm btn-light border border-light-subtle rounded-3 p-2 d-flex align-items-center justify-content-center"
-            style="width: 36px; height: 36px"
-            title="前日"
-          >
+            style="width: 36px; height: 36px" title="前日">
             <i class="bi bi-chevron-left fw-bold text-secondary"></i>
           </button>
-          <button
-            type="button"
-            id="btn_next_day"
+          <button type="button" id="btn_next_day"
             class="btn btn-sm btn-light border border-light-subtle rounded-3 p-2 d-flex align-items-center justify-content-center"
-            style="width: 36px; height: 36px"
-            title="翌日"
-          >
+            style="width: 36px; height: 36px" title="翌日">
             <i class="bi bi-chevron-right fw-bold text-secondary"></i>
           </button>
         </div>
@@ -58,7 +41,8 @@
                 <div class="col-6">
                   <div class="d-flex justify-content-between align-items-center">
                     <label for="edit_clock_in" class="form-label fw-bold small mb-0">出勤時刻</label>
-                    <span class="badge rounded-pill bg-secondary bg-opacity-10 text-secondary fw-normal" style="font-size: 0.65rem">
+                    <span class="badge rounded-pill bg-secondary bg-opacity-10 text-secondary fw-normal"
+                      style="font-size: 0.65rem">
                       打刻: <span id="display_original_date_in">--/--</span>
                       <span id="display_original_clock_in">--:--</span>
                     </span>
@@ -69,7 +53,8 @@
                 <div class="col-6">
                   <div class="d-flex justify-content-between align-items-center">
                     <label for="edit_clock_out" class="form-label fw-bold small mb-0">退勤時刻</label>
-                    <span class="badge rounded-pill bg-secondary bg-opacity-10 text-secondary fw-normal" style="font-size: 0.65rem">
+                    <span class="badge rounded-pill bg-secondary bg-opacity-10 text-secondary fw-normal"
+                      style="font-size: 0.65rem">
                       打刻: <span id="display_original_date_out">--/--</span>
                       <span id="display_original_clock_out">--:--</span>
                     </span>
@@ -80,7 +65,14 @@
 
               <div>
                 <label for="total_break_m" class="form-label fw-bold small">休憩時間 (分)</label>
-                <input type="number" id="total_break_m" class="form-control border-2 py-2" value="60" step="15" />
+                <input type="number" id="total_break_m" class="form-control border-2 py-2" value="60" step="15" min="0"
+                  max="990" inputmode="numeric"
+                  onkeydown="return event.key !== 'e' && event.key !== 'E' && event.key !== '+' && event.key !== '-';"
+                  oninput="
+      this.value = this.value.replace(/[０-９]/g, s => String.fromCharCode(s.charCodeAt(0) - 0xfee0)).replace(/[^0-9]/g, '');
+      if (this.value.length > 3) this.value = this.value.slice(0, 3);
+      if (parseInt(this.value, 10) > 990) this.value = '990';
+    " />
               </div>
 
               <div class="row g-2">
@@ -110,7 +102,8 @@
             </div>
 
             <div class="col-md-7 d-flex flex-column gap-3">
-              <div class="card border-0 p-3 rounded-3 shadow-sm expense-memo-card d-flex flex-column" style="min-height: 350px">
+              <div class="card border-0 p-3 rounded-3 shadow-sm expense-memo-card d-flex flex-column"
+                style="min-height: 350px">
                 <div class="d-flex justify-content-between align-items-center">
                   <label class="form-label fw-bold small m-0 d-flex align-items-center expense-memo-label">
                     <i class="bi-file-earmark-text me-1 fs-5"></i>
@@ -121,7 +114,8 @@
                 <div class="pt-3 d-flex flex-column flex-grow-1 w-100 h-100">
                   <div id="expense_list" class="d-flex flex-column gap-2 mb-3 px-1 expense-memo-list"></div>
                   <div class="d-flex justify-content-between align-items-center pt-2 expense-memo-footer">
-                    <button type="button" class="btn btn-sm bg-white shadow-sm border-light-subtle rounded-pill px-3 fw-bold expense-add-btn">
+                    <button type="button"
+                      class="btn btn-sm bg-white shadow-sm border-light-subtle rounded-pill px-3 fw-bold expense-add-btn">
                       <i class="bi bi-pencil-fill small me-1"></i>経費を追加
                     </button>
                     <div class="fw-bold small expense-total-text">
@@ -153,23 +147,16 @@
 
       <div class="modal-footer border-top-0 px-4 py-3 d-flex align-items-center">
         <div>
-          <button type="button" id="attendance_reset_btn" class="btn btn-sm btn-outline-secondary px-3 fw-semibold">データをリセット</button>
+          <button type="button" id="attendance_reset_btn"
+            class="btn btn-sm btn-outline-secondary px-3 fw-semibold">データをリセット</button>
         </div>
         <div class="d-flex gap-2 ms-auto">
-          <button
-            type="button"
-            id="attendance_cancel_btn"
-            class="btn btn-sm btn-link text-decoration-none text-muted fw-bold"
-            data-bs-dismiss="modal"
-          >
+          <button type="button" id="attendance_cancel_btn"
+            class="btn btn-sm btn-link text-decoration-none text-muted fw-bold" data-bs-dismiss="modal">
             閉じる
           </button>
-          <button
-            type="submit"
-            id="attendance_save_btn"
-            form="attendance_edit_form"
-            class="btn btn-sm btn-primary px-4 py-2 rounded-pill fw-bold shadow-sm"
-          >
+          <button type="submit" id="attendance_save_btn" form="attendance_edit_form"
+            class="btn btn-sm btn-primary px-4 py-2 rounded-pill fw-bold shadow-sm">
             <i class="bi bi-check2-circle me-1"></i> 保存
           </button>
         </div>
@@ -190,11 +177,13 @@
         <p class="small text-muted mb-4">データの戻し方を選択してください。</p>
 
         <div class="d-flex flex-column gap-2">
-          <button type="button" class="btn btn-sm btn-outline-dark w-100 py-2 fw-semibold" id="btn_clear_inputs">手入力をクリアして再入力</button>
+          <button type="button" class="btn btn-sm btn-outline-dark w-100 py-2 fw-semibold"
+            id="btn_clear_inputs">手入力をクリアして再入力</button>
           <button type="button" class="btn btn-sm btn-danger w-100 py-2 fw-semibold" id="btn_completely_delete">
             <span id="discard_modal_date">この日</span>の記録を完全消去
           </button>
-          <button type="button" class="btn btn-sm btn-link text-decoration-none text-muted w-100 mt-1 py-1 small" id="btn_discard_cancel">
+          <button type="button" class="btn btn-sm btn-link text-decoration-none text-muted w-100 mt-1 py-1 small"
+            id="btn_discard_cancel">
             キャンセル
           </button>
         </div>

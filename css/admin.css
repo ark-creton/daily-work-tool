@@ -51,26 +51,48 @@
   box-shadow: none !important;
 }
 
-/* ◆ 新規ユーザー登録ボタン（備考保存ボタンと共通のHover仕様） */
+/* ◆ 新規ユーザー登録ボタン（枠線ズレ解消・スッキリ垢抜け仕様） */
 .btn-primary-custom {
-  background-color: #8ea3c2 !important;
+  /* 上下のグラデーションで立体感をプラス */
+  background: linear-gradient(180deg, #9bb0cf 0%, #8ea3c2 100%) !important;
   color: #ffffff !important;
+  
+  /* ズレの原因になる外枠線を排除 */
   border: none !important;
+  
   font-weight: 600 !important;
+  letter-spacing: 0.02em;
   padding: 10px 20px !important;
-  border-radius: 8px !important;
-  box-shadow: 0 4px 10px -2px rgba(142, 163, 194, 0.25) !important;
+  border-radius: 10px !important;
+  
+  /* ボタン内側の上部にだけ薄い光（inset）を当てて、単一の柔らかい影を付与 */
+  box-shadow: 
+    inset 0 1px 0 rgba(255, 255, 255, 0.4),
+    0 4px 12px rgba(142, 163, 194, 0.3) !important;
+    
   transition: all 0.2s ease !important;
 }
 
+/* ホバー時 */
 .btn-primary-custom:hover:not(:disabled) {
-  background-color: #7a99c5 !important;
-  box-shadow: 0 6px 12px -2px rgba(122, 153, 197, 0.35) !important;
+  background: linear-gradient(180deg, #879ebd 0%, #7a99c5 100%) !important;
+  box-shadow: 
+    inset 0 1px 0 rgba(255, 255, 255, 0.5),
+    0 6px 16px rgba(122, 153, 197, 0.4) !important;
 }
 
+/* クリック時 */
+.btn-primary-custom:active:not(:disabled) {
+  box-shadow: 
+    inset 0 1px 2px rgba(0, 0, 0, 0.15) !important;
+}
+
+/* アイコン設定 */
 .btn-primary-custom i,
 .btn-primary-custom svg {
   color: #ffffff !important;
+  margin-right: 6px;
+  font-size: 1.05em;
 }
 
 /* ==========================================================================

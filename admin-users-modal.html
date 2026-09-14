@@ -10,18 +10,22 @@
       <div class="modal-body px-4 py-4">
         <form id="user_form" novalidate>
           <div class="row g-3">
+
+            <!-- 姓 -->
             <div class="col-6">
               <label for="last_name" class="form-label">姓 <span class="text-danger">*</span></label>
-              <input type="text" id="last_name" class="form-control" placeholder="例: 山田" required />
-              <div class="invalid-feedback small">姓を入力してください。</div>
+              <input type="text" id="last_name" class="form-control" placeholder="例: 山田" maxlength="25" required />
+              <div class="invalid-feedback small">姓を入力してください（25文字以内）。</div>
             </div>
 
+            <!-- 名 -->
             <div class="col-6">
               <label for="first_name" class="form-label">名 <span class="text-danger">*</span></label>
-              <input type="text" id="first_name" class="form-control" placeholder="例: 太郎" required />
-              <div class="invalid-feedback small">名を入力してください。</div>
+              <input type="text" id="first_name" class="form-control" placeholder="例: 太郎" maxlength="25" required />
+              <div class="invalid-feedback small">名を入力してください（25文字以内）。</div>
             </div>
 
+            <!-- 氏名 -->
             <input type="hidden" id="user_name" />
 
             <div class="col-12">

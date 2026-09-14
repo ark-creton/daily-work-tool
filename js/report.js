@@ -59,6 +59,7 @@ async function initializeReportPage() {
     // 年月インプットの初期化 & イベント・一括描画の連動設定
     // ==========================================================================
     const monthInput = document.getElementById("display_period");
+    const monthInputSp = document.getElementById("display_period_sp");
     const userSelect = document.getElementById("target_user_id");
 
     // 年月インプットが空なら現在の年月（例: "2026-06" や "2026-07"）をセット
@@ -69,9 +70,25 @@ async function initializeReportPage() {
       monthInput.value = currentPeriodVal;
     }
 
-    // 💡 古い updateAllCalculations や個別イベントを撤去し、新フィルター（handleReportFilterChange）に一本化
+    if (monthInputSp && !monthInputSp.value) {
+      monthInputSp.value = currentPeriodVal;
+    }
+
+    // 💡 PC版とスマホ版の入力同期 & フィルターイベント登録
+    const handleMonthChange = (e) => {
+      const val = e.target.value;
+      if (monthInput) monthInput.value = val;
+      if (monthInputSp) monthInputSp.value = val;
+      if (typeof handleReportFilterChange === "function") {
+        handleReportFilterChange();
+      }
+    };
+
     if (monthInput) {
-      monthInput.onchange = handleReportFilterChange;
+      monthInput.onchange = handleMonthChange; // 💡 変更
+    }
+    if (monthInputSp) {
+      monthInputSp.onchange = handleMonthChange; // 💡 追加
     }
     if (userSelect) {
       userSelect.onchange = handleReportFilterChange;
@@ -132,9 +149,13 @@ window.onReportSavedSuccess = async function (year, month, specificReportId = nu
 
   // 1. レポート画面の年月インプット (#display_period) を保存された年月（YYYY-MM）に自動書き換え
   const monthInput = document.getElementById("display_period");
+  const monthInputSp = document.getElementById("display_period_sp");
+  const formattedPeriod = `${year}-${String(month).padStart(2, "0")}`;
   if (monthInput) {
-    const formattedPeriod = `${year}-${String(month).padStart(2, "0")}`;
     monthInput.value = formattedPeriod;
+  }
+  if (monthInputSp) {
+    monthInputSp.value = formattedPeriod;
   }
 
   // 2. カレンダーや過去一覧の更新
@@ -154,8 +175,9 @@ window.onReportSavedSuccess = async function (year, month, specificReportId = nu
     setTimeout(() => {
       const targetRow = document.querySelector(`[data-report-id="${specificReportId}"]`);
       if (targetRow) {
-        // 💡 保存直後（window.isJustSaved）でない場合のみ画面スクロールを実行
-        if (!window.isJustSaved) {
+        // 💡 スマホ（991px以下）ではなく、かつ保存直後でない場合のみPCで追尾スクロールを実行
+        const isMobile = window.innerWidth <= 991;
+        if (!isMobile && !window.isJustSaved) {
           targetRow.scrollIntoView({ behavior: "smooth", block: "center" });
         }
 
@@ -1201,13 +1223,18 @@ async function refreshReportList(targetYear, targetMonth, specificReportId = nul
         // DOM要素を直接探してスクロール追尾させる
         const targetRow = document.querySelector(`[data-report-id="${specificReportId}"]`);
         if (targetRow) {
-          targetRow.scrollIntoView({ behavior: "smooth", block: "center" });
+          // 💡 スマホ（991px以下）以外の場合のみ、画面をスムーズスクロール追尾させる
+          const isMobile = window.innerWidth <= 991;
+          if (!isMobile) {
+            targetRow.scrollIntoView({ behavior: "smooth", block: "center" });
+          }
+
           targetRow.classList.add("table-active", "highlight-flash");
           setTimeout(() => {
             targetRow.classList.remove("highlight-flash");
           }, 2000);
         }
-      }, 150); // DOMレンダリング待ちのため少しだけ遅延させる
+      }, 150);
 
       // 7. フラグを少し遅れて解除
       setTimeout(() => {
@@ -1629,25 +1656,32 @@ async function handlePastReportRowClick(rowElement) {
     newBadge.remove();
   }
 
-  // ③ 【DB永続化】Supabaseの report_shares に既読を保存
+  // ③ 【DB永続化】Supabaseの report_shares に既読を保存（既存の共有レコードのみ更新）
   try {
     const supabaseClient = window.supabase || supabase;
     const {
       data: { user },
     } = await supabaseClient.auth.getUser();
+
     if (user) {
       const nowISO = new Date().toISOString();
-      await supabaseClient.from("report_shares").upsert(
-        {
-          report_id: reportId,
-          user_id: user.id,
+
+      // upsert ではなく update を使用する（自分がもともと共有先に含まれている場合のみ更新）
+      const { data, error } = await supabaseClient
+        .from("report_shares")
+        .update({
           is_read: true,
           read_at: nowISO,
           updated_at: nowISO,
-        },
-        { onConflict: "report_id,user_id" },
-      );
-      console.log("✏️ レポート画面：DBへの既読保存完了");
+        })
+        .eq("report_id", reportId)
+        .eq("user_id", user.id);
+
+      if (error) {
+        console.error("既読更新エラー:", error);
+      } else {
+        console.log("✏️ レポート画面：DBへの既読保存完了");
+      }
     }
   } catch (dbErr) {
     console.error("既読処理のエラー:", dbErr);
@@ -1968,7 +2002,7 @@ async function selectReportAndCloseModal(reportId) {
 
   if (!reportId || reportId === "undefined") return;
 
-  // ② DBへの既読保存 (report_shares) を【最優先】で完了させる！
+  // ② DBへの既読保存 (report_shares) を【最優先】で完了させる（既存の共有レコードのみ更新）
   try {
     const supabaseClient = window.supabase || supabase;
     if (supabaseClient && supabaseClient.auth) {
@@ -1977,17 +2011,23 @@ async function selectReportAndCloseModal(reportId) {
       } = await supabaseClient.auth.getUser();
       if (user) {
         const nowISO = new Date().toISOString();
-        await supabaseClient.from("report_shares").upsert(
-          {
-            report_id: reportId,
-            user_id: user.id,
+
+        // upsert から update に変更（共有データが存在する場合のみ既読に更新）
+        const { data, error } = await supabaseClient
+          .from("report_shares")
+          .update({
             is_read: true,
             read_at: nowISO,
             updated_at: nowISO,
-          },
-          { onConflict: "report_id,user_id" },
-        );
-        console.log("✏️ 既読保存完了");
+          })
+          .eq("report_id", reportId)
+          .eq("user_id", user.id);
+
+        if (error) {
+          console.error("⚠️ 既読更新エラー:", error);
+        } else {
+          console.log("✏️ 既読保存完了");
+        }
       }
     }
   } catch (dbErr) {
@@ -2126,11 +2166,28 @@ async function updateTargetUserDropdownByMonth(targetYearMonth) {
     const lastDay = new Date(year, month, 0).getDate();
     const endDate = `${year}-${String(month).padStart(2, "0")}-${String(lastDay).padStart(2, "0")}`;
 
-    const { data: reports, error: reportErr } = await supabaseClient
+    // 1. 自分が共有されている report_id のリストを取得
+    const { data: shareData } = await supabaseClient
+      .from("report_shares")
+      .select("report_id")
+      .eq("user_id", currentUserId);
+
+    const sharedReportIds = (shareData || []).map((s) => s.report_id);
+
+    // 2. 「自分が作成者」または「自分が共有先に含まれる」レポートのみを取得
+    let query = supabaseClient
       .from("report_logs")
       .select("user_id, report_date, work_period_start, created_at")
       .gte("report_date", startDate)
       .lte("report_date", endDate);
+
+    if (sharedReportIds.length > 0) {
+      query = query.or(`user_id.eq.${currentUserId},id.in.(${sharedReportIds.join(",")})`);
+    } else {
+      query = query.eq("user_id", currentUserId);
+    }
+
+    const { data: reports, error: reportErr } = await query;
 
     if (reportErr) {
       lockDropdown(userSelect, "（データ取得エラー）");
@@ -2145,8 +2202,9 @@ async function updateTargetUserDropdownByMonth(targetYearMonth) {
 
     let activeUserIds = [...new Set(matchedReports.map((r) => r.user_id).filter(Boolean))];
 
+    // 🎯 データが0件の場合は「全てのレポート」を表示しつつ非活性（ロック）にする
     if (activeUserIds.length === 0) {
-      lockDropdown(userSelect, "");
+      lockDropdown(userSelect, "全てのレポート");
       return;
     }
 
@@ -2271,11 +2329,14 @@ function highlightSelectedReportItem(selectedReportId) {
       // 1. フォーカス用のクラスを追加
       item.classList.add("active-report", "bg-secondary-subtle");
 
-      // 2. ✨ 自動スクロールを実行！（リスト枠内で見える位置まで移動）
-      item.scrollIntoView({
-        behavior: "smooth", // なめらかにスクロール
-        block: "nearest", // 一番近い位置（リスト内）で止める
-      });
+      // 2. ✨ PC表示（991px超）の場合のみ自動スクロールを実行！
+      const isMobile = window.innerWidth <= 991;
+      if (!isMobile) {
+        item.scrollIntoView({
+          behavior: "smooth", // なめらかにスクロール
+          block: "nearest", // 一番近い位置（リスト内）で止める
+        });
+      }
     } else {
       // フォーカスを外す
       item.classList.remove("active-report", "bg-secondary-subtle");
