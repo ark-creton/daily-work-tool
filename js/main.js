@@ -635,20 +635,67 @@ async function initializeMainPage() {
       });
     }
 
-    // --- LocalStorageから本日のログを復元する処理 ---
-    // ◆ ローカルログ復元関数
-    const restoreLogsFromStorage = () => {
+    // ◆ データベースの打刻データからログ表示を復元する関数
+    const restoreLogsFromDB = async () => {
       if (!logArea) return;
-      // 今日の日付文字列（YYYY-MM-DD）をキーにして取得
-      const todayKey = `attendance_logs_${new Date().toISOString().split("T")[0]}`;
-      const savedLogs = localStorage.getItem(todayKey);
-      if (savedLogs) {
-        logArea.value = savedLogs;
+
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
+
+        const todayStr = new Date().toISOString().split("T")[0];
+
+        // 今日のデータを取りに行く
+        const { data: record } = await supabase
+          .from("attendance_data")
+          .select("*")
+          .match({ user_id: user.id, work_date: todayStr, is_active: true })
+          .maybeSingle();
+
+        if (!record) {
+          logArea.value = "";
+          return;
+        }
+
+        let logs = [];
+
+        // 出勤ログの組み立て
+        if (record.clock_in) {
+          const timeStr = new Date(record.clock_in).toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' });
+          logs.push(`${timeStr} 【出勤】 出勤しました。`);
+        }
+
+        // 外出/戻り などの履歴があればここに追加可能
+        if (record.break_start) {
+          const timeStr = new Date(record.break_start).toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' });
+          logs.push(`${timeStr} 【外出開始】 外出を開始しました。`);
+        }
+        if (record.break_end) {
+          const timeStr = new Date(record.break_end).toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' });
+          logs.push(`${timeStr} 【外出終了】 外出から戻りました。`);
+        }
+
+        // 退勤ログの組み立て
+        if (record.clock_out) {
+          const timeStr = new Date(record.clock_out).toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' });
+          logs.push(`${timeStr} 【退勤】 退勤しました。お疲れ様でした！`);
+        }
+
+        // 備考ログの組み立て
+        if (record.memo) {
+          logs.push(`[備考] ${record.memo}`);
+        }
+
+        // ログエリアに改行区切りでセット
+        logArea.value = logs.join("\n");
+
+      } catch (err) {
+        console.error("ログ復元エラー:", err);
       }
     };
 
     // ログの復元を実行
-    restoreLogsFromStorage();
+    await restoreLogsFromDB();
 
     // ◆ 画面初回ロード時の非同期データ読み込み一括処理
     // 【目的】画面を開いた瞬間に、必要なユーザー状態や各種UIの描画処理を並行して効率的に同期・実行する

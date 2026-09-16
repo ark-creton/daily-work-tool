@@ -524,24 +524,47 @@ async function fetchAndDisplayPastReportList(targetUserId = null, targetYearMont
 
     listContainer.innerHTML = htmlContent;
 
-    // 💡 🎯【追加】生成された要素にクリックイベント（詳細表示／モーダル表示）をバインドする
-    listContainer.querySelectorAll(".past-report-item").forEach((item) => {
-      item.addEventListener("click", function (e) {
-        e.preventDefault();
-        const reportId = this.getAttribute("data-id");
-        if (!reportId) return;
+    // 💡 親要素にイベントを委譲し、非同期完了後に正確にスクロールさせる
+    listContainer.onclick = async function (e) {
+      const item = e.target.closest(".past-report-item");
+      if (!item) return;
 
-        // 1. 詳細表示関数を呼び出す
-        if (typeof fetchAndDisplaySingleReport === "function") {
-          fetchAndDisplaySingleReport(reportId);
-        }
+      e.preventDefault();
+      const reportId = item.getAttribute("data-id");
+      if (!reportId) return;
 
-        // 2. モーダル表示関数や選択状態（ハイライト）の更新
-        if (typeof highlightSelectedReportItem === "function") {
-          highlightSelectedReportItem(reportId);
-        }
-      });
-    });
+      // 1. 詳細表示関数を呼び出し、完了まで【await】で待つ！
+      if (typeof fetchAndDisplaySingleReport === "function") {
+        await fetchAndDisplaySingleReport(reportId);
+      }
+
+      // 2. ハイライト処理
+      if (typeof highlightSelectedReportItem === "function") {
+        highlightSelectedReportItem(reportId);
+      }
+
+      // 3. 🌟 描画が完全に終わった後、少しだけディレイ（タイマー）を入れてスクロールを実行
+      if (window.innerWidth <= 991) {
+        setTimeout(() => {
+          // カード本体、または画面の一番上（ヘッダー/コンテナ）を取得
+          const targetEl = document.querySelector(".report-detail-card") ||
+            document.getElementById("report_detail_view") ||
+            document.querySelector(".container-fluid");
+
+          if (targetEl) {
+            // window全体を移動させる記述に変更（これで途中で止まるのを防ぎます）
+            const rect = targetEl.getBoundingClientRect();
+            const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+            const targetPosition = rect.top + scrollTop - 20; // 少し余裕を持たせて上部にスクロール
+
+            window.scrollTo({
+              top: targetPosition,
+              behavior: "smooth"
+            });
+          }
+        }, 100); // 描画直後のカクつき防止用に100ms待機
+      }
+    };
 
     // アクティブ選択状態の維持（引数で明示指定されたIDを最優先にする！）
     const activeId =
@@ -719,15 +742,6 @@ async function fetchAndDisplaySingleReport(reportId) {
     } else {
       // ■ レポート画面の場合：画面内の詳細エリアに描画
       console.log("【レポート画面】画面内の詳細エリアに描画しました。");
-      if (window.innerWidth <= 991) {
-        const detailCard = document.querySelector(".report-detail-card");
-        if (detailCard) {
-          detailCard.scrollIntoView({
-            behavior: "smooth",
-            block: "start"
-          });
-        }
-      }
     }
   } catch (err) {
     console.error("レポートの単体取得・表示中にエラーが発生しました:", err);
@@ -1237,7 +1251,7 @@ async function refreshReportList(targetYear, targetMonth, specificReportId = nul
         // DOM要素を直接探してスクロール追尾させる
         const targetRow = document.querySelector(`[data-report-id="${specificReportId}"]`);
         if (targetRow) {
-          // 💡 スマホ（991px以下）以外の場合のみ、画面をスムーズスクロール追尾させる
+          // 💡 PC（991px超）の場合のみ、リスト内の対象行へスクロール
           const isMobile = window.innerWidth <= 991;
           if (!isMobile) {
             targetRow.scrollIntoView({ behavior: "smooth", block: "center" });
@@ -1248,6 +1262,9 @@ async function refreshReportList(targetYear, targetMonth, specificReportId = nul
             targetRow.classList.remove("highlight-flash");
           }, 2000);
         }
+
+        // 🌟 スマホ（991px以下）の場合は、画面上部の詳細エリアへスクロール！
+        scrollToReportDetailOnMobile();
       }, 150);
 
       // 7. フラグを少し遅れて解除
@@ -1714,6 +1731,7 @@ async function handlePastReportRowClick(rowElement) {
       await renderReportCalendar(y, m);
     }
   }
+  scrollToReportDetailOnMobile();
 }
 
 // 🛡️ 最強ガード：document全体のキャプチャフェーズ(true)で過去レポートアイテムのクリックを横取りする
@@ -2107,6 +2125,7 @@ async function selectReportAndCloseModal(reportId) {
       });
     }
   }
+  scrollToReportDetailOnMobile();
 }
 
 /**
@@ -2145,29 +2164,39 @@ function extractYearMonth(dateStr) {
 }
 
 /**
- * 🔒 プルダウン非活性化処理
+ * 🔒 プルダウン非活性化処理（サイズ維持版）
  */
 function lockDropdown(selectEl, message) {
+  if (!selectEl) return;
+
+  // 1. 非活性化前（通常時）の幅を計測して固定
+  const currentWidth = selectEl.offsetWidth;
+  if (currentWidth > 0) {
+    selectEl.style.width = `${currentWidth}px`;
+  }
+
+  // 2. 選択肢の設定と非活性化
   selectEl.innerHTML = `<option value="all" selected>${message}</option>`;
   selectEl.value = "all";
   selectEl.disabled = true;
-  selectEl.setAttribute("disabled", "disabled");
+
+  // 3. スタイルの調整（opacityは外してサイズ感とデザインを維持）
   selectEl.style.setProperty("background-color", "#e9ecef", "important");
   selectEl.style.setProperty("cursor", "not-allowed", "important");
-  selectEl.style.setProperty("pointer-events", "none", "important");
-  selectEl.style.setProperty("opacity", "0.6", "important");
 }
 
 /**
  * 🔓 プルダウンロック解除処理
  */
 function unlockDropdown(selectEl) {
+  if (!selectEl) return;
+
   selectEl.disabled = false;
-  selectEl.removeAttribute("disabled");
+
+  // 追加したスタイル・幅制限を解除
+  selectEl.style.removeProperty("width");
   selectEl.style.removeProperty("background-color");
   selectEl.style.removeProperty("cursor");
-  selectEl.style.removeProperty("pointer-events");
-  selectEl.style.removeProperty("opacity");
 }
 
 /**
@@ -2370,5 +2399,28 @@ function highlightSelectedReportItem(selectedReportId) {
       // フォーカスを外す
       item.classList.remove("active-report", "bg-secondary-subtle");
     }
+  });
+}
+
+/**
+ * 📱 スマホ時に詳細表示エリアへスムーズスクロールするヘルパー関数
+ */
+function scrollToReportDetailOnMobile() {
+  const isMobile = window.innerWidth <= 991;
+  if (!isMobile) return;
+
+  requestAnimationFrame(() => {
+    setTimeout(() => {
+      const detailCard = document.querySelector(".report-detail-card") ||
+        document.getElementById("report_detail_view") ||
+        document.getElementById("report_detail_container");
+
+      if (detailCard) {
+        detailCard.scrollIntoView({
+          behavior: "smooth",
+          block: "start"
+        });
+      }
+    }, 100);
   });
 }
