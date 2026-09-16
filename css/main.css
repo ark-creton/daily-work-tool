@@ -752,16 +752,16 @@
 
 /* 🔵 出勤中：青い呼吸するドット */
 .cal-working-indicator {
-  display: inline-block;
+  display: inline-block !important;
   width: 7px !important;
   height: 7px !important;
   border-radius: 50% !important;
   background-color: #3b82f6 !important;
   box-shadow: 0 0 6px rgba(59, 130, 246, 0.5);
   animation: gentle-glow 3s ease-in-out infinite;
-  position: absolute !important;
-  bottom: 8px !important;
-  left: 1px !important;
+
+  position: static !important;
+  margin-left: -2px !important;
   flex-shrink: 0;
   vertical-align: middle;
 }

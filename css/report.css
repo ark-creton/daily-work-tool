@@ -648,16 +648,17 @@ select:disabled {
     margin-bottom: 0 !important;
   }
 
-  /* 5. プルダウン（タイトルの右側の余白をすべて使って右端まで伸ばす） */
-  .report-list-card select.past-report-select,
-  .report-list-card select[name="target_user_id"] {
-    flex: 1 1 0% !important;
-    width: 100% !important;
+  /* 5. 過去のレポートプルダウン（スマホ：カレンダーと同様に右寄せ・自動幅指定） */
+  .report-list-card #target_user_id {
+    width: auto !important;
     min-width: 0 !important;
-    max-width: 100% !important;
-    height: 28px !important;
-    margin: 0 !important;
-    transform: none !important;
-    box-sizing: border-box !important;
+    max-width: 140px !important;
+    /* 広がりすぎを防ぐ上限（必要に応じて調整） */
+    height: 1.85rem !important;
+    /* カレンダーのプルダウン(1.85rem)と高さを統一 */
+    font-size: 0.8rem !important;
+    /* フォントサイズも統一 */
+    margin-left: auto !important;
+    flex: 0 0 auto !important;
   }
 }

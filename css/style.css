@@ -243,6 +243,57 @@ body {
     opacity 0.3s ease;
 }
 
+/* ==========================================================================
+   🔧 閉じるボタン（トースト＆モーダル）表示・操作の修正
+   ========================================================================== */
+
+/* 1. トースト全体のクリック判定を復活 */
+.custom-toast {
+  pointer-events: auto !important;
+  /* クリックできるように修正 */
+}
+
+/* 2. トースト内の閉じるボタン専用スタイル */
+.custom-toast .toast-close-btn {
+  background: transparent !important;
+  border: none !important;
+  color: #64748b !important;
+  /* アイコンの色（スレートグレー） */
+  font-size: 1.25rem !important;
+  line-height: 1 !important;
+  padding: 0 !important;
+  margin-left: auto !important;
+  cursor: pointer !important;
+  flex-shrink: 0 !important;
+  opacity: 0.7;
+  transition: opacity 0.2s ease, color 0.2s ease;
+}
+
+.custom-toast .toast-close-btn:hover {
+  opacity: 1;
+  color: #0f172a !important;
+}
+
+/* 3. エラー時トースト内の閉じるボタンの色 */
+.custom-toast.error .toast-close-btn {
+  color: #991b1b !important;
+}
+
+/* 4. モーダル等の標準 `.btn-close`（Bootstrap）が見えなくなる問題の防止 */
+.btn-close {
+  box-sizing: content-box;
+  width: 1em;
+  height: 1em;
+  padding: .25em .25em;
+  color: #000;
+  opacity: .5;
+  cursor: pointer;
+}
+
+.btn-close:hover {
+  opacity: .75;
+}
+
 /* スマートフォン環境 (991px以下)：画面下部に配置 */
 @media (max-width: 991px) {
   .custom-toast {
@@ -1007,7 +1058,7 @@ body {
   }
 
   ::-webkit-scrollbar-thumb {
-    background-color: #dee2e6(0, 0, 0, 0.2) !important;
+    background-color: #dee2e6 !important;
     border-radius: 3px !important;
   }
 

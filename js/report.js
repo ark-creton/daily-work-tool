@@ -631,6 +631,11 @@ async function fetchAndDisplaySingleReport(reportId) {
         } else {
           console.log(`【report.js】レポートID: ${reportId} を正常に既読に更新しました！`);
 
+          // 🔔閲覧されたレポートの通知（notifications）を物理削除してベルマーク更新
+          if (typeof clearNotificationOnReportRead === "function") {
+            await clearNotificationOnReportRead(reportId);
+          }
+
           // DBを更新したので、画面上のreportオブジェクト内の自分のステータスも既読に書き換える
           myShare.is_read = true;
           myShare.read_at = new Date().toISOString();
@@ -714,6 +719,15 @@ async function fetchAndDisplaySingleReport(reportId) {
     } else {
       // ■ レポート画面の場合：画面内の詳細エリアに描画
       console.log("【レポート画面】画面内の詳細エリアに描画しました。");
+      if (window.innerWidth <= 991) {
+        const detailCard = document.querySelector(".report-detail-card");
+        if (detailCard) {
+          detailCard.scrollIntoView({
+            behavior: "smooth",
+            block: "start"
+          });
+        }
+      }
     }
   } catch (err) {
     console.error("レポートの単体取得・表示中にエラーが発生しました:", err);
@@ -2060,15 +2074,13 @@ async function selectReportAndCloseModal(reportId) {
 
   // ⑤ ミニカレンダー側の表示を最新の DB（既読状態）を反映してリフレッシュ
   const monthInput = document.getElementById("display_period");
-  const userSelect = document.getElementById("target_user_id"); // ← ユーザー選択欄を取得
+  const userSelect = document.getElementById("target_user_id");
 
   if (monthInput && monthInput.value) {
     const [y, m] = monthInput.value.split("-").map(Number);
-    // 現在選択されているユーザーID（未選択時は "all"）
     const selectedUserId = userSelect ? userSelect.value : "all";
 
     if (typeof renderReportCalendar === "function") {
-      // ★ 第3引数に selectedUserId を渡して再描画を実行！
       await renderReportCalendar(y, m, selectedUserId);
       console.log("✨ 行クリックからのカレンダー既読即時反映に成功しました");
     }
@@ -2077,6 +2089,23 @@ async function selectReportAndCloseModal(reportId) {
   // ⑥ 最後に選択ハイライトを適用
   if (typeof highlightSelectedReportItem === "function") {
     highlightSelectedReportItem(reportId);
+  }
+
+  // -------------------------------------------------------------------------
+  // 🌟 スマホ（991px以下）の場合のみ、画面上部の詳細表示エリアへ自動スムーズスクロール
+  // -------------------------------------------------------------------------
+  const isMobile = window.innerWidth <= 991;
+  if (isMobile) {
+    const detailCard = document.querySelector(".report-detail-card") ||
+      document.getElementById("report_detail_view") ||
+      document.getElementById("report_detail_container");
+
+    if (detailCard) {
+      detailCard.scrollIntoView({
+        behavior: "smooth",
+        block: "start"
+      });
+    }
   }
 }
 

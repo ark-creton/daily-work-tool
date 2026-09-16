@@ -1757,7 +1757,7 @@ const EMPTY_REPORT_PLACEHOLDER_HTML = `
 `;
 
 // ◆ メイン画面過去レポート一覧描画処理
-//  【目的】現在選択されている年月・ユーザーフィルターに基づき、該当する提出済および自身の下書きレポート一覧をSupabaseから取得し、未読優先度と日付順でソートしてDOMを描画する
+// 【目的】現在選択されている年月・ユーザーフィルターに基づき、該当する提出済および自身の下書きレポート一覧をSupabaseから取得し、未読優先度と日付順でソートしてDOMを描画する
 async function updateMainPageReportList() {
   const pastReportListEl = document.getElementById("past_report_list");
   if (!pastReportListEl) return;
@@ -1942,6 +1942,9 @@ async function updateMainPageReportList() {
       });
     }
 
+    // 💡 フィルタリングをかける前の「今月閲覧可能な全体件数」を保持しておく
+    const totalReportsCount = displayReports.length;
+
     // プルダウンによるユーザー絞り込みを適用
     // 💡 値が空（""）の場合は "all" と同じ扱いにして、全件表示を維持する
     if (filterValue === "mine") {
@@ -1985,17 +1988,20 @@ async function updateMainPageReportList() {
       pastReportListEl.innerHTML = EMPTY_REPORT_PLACEHOLDER_HTML;
 
       if (userSelect) {
-        userSelect.value = "all";
-        userSelect.disabled = true; // 0件時は操作不可
+        if (totalReportsCount === 0) {
+          // 当月全体で誰のレポートも全く存在しない場合はプルダウンを非活性（ロック）
+          userSelect.value = "all";
+          userSelect.disabled = true;
+        } else {
+          // 全体にはデータが存在するが、選択した絞り込み（"mine" 等）で0件になった場合はプルダウンを有効のまま維持
+          userSelect.disabled = false;
+        }
       }
       return;
     } else {
-      // 💡 データが1件以上存在する場合は、プルダウンを有効化し、未選択なら "all" にセット
+      // データが1件以上存在する場合は、プルダウンを常に有効化
       if (userSelect) {
         userSelect.disabled = false;
-        if (!userSelect.value || userSelect.value === "") {
-          userSelect.value = "all";
-        }
       }
     }
 
