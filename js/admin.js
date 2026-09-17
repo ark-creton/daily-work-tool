@@ -423,8 +423,55 @@ function setupFormSubmit(userModal) {
         if (dbError) throw dbError;
         showToast("ユーザー情報を更新しました！");
       } else {
-        // 新規登録の処理（省略なし）
-        // ...
+        // 新規登録の処理
+        console.log("Supabase Authにユーザーを新規登録中...");
+
+        // 1. Supabase Auth にアカウントを作成
+        const { data: authData, error: authError } = await supabase.auth.signUp({
+          email: loginEmail,
+          password: password,
+          options: {
+            data: {
+              display_name: userName,
+              company_id: companyId,
+              role: role,
+            },
+          },
+        });
+
+        if (authError) throw authError;
+
+        if (!authData.user) {
+          throw new Error("ユーザーの作成に失敗しました。");
+        }
+
+        const newUserId = authData.user.id;
+        console.log("Auth登録成功! ユーザーID:", newUserId);
+
+        // モーダル等に has_report_access の入力項目があれば取得（なければデフォルト true）
+        const hasReportAccessInput = document.getElementById("has_report_access");
+        const hasReportAccess = hasReportAccessInput ? hasReportAccessInput.checked : true;
+
+        // 2. データベース(user_master)に詳細情報を保存（設計書の定義に準拠）
+        console.log("user_master テーブルにデータを作成中...");
+        const { error: dbError } = await supabase.from("user_master").insert([
+          {
+            id: newUserId, // AuthenticationのUIDと同一 (PK)
+            login_email: loginEmail,
+            user_name: userName,
+            last_name: lastName,
+            first_name: firstName,
+            company_id: companyId,
+            role: role,
+            has_report_access: hasReportAccess, // レポート利用フラグ
+            is_active: isActive,
+            avatar_url: avatarUrl || "default-avatar.png",
+          },
+        ]);
+
+        if (dbError) throw dbError;
+
+        showToast("ユーザーを新規登録しました！");
       }
 
       isFormDirty = false;

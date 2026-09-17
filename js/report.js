@@ -85,10 +85,10 @@ async function initializeReportPage() {
     };
 
     if (monthInput) {
-      monthInput.onchange = handleMonthChange; // 💡 変更
+      monthInput.onchange = handleMonthChange; 
     }
     if (monthInputSp) {
-      monthInputSp.onchange = handleMonthChange; // 💡 追加
+      monthInputSp.onchange = handleMonthChange; 
     }
     if (userSelect) {
       userSelect.onchange = handleReportFilterChange;
@@ -507,17 +507,27 @@ async function fetchAndDisplayPastReportList(targetUserId = null, targetYearMont
         <a href="javascript:void(0);" class="list-group-item list-group-item-action d-flex align-items-center justify-content-between past-report-item" 
           data-id="${report.id}"
           style="padding: 0.65rem 0.5rem; border: none; border-bottom: 1px solid #f1f5f9; transition: all 0.2s;">
-          <div class="d-flex align-items-center min-w-0 flex-grow-1">
+          
+          <!-- 【左側エリア】style="min-width: 0;" を指定してテキスト省略を有効化 -->
+          <div class="d-flex align-items-center flex-grow-1 min-w-0 me-2" style="min-width: 0;">
             ${leftBorderHtml}
-            <div class="d-flex align-items-center gap-1.5 min-w-0" style="font-size: 0.82rem;">
+            <div class="d-flex align-items-center gap-1.5 min-w-0 flex-grow-1" style="font-size: 0.82rem; min-width: 0;">
               ${iconHtml}
-              <span class="${textClass} text-truncate ms-1">
+              <!-- タイトルと名前のテキスト（省略表示） -->
+              <span class="${textClass} text-truncate ms-1" title="${report.report_type}：${reporterName}">
                 ${report.report_type}：${reporterName}
               </span>
-              ${badgeHtml}
+              <!-- バッジ（NEWや下書き）の潰れ防止 -->
+              <div class="flex-shrink-0">
+                ${badgeHtml}
+              </div>
             </div>
           </div>
-          <span class="text-muted flex-shrink-0 ms-2" style="font-size: 0.72rem; opacity: 0.8;">${formattedDate}</span>
+
+          <!-- 【右側エリア】日付が絶対に改行・見切れを起こさないよう保護 -->
+          <span class="text-muted flex-shrink-0 ms-auto" style="font-size: 0.72rem; opacity: 0.8; white-space: nowrap;">
+            ${formattedDate}
+          </span>
         </a>
       `;
     });
@@ -543,26 +553,33 @@ async function fetchAndDisplayPastReportList(targetUserId = null, targetYearMont
         highlightSelectedReportItem(reportId);
       }
 
-      // 3. 🌟 描画が完全に終わった後、少しだけディレイ（タイマー）を入れてスクロールを実行
+      // 3. 🌟 描画完了後、ヘッダー下の「レポート管理」タイトルまでスムーズスクロール
       if (window.innerWidth <= 991) {
         setTimeout(() => {
-          // カード本体、または画面の一番上（ヘッダー/コンテナ）を取得
-          const targetEl = document.querySelector(".report-detail-card") ||
-            document.getElementById("report_detail_view") ||
-            document.querySelector(".container-fluid");
+          // メインコンテンツエリア（「レポート管理」がある最上部コンテナ）を取得
+          const targetEl = document.getElementById("main_content_dynamic_area") ||
+            document.querySelector(".content-area") ||
+            document.querySelector(".main-layout");
 
           if (targetEl) {
-            // window全体を移動させる記述に変更（これで途中で止まるのを防ぎます）
+            // 上部固定ヘッダーの高さを取得（重なり防止）
+            const header = document.querySelector(".header-area");
+            const headerHeight = header ? header.offsetHeight : 0;
+
             const rect = targetEl.getBoundingClientRect();
             const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
-            const targetPosition = rect.top + scrollTop - 20; // 少し余裕を持たせて上部にスクロール
+            // ヘッダー直下にぴったり合わせる計算
+            const targetPosition = rect.top + scrollTop - headerHeight;
 
             window.scrollTo({
-              top: targetPosition,
+              top: Math.max(0, targetPosition),
               behavior: "smooth"
             });
+          } else {
+            // 万が一ターゲットが見つからない場合は一番上へ
+            window.scrollTo({ top: 0, behavior: "smooth" });
           }
-        }, 100); // 描画直後のカクつき防止用に100ms待機
+        }, 100);
       }
     };
 
@@ -1071,7 +1088,8 @@ function mapReportToDisplay(report) {
             const tooltipText = `${fullName}${timeStr}`;
 
             stackHtml += `
-              <div class="avatar-stack-item d-flex align-items-center justify-content-center fw-semibold" 
+              <div class="avatar-stack-item js-avatar-item d-flex align-items-center justify-content-center fw-semibold" 
+                   tabindex="0"
                    title="${tooltipText}"
                    style="
                      width: 24px; 
@@ -1083,6 +1101,7 @@ function mapReportToDisplay(report) {
                      font-size: 0.65rem; 
                      margin-left: -8px; 
                      cursor: pointer;
+                     outline: none;
                      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
                      transition: transform 0.15s ease, z-index 0.15s ease;
                      position: relative;
@@ -1095,7 +1114,8 @@ function mapReportToDisplay(report) {
             `;
           } else {
             stackHtml += `
-              <div class="avatar-stack-item d-flex align-items-center justify-content-center text-muted" 
+              <div class="avatar-stack-item js-avatar-item d-flex align-items-center justify-content-center text-muted" 
+                   tabindex="0"
                    title="${fullName}（未読）"
                    style="
                      width: 24px; 
@@ -1135,12 +1155,27 @@ function mapReportToDisplay(report) {
         btnReadStatus.removeAttribute("data-bs-trigger");
 
         btnReadStatus.innerHTML = stackHtml;
+
+        // 🌟 アイコンタップ時に表示され、画面の他をタップすると自動閉鎖する設定（focus trigger）
+        const avatarItems = btnReadStatus.querySelectorAll(".js-avatar-item");
+        avatarItems.forEach((el) => {
+          const oldTooltip = bootstrap.Tooltip.getInstance(el);
+          if (oldTooltip) oldTooltip.dispose();
+
+          new bootstrap.Tooltip(el, {
+            trigger: "hover focus",
+            placement: "bottom"
+          });
+        });
+
       } else {
         readStatusWrapper.classList.add("d-none");
       }
     } else {
       readStatusWrapper.classList.add("d-none");
     }
+  } else {
+    readStatusWrapper.classList.add("d-none");
   }
 }
 
@@ -1960,13 +1995,21 @@ function openReportSelectModal(dateStr, reports) {
               class="list-group-item list-group-item-action d-flex align-items-center justify-content-between p-3 border-bottom position-relative" 
               style="border: none; border-bottom: 1px solid #f1f5f9 !important;"
               onclick="selectReportAndCloseModal('${r.id}')">
-        <div class="d-flex align-items-center min-w-0 flex-grow-1">
+        
+        <!-- 【左側エリア】min-width:0 を指定してテキスト省略を有効化 -->
+        <div class="d-flex align-items-center flex-grow-1 min-w-0 me-2" style="min-width: 0;">
           ${leftBarHtml}
           ${iconHtml}
-          <span class="fw-medium text-dark ms-1 text-truncate" style="font-size: 0.85rem;">${displayTitle}</span>
-          ${badgeHtml}
+          <span class="fw-medium text-dark ms-1 text-truncate" style="font-size: 0.85rem;" title="${displayTitle}">
+            ${displayTitle}
+          </span>
+          <div class="flex-shrink-0">
+            ${badgeHtml}
+          </div>
         </div>
-        <div class="d-flex align-items-center flex-shrink-0 ms-2">
+
+        <!-- 【右側エリア】flex-shrink:0 を指定して絶対に潰れないように保護 -->
+        <div class="d-flex align-items-center flex-shrink-0" style="white-space: nowrap;">
           ${dateDisplayHtml}
           <i class="bi bi-chevron-right text-muted fs-6"></i>
         </div>
@@ -2403,24 +2446,42 @@ function highlightSelectedReportItem(selectedReportId) {
 }
 
 /**
- * 📱 スマホ時に詳細表示エリアへスムーズスクロールするヘルパー関数
+ * 📱 スマホ時にコンテンツの最上部へ確実にスクロールさせる関数
  */
 function scrollToReportDetailOnMobile() {
   const isMobile = window.innerWidth <= 991;
   if (!isMobile) return;
 
-  requestAnimationFrame(() => {
-    setTimeout(() => {
-      const detailCard = document.querySelector(".report-detail-card") ||
-        document.getElementById("report_detail_view") ||
-        document.getElementById("report_detail_container");
+  // 描画タイミングのズレを防ぐため少し待機
+  setTimeout(() => {
+    // スクロールさせている可能性のある親コンテナを探す
+    const mainLayout = document.querySelector(".main-layout");
+    const contentArea = document.getElementById("main_content_dynamic_area") || document.querySelector(".content-area");
 
-      if (detailCard) {
-        detailCard.scrollIntoView({
-          behavior: "smooth",
-          block: "start"
-        });
-      }
-    }, 100);
-  });
+    // 1. もし DIV 要素自体がスクロール枠になっている場合（main-layout や content-area）
+    if (mainLayout && mainLayout.scrollTop > 0) {
+      mainLayout.scrollTo({ top: 0, behavior: "smooth" });
+    } else if (contentArea && contentArea.scrollTop > 0) {
+      contentArea.scrollTo({ top: 0, behavior: "smooth" });
+    }
+
+    // 2. 通常のブラウザウィンドウ全体がスクロールしている場合
+    // 対象要素（#main_content_dynamic_area）のTop位置を計算
+    if (contentArea) {
+      const header = document.querySelector(".header-area");
+      const headerHeight = header ? header.offsetHeight : 0;
+
+      // 画面上の位置を取得
+      const rect = contentArea.getBoundingClientRect();
+      const absoluteTop = rect.top + window.pageYOffset - headerHeight;
+
+      window.scrollTo({
+        top: Math.max(0, absoluteTop),
+        behavior: "smooth"
+      });
+    } else {
+      // 万が一要素が見つからない場合は画面の一番上へ
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+  }, 150); // 描画完了を待つため150ms待機
 }
